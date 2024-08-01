@@ -1,0 +1,31 @@
+# 🎯 Koubou Basic Example
+# This configuration generates a simple screenshot with background and text overlay
+
+project_name: "My Beautiful App"
+output_directory: "output"
+
+screenshots:
+  - name: "App Launch Screen"
+    source_image: "screenshots/home.png"
+    output_size: [1320, 2868]  # iPhone 16 Pro size
+    device_frame: "iPhone 16 Pro - Black Titanium - Portrait"
+    
+    background:
+      type: "linear"
+      colors: ["#667eea", "#764ba2"]
+      direction: 45
+    
+    text_overlays:
+      - content: "Beautiful App"
+        position: [100, 200]
+        font_size: 48
+        color: "#ffffff"
+        alignment: "center"
+        max_width: 600
+      
+      - content: "Experience the future of mobile apps"
+        position: [100, 300]
+        font_size: 24
+        color: "#ffffff"
+        alignment: "center"
+        max_width: 600

@@ -1,0 +1,110 @@
+{
+  "iPhone": {
+    "iPhone 16 Pro Portrait": {
+      "width": 1320,
+      "height": 2868
+    },
+    "iPhone 16 Pro Max Portrait": {
+      "width": 1320,
+      "height": 2868  
+    },
+    "iPhone 16 Portrait": {
+      "width": 1179,
+      "height": 2556
+    },
+    "iPhone 15 Pro Portrait": {
+      "width": 1290,
+      "height": 2796
+    },
+    "iPhone 15 Pro Max Portrait": {
+      "width": 1320,
+      "height": 2868
+    },
+    "iPhone 15 Portrait": {
+      "width": 1179,
+      "height": 2556
+    },
+    "iPhone 14 Pro Portrait": {
+      "width": 1290,
+      "height": 2796
+    },
+    "iPhone 14 Pro Max Portrait": {
+      "width": 1320,
+      "height": 2868
+    },
+    "iPhone 13 Pro Portrait": {
+      "width": 1170,
+      "height": 2532
+    },
+    "iPhone 13 Pro Max Portrait": {
+      "width": 1284,
+      "height": 2778
+    },
+    "iPhone 12 Pro Portrait": {
+      "width": 1170,
+      "height": 2532
+    },
+    "iPhone 12 Pro Max Portrait": {
+      "width": 1284,
+      "height": 2778
+    },
+    "iPhone 11 Pro Portrait": {
+      "width": 1125,
+      "height": 2436
+    }
+  },
+  "iPad": {
+    "iPad Pro 13 Portrait": {
+      "width": 2064,
+      "height": 2752
+    },
+    "iPad Pro 11 Portrait": {
+      "width": 1668,
+      "height": 2388
+    },
+    "iPad Air 13 Portrait": {
+      "width": 2048,
+      "height": 2732
+    },
+    "iPad Air 11 Portrait": {
+      "width": 1668,
+      "height": 2388
+    },
+    "iPad Portrait": {
+      "width": 1620,
+      "height": 2160
+    },
+    "iPad mini Portrait": {
+      "width": 1488,
+      "height": 2266
+    }
+  },
+  "Mac": {
+    "MacBook Pro 16": {
+      "width": 3456,
+      "height": 2234
+    },
+    "MacBook Pro 14": {
+      "width": 3024,
+      "height": 1964
+    },
+    "MacBook Air": {
+      "width": 2560,
+      "height": 1664
+    },
+    "iMac 24": {
+      "width": 4480,
+      "height": 2520
+    }
+  },
+  "Watch": {
+    "Apple Watch S10 42mm": {
+      "width": 394,
+      "height": 480
+    },
+    "Apple Watch S10 46mm": {
+      "width": 410,
+      "height": 502
+    }
+  }
+}

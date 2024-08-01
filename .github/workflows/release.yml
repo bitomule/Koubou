@@ -1,0 +1,125 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  actions: read
+  id-token: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Get tag name
+      id: tag
+      run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build wheel twine
+        
+    - name: Build package
+      run: python -m build
+        
+    - name: Create checksums
+      run: |
+        cd dist
+        sha256sum * > checksums.txt
+        
+    - name: Generate changelog
+      id: changelog
+      run: |
+        if git describe --tags --abbrev=0 HEAD^ >/dev/null 2>&1; then
+          echo "changelog=New features and improvements since last release" >> $GITHUB_OUTPUT
+        else
+          echo "changelog=Initial release" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: Release ${{ steps.tag.outputs.tag }}
+        draft: false
+        prerelease: false
+        body: |
+          🎯 **Koubou (工房)** - The artisan workshop for App Store screenshots
+          
+          Transform YAML into handcrafted App Store screenshots. 
+          Koubou is your professional workshop where every screenshot 
+          is carefully crafted with artisan quality.
+          
+          工房 (koubou) means "artisan's workshop" in Japanese - 
+          where masters create their finest work.
+          
+          ## What's Changed
+          ${{ steps.changelog.outputs.changelog }}
+          
+          ## Installation
+          
+          ### PyPI (Recommended)
+          ```bash
+          pip install koubou
+          ```
+          
+          ### Homebrew (macOS/Linux)
+          ```bash
+          brew install bitomule/tap/koubou
+          ```
+          
+          ### Manual Download
+          Download the wheel or source distribution from the assets below.
+          
+          ## Quick Start
+          ```bash
+          kou create-config my-screenshots.yaml    # Create sample config
+          kou generate my-screenshots.yaml         # Generate screenshots
+          kou list-frames                          # List available device frames
+          ```
+          
+          ## Features
+          - 🎨 **100+ Device Frames**: iPhone, iPad, Mac, Watch, and more
+          - 🌈 **Professional Backgrounds**: Linear, radial, conic gradients
+          - ✨ **Rich Typography**: Advanced text overlays with stroke, alignment
+          - 📱 **YAML Configuration**: Elegant, declarative screenshot definitions
+          - 🚀 **Batch Processing**: Generate multiple screenshots efficiently
+          
+          **Full Changelog**: https://github.com/bitomule/koubou/commits/${{ steps.tag.outputs.tag }}
+        files: |
+          dist/*
+          dist/checksums.txt
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+      run: |
+        twine upload dist/*
+      continue-on-error: true
+        
+    - name: Update Homebrew formula
+      uses: mislav/bump-homebrew-formula-action@v3
+      with:
+        formula-name: koubou
+        formula-path: koubou.rb
+        homebrew-tap: bitomule/homebrew-tap
+      env:
+        COMMITTER_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
+      continue-on-error: true

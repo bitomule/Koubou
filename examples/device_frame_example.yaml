@@ -1,0 +1,34 @@
+# Device Frame Example
+# This configuration demonstrates device frame usage
+
+project_name: "Device Frame Example"
+output_directory: "output"
+
+screenshots:
+  - name: "iPhone Screenshot with Frame"
+    source_image: "screenshots/app_screen.png"
+    device_frame: "iPhone 15 Pro - Natural Titanium - Portrait"
+    output_size: [1290, 2796]
+    
+    background:
+      type: "radial" 
+      colors: ["#ff9a9e", "#fecfef"]
+      center: ["50%", "30%"]
+    
+    text_overlays:
+      - content: "Now Available"
+        position: [100, 150]
+        font_size: 36
+        color: "#333333"
+        alignment: "center"
+        max_width: 500
+
+  - name: "iPad Screenshot with Frame"
+    source_image: "screenshots/app_screen_ipad.png"
+    device_frame: "iPad Pro 13 - M4 - Space Gray - Portrait"
+    output_size: [2048, 2732]
+    
+    background:
+      type: "conic"
+      colors: ["#667eea", "#764ba2", "#f093fb", "#f5576c"]
+      center: ["50%", "50%"]

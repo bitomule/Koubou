@@ -1,0 +1,102 @@
+# 🎯 Koubou Advanced Example
+# This demonstrates all available features with professional artisan quality
+
+project_name: "Advanced Koubou Showcase"
+output_directory: "output"
+
+screenshots:
+  - name: "Feature Showcase"
+    source_image: "screenshots/feature_screen.png"
+    device_frame: "iPhone 16 Pro - Black Titanium - Portrait"
+    output_size: [1320, 2868]
+    
+    background:
+      type: "linear"
+      colors: ["#667eea", "#764ba2", "#f093fb"]
+      direction: 135
+    
+    text_overlays:
+      - content: "Revolutionary Features"
+        position: [100, 100]
+        font_size: 52
+        font_weight: "bold"
+        color: "#ffffff"
+        alignment: "center"
+        max_width: 700
+        stroke_width: 2
+        stroke_color: "#000000"
+        line_height: 1.3
+      
+      - content: "✨ AI-Powered Analysis"
+        position: [150, 220]
+        font_size: 28
+        color: "#ffffff"
+        alignment: "left"
+      
+      - content: "🚀 Lightning Fast Performance"  
+        position: [150, 280]
+        font_size: 28
+        color: "#ffffff"
+        alignment: "left"
+      
+      - content: "🔒 Privacy First Design"
+        position: [150, 340]
+        font_size: 28
+        color: "#ffffff"
+        alignment: "left"
+
+  - name: "iPad Showcase"
+    source_image: "screenshots/settings.png"
+    device_frame: "iPad Air 13\" - M2 - Space Gray - Landscape"
+    output_size: [2732, 2048]
+    
+    background:
+      type: "radial"
+      colors: ["#ff9a9e", "#fecfef", "#feca57"]
+      center: ["30%", "20%"]
+    
+    text_overlays:
+      - content: "Customizable Experience"
+        position: [200, 400]
+        font_size: 42
+        font_weight: "bold"
+        color: "#2c2c54"
+        alignment: "center"
+        max_width: 800
+        line_height: 1.3
+
+  - name: "Watch Elegance"
+    source_image: "screenshots/watch.png"
+    device_frame: "Watch Ultra 2022"
+    output_size: [1024, 1024]
+    
+    background:
+      type: "conic"
+      colors: ["#667eea", "#764ba2", "#f093fb", "#667eea"]
+      center: ["50%", "50%"]
+    
+    text_overlays:
+      - content: "Wrist Perfection"
+        position: [512, 900]
+        font_size: 32
+        color: "#ffffff"
+        alignment: "center"
+        anchor: "center"
+        stroke_width: 1
+        stroke_color: "#000000"
+
+  - name: "Minimalist Design"
+    source_image: "screenshots/minimal.png"
+    output_size: [1290, 2796]
+    
+    background:
+      type: "solid"
+      colors: ["#f8f9fa"]
+    
+    text_overlays:
+      - content: "Clean. Simple. Elegant."
+        position: [100, 500]
+        font_size: 38
+        color: "#495057"
+        alignment: "center"
+        max_width: 600
