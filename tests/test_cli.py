@@ -76,7 +76,7 @@ class TestCLI:
         config_data = {
             "project": {
                 "name": "CLI Test Project",
-                "output_dir": str(self.temp_dir / "output")
+                "output_dir": str(self.temp_dir / "output"),
             },
             "devices": ["iPhone 15 Pro Portrait"],
             "screenshots": [
@@ -87,9 +87,9 @@ class TestCLI:
                             "type": "image",
                             "asset": str(self.source_image_path),
                             "position": ["50%", "50%"],
-                            "scale": 1.0
+                            "scale": 1.0,
                         }
-                    ]
+                    ],
                 }
             ],
         }
@@ -121,9 +121,7 @@ class TestCLI:
         """Test generate command with invalid config."""
         # Create invalid config (missing required fields)
         config_data = {
-            "project": {
-                "name": "Invalid Project"
-            },
+            "project": {"name": "Invalid Project"},
             "screenshots": [
                 {
                     "name": "Invalid Screenshot"
@@ -145,10 +143,7 @@ class TestCLI:
         """Test generate command with custom output directory."""
         # Create test configuration
         config_data = {
-            "project": {
-                "name": "Custom Output Test",
-                "output_dir": str(self.temp_dir)
-            },
+            "project": {"name": "Custom Output Test", "output_dir": str(self.temp_dir)},
             "devices": ["iPhone 15 Pro Portrait"],
             "screenshots": [
                 {
@@ -158,9 +153,9 @@ class TestCLI:
                             "type": "image",
                             "asset": str(self.source_image_path),
                             "position": ["50%", "50%"],
-                            "scale": 1.0
+                            "scale": 1.0,
                         }
-                    ]
+                    ],
                 }
             ],
         }

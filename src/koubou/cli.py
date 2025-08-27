@@ -245,6 +245,7 @@ def version() -> None:
     """Show version information."""
 
     from koubou import __version__
+
     console.print(f"🎯 Koubou v{__version__}", style="green")
 
 
