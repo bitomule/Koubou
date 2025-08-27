@@ -101,9 +101,7 @@ jobs:
           - 🚀 **Batch Processing**: Generate multiple screenshots efficiently
           
           **Full Changelog**: https://github.com/bitomule/koubou/commits/${{ steps.tag.outputs.tag }}
-        files: |
-          dist/*
-          dist/checksums.txt
+        files: dist/*
         token: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Publish to PyPI
