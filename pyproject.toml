@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "koubou"
-version = "1.0.0"
+version = "0.0.1"
 description = "🎯 Koubou (工房) - The artisan workshop for App Store screenshots"
 authors = [
     {name = "David Collado", email = "your-email@example.com"},
