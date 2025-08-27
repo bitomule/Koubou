@@ -67,14 +67,14 @@ def generate(
             project_config = ProjectConfig(**config_data)
             console.print("🎨 Using flexible content-based API", style="blue")
         except Exception as _e:
-            console.print("❌ Invalid configuration: {e}", style="red")
+            console.print(f"❌ Invalid configuration: {_e}", style="red")
             raise typer.Exit(1)
 
         # Override output directory only if explicitly provided AND not set in YAML
         if output_dir:
             project_config.project.output_dir = output_dir
             console.print(
-                "📁 Overriding output directory: {output_dir}", style="yellow"
+                f"📁 Overriding output directory: {output_dir}", style="yellow"
             )
         else:
             console.print(
@@ -104,7 +104,7 @@ def generate(
                         (screenshot_def.name, None, False, "Generation failed")
                     )
         except Exception as _e:
-            console.print("❌ Project generation failed: {e}", style="red")
+            console.print(f"❌ Project generation failed: {_e}", style="red")
             raise typer.Exit(1)
 
         # Show results
@@ -119,14 +119,14 @@ def generate(
             raise typer.Exit(1)
 
         console.print(
-            "\n✅ Generated {len(results)} screenshots successfully!", style="green"
+            f"\n✅ Generated {len(results)} screenshots successfully!", style="green"
         )
 
     except KoubouError as e:
-        console.print("❌ {e}", style="red")
+        console.print(f"❌ {e}", style="red")
         raise typer.Exit(1)
     except Exception as _e:
-        console.print("❌ Unexpected error: {e}", style="red")
+        console.print(f"❌ Unexpected error: {_e}", style="red")
         if verbose:
             console.print_exception()
         raise typer.Exit(1)
@@ -207,9 +207,9 @@ def create_config(
     with open(output_file, "w") as f:
         yaml.dump(sample_config, f, default_flow_style=False, indent=2)
 
-    console.print("✅ Created sample configuration: {output_file}", style="green")
+    console.print(f"✅ Created sample configuration: {output_file}", style="green")
     console.print("\n📝 Edit the configuration file and run:", style="blue")
-    console.print("   kou generate {output_file}", style="cyan")
+    console.print(f"   kou generate {output_file}", style="cyan")
 
 
 def _show_results(results, output_dir: str) -> None:
@@ -237,14 +237,15 @@ def _show_results(results, output_dir: str) -> None:
     console.print(table)
 
     # Show output directory
-    console.print("\n📁 Output directory: {Path(output_dir).absolute()}", style="blue")
+    console.print(f"\n📁 Output directory: {Path(output_dir).absolute()}", style="blue")
 
 
 @app.command()
 def version() -> None:
     """Show version information."""
 
-    console.print("🎯 Koubou v{__version__}", style="green")
+    from koubou import __version__
+    console.print(f"🎯 Koubou v{__version__}", style="green")
 
 
 def main() -> None:

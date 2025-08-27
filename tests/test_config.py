@@ -1,5 +1,6 @@
 """Tests for configuration models."""
 
+import pytest
 from pydantic import ValidationError
 
 from koubou.config import BackgroundConfig, ProjectConfig, ScreenshotConfig, TextOverlay

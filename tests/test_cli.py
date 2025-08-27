@@ -33,7 +33,7 @@ class TestCLI:
         """Test version command."""
         result = self.runner.invoke(app, ["version"])
         assert result.exit_code == 0
-        assert "ScreenshotGen" in result.stdout
+        assert "Koubou" in result.stdout
 
     def test_create_config_command(self):
         """Test create-config command."""
@@ -74,14 +74,22 @@ class TestCLI:
         """Test generate command."""
         # Create test configuration
         config_data = {
-            "project_name": "CLI Test Project",
-            "output_directory": str(self.temp_dir / "output"),
+            "project": {
+                "name": "CLI Test Project",
+                "output_dir": str(self.temp_dir / "output")
+            },
+            "devices": ["iPhone 15 Pro Portrait"],
             "screenshots": [
                 {
                     "name": "CLI Test Screenshot",
-                    "source_image": str(self.source_image_path),
-                    "output_size": [400, 800],
-                    "background": {"type": "solid", "colors": ["#0066cc"]},
+                    "content": [
+                        {
+                            "type": "image",
+                            "asset": str(self.source_image_path),
+                            "position": ["50%", "50%"],
+                            "scale": 1.0
+                        }
+                    ]
                 }
             ],
         }
@@ -113,11 +121,13 @@ class TestCLI:
         """Test generate command with invalid config."""
         # Create invalid config (missing required fields)
         config_data = {
-            "project_name": "Invalid Project",
+            "project": {
+                "name": "Invalid Project"
+            },
             "screenshots": [
                 {
                     "name": "Invalid Screenshot"
-                    # Missing required fields
+                    # Missing required content field
                 }
             ],
         }
@@ -135,12 +145,22 @@ class TestCLI:
         """Test generate command with custom output directory."""
         # Create test configuration
         config_data = {
-            "project_name": "Custom Output Test",
+            "project": {
+                "name": "Custom Output Test",
+                "output_dir": str(self.temp_dir)
+            },
+            "devices": ["iPhone 15 Pro Portrait"],
             "screenshots": [
                 {
                     "name": "Test Screenshot",
-                    "source_image": str(self.source_image_path),
-                    "output_size": [400, 800],
+                    "content": [
+                        {
+                            "type": "image",
+                            "asset": str(self.source_image_path),
+                            "position": ["50%", "50%"],
+                            "scale": 1.0
+                        }
+                    ]
                 }
             ],
         }
