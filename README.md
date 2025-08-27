@@ -66,13 +66,13 @@ kou --help
 
 ```bash
 # Create a sample configuration
-kou create-config my-screenshots.yaml
+kou create_config my-screenshots.yaml
 
 # Generate screenshots
 kou generate my-screenshots.yaml
 
 # List available device frames
-kou list-frames
+kou list_frames
 ```
 
 ## 🎨 Configuration
@@ -80,62 +80,82 @@ kou list-frames
 Create elegant screenshots with YAML configuration:
 
 ```yaml
-project_name: "My Beautiful App"
-output_directory: "screenshots"
+project:
+  name: "My Beautiful App"
+  output_dir: "Screenshots/Generated"
+
+devices:
+  - "iPhone 15 Pro Portrait"
+
+defaults:
+  background:
+    type: linear
+    colors: ["#E8F0FE", "#F8FBFF"]
+    direction: 180
 
 screenshots:
-  - name: "App Launch"
-    source_image: "screenshots/home.png"
-    device_frame: "iPhone 16 Pro - Black Titanium - Portrait"
-    output_size: [1320, 2868]
-    
-    background:
-      type: "linear"
-      colors: ["#667eea", "#764ba2"]
-      direction: 45
-    
-    text_overlays:
-      - content: "Beautiful App"
-        position: [100, 200]
-        font_size: 48
-        color: "#ffffff"
-        alignment: "center"
-        max_width: 700
-        stroke_width: 2
-        stroke_color: "#000000"
+  - name: "welcome_screen"
+    content:
+      - type: "text"
+        content: "Beautiful App"
+        position: ["50%", "15%"]
+        size: 48
+        color: "#8E4EC6"
+        weight: "bold"
+      - type: "text"
+        content: "Transform your workflow today"
+        position: ["50%", "25%"]
+        size: 24
+        color: "#1A73E8"
+      - type: "image"
+        asset: "screenshots/home.png"
+        position: ["50%", "60%"]
+        scale: 0.6
+        frame: true
 ```
 
 ### Advanced Configuration
 
 ```yaml
+project:
+  name: "Feature Showcase"
+  output_dir: "Screenshots/Generated"
+
+devices:
+  - "iPhone 15 Pro Portrait"
+
+defaults:
+  background:
+    type: radial
+    colors: ["#ff9a9e", "#fecfef", "#feca57"]
+
 screenshots:
-  - name: "Feature Showcase"
-    source_image: "screenshots/features.png"
-    device_frame: "iPad Air 13\" - M2 - Space Gray - Landscape"
-    output_size: [2732, 2048]
-    
-    background:
-      type: "radial" 
-      colors: ["#ff9a9e", "#fecfef", "#feca57"]
-      center: ["30%", "20%"]
-    
-    text_overlays:
-      - content: "✨ AI-Powered Analysis"
-        position: [150, 220]
-        font_size: 36
-        font_weight: "bold"
+  - name: "ai_analysis"
+    content:
+      - type: "text"
+        content: "✨ AI-Powered Analysis"
+        position: ["50%", "10%"]
+        size: 42
         color: "#2c2c54"
-        alignment: "left"
-        max_width: 800
-        line_height: 1.4
+        weight: "bold"
+      - type: "text"
+        content: "Smart insights at your fingertips"
+        position: ["50%", "20%"]
+        size: 28
+        color: "#1A73E8"
+      - type: "image"
+        asset: "screenshots/analysis.png"
+        position: ["50%", "65%"]
+        scale: 0.5
+        frame: true
 ```
 
 ## 🎯 Commands
 
 - `kou generate <config.yaml>` - Generate screenshots from configuration
-- `kou create-config <output.yaml>` - Create a sample configuration file
-- `kou list-frames` - List all available device frames
-- `kou version` - Show version information
+- `kou create_config <output.yaml>` - Create a sample configuration file
+- `kou list_frames` - List all available device frames
+- `kou --version` - Show version information
 - `kou --help` - Show detailed help
 
 ### Command Options
@@ -149,7 +169,12 @@ kou generate config.yaml --frames ./my-frames
 
 # Enable verbose logging
 kou generate config.yaml --verbose
+
+# Create config with custom project name
+kou create_config config.yaml --name "My App Screenshots"
 ```
+
+> **Note**: Commands use underscores (`create_config`, `list_frames`) following Python naming conventions.
 
 ## 🎨 Device Frames
 
@@ -175,18 +200,36 @@ Koubou includes 100+ professionally crafted device frames:
 
 ### Project Configuration
 ```yaml
-project_name: string          # Project name
-output_directory: string      # Output directory (default: "output")
+project:
+  name: string               # Project name
+  output_dir: string         # Output directory (default: "output")
+
+devices: [string, ...]       # Target device list (e.g., ["iPhone 15 Pro Portrait"])
+
+defaults:                    # Default settings applied to all screenshots
+  background:                # Default background configuration
+    type: "solid" | "linear" | "radial" | "conic"
+    colors: [string, ...]    # Hex colors array
+    direction: float?        # Degrees for gradients (default: 0)
 ```
 
 ### Screenshot Configuration  
 ```yaml
 screenshots:
-  - name: string              # Screenshot identifier
-    source_image: string      # Path to source image
-    device_frame: string?     # Device frame name (optional)
-    output_size: [int, int]   # Output dimensions [width, height]
-    output_path: string?      # Custom output path (optional)
+  - name: string             # Screenshot identifier
+    content:                 # Array of content items
+      - type: "text" | "image"
+        # Text content properties
+        content: string?     # Text content (for type: "text")
+        position: [string, string]  # Position as ["x%", "y%"] or ["xpx", "ypx"]
+        size: int?           # Font size (default: 24)
+        color: string?       # Hex color (default: "#000000")
+        weight: string?      # "normal" or "bold" (default: "normal")
+        alignment: string?   # "left", "center", "right" (default: "center")
+        # Image content properties
+        asset: string?       # Image file path (for type: "image")
+        scale: float?        # Scale factor (default: 1.0)
+        frame: bool?         # Apply device frame (default: false)
 ```
 
 ### Background Configuration
@@ -198,22 +241,23 @@ background:
   center: [string, string]?  # Center point for radial/conic ["x%", "y%"]
 ```
 
-### Text Overlays
+### Content Items
 ```yaml
-text_overlays:
-  - content: string          # Text content
-    position: [int, int]     # X, Y position in pixels
-    font_size: int           # Font size (default: 24)
-    font_family: string      # Font name (default: "Arial")
-    font_weight: string      # "normal" or "bold" (default: "normal")
-    color: string            # Hex color (default: "#000000")
-    alignment: string        # "left", "center", "right" (default: "center")
-    anchor: string           # Anchor point (default: "center")
-    max_width: int?          # Maximum width for wrapping
-    max_lines: int?          # Maximum lines for wrapping
-    line_height: float       # Line height multiplier (default: 1.2)
-    stroke_width: int?       # Text stroke width
-    stroke_color: string?    # Text stroke color
+# Text Content Item
+- type: "text"
+  content: string            # Text to display
+  position: [string, string] # Position as ["50%", "20%"] or ["100px", "50px"]
+  size: int                  # Font size in pixels (default: 24)
+  color: string              # Hex color (default: "#000000")
+  weight: string             # "normal" or "bold" (default: "normal")
+  alignment: string          # "left", "center", "right" (default: "center")
+
+# Image Content Item
+- type: "image"
+  asset: string              # Path to image file
+  position: [string, string] # Position as ["50%", "60%"] or ["200px", "300px"]
+  scale: float               # Scale factor (default: 1.0)
+  frame: bool                # Apply device frame around image (default: false)
 ```
 
 ## 🏗️ Architecture

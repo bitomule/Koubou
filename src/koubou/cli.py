@@ -114,7 +114,7 @@ def generate(
         failed_count = sum(1 for _, _, success, _ in results if not success)
         if failed_count > 0:
             console.print(
-                "\n⚠️  {failed_count} screenshot(s) failed to generate", style="yellow"
+                f"\n⚠️  {failed_count} screenshot(s) failed to generate", style="yellow"
             )
             raise typer.Exit(1)
 
@@ -172,36 +172,72 @@ def create_config(
     """Create a sample configuration file."""
 
     if output_file.exists():
-        if not typer.confirm("File {output_file} already exists. Overwrite?"):
+        if not typer.confirm(f"File {output_file} already exists. Overwrite?"):
             raise typer.Exit(0)
 
-    # Create sample configuration
+    # Create sample configuration using real ProjectConfig format
     sample_config = {
-        "project_name": name,
-        "output_directory": "output",
+        "project": {
+            "name": name,
+            "output_dir": "Screenshots/Generated"
+        },
+        "devices": ["iPhone 15 Pro Portrait"],
+        "defaults": {
+            "background": {
+                "type": "linear",
+                "colors": ["#E8F0FE", "#F8FBFF"],
+                "direction": 180
+            }
+        },
         "screenshots": [
             {
-                "name": "App Launch",
-                "source_image": "screenshots/home.png",
-                "device_frame": "iPhone 15 Pro - Natural Titanium - Portrait",
-                "output_size": [1290, 2796],
-                "background": {
-                    "type": "linear",
-                    "colors": ["#667eea", "#764ba2"],
-                    "direction": 45,
-                },
-                "text_overlays": [
+                "name": "welcome_screen",
+                "content": [
                     {
+                        "type": "text",
                         "content": "Beautiful App",
-                        "position": [100, 200],
-                        "font_size": 48,
-                        "color": "#ffffff",
-                        "alignment": "center",
-                        "max_width": 600,
+                        "position": ["50%", "15%"],
+                        "size": 48,
+                        "color": "#8E4EC6",
+                        "weight": "bold"
+                    },
+                    {
+                        "type": "text", 
+                        "content": "Transform your workflow today",
+                        "position": ["50%", "25%"],
+                        "size": 24,
+                        "color": "#1A73E8"
+                    },
+                    {
+                        "type": "image",
+                        "asset": "screenshots/home.png",
+                        "position": ["50%", "60%"],
+                        "scale": 0.6,
+                        "frame": True
                     }
-                ],
+                ]
+            },
+            {
+                "name": "features_screen",
+                "content": [
+                    {
+                        "type": "text",
+                        "content": "✨ Amazing Features",
+                        "position": ["50%", "10%"],
+                        "size": 42,
+                        "color": "#8E4EC6",
+                        "weight": "bold"
+                    },
+                    {
+                        "type": "image",
+                        "asset": "screenshots/features.png", 
+                        "position": ["50%", "65%"],
+                        "scale": 0.5,
+                        "frame": True
+                    }
+                ]
             }
-        ],
+        ]
     }
 
     with open(output_file, "w") as f:
