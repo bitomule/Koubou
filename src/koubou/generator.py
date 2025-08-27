@@ -164,7 +164,8 @@ class ScreenshotGenerator:
         scaled_height = int(original_height * scale_factor)
 
         logger.info(
-            "📏 Scaling image: {original_width}×{original_height} → {scaled_width}×{scaled_height} (scale: {scale_factor})"
+            "📏 Scaling image: {original_width}×{original_height} → "
+            "{scaled_width}×{scaled_height} (scale: {scale_factor})"
         )
 
         # Resize the source image
@@ -186,7 +187,8 @@ class ScreenshotGenerator:
         y = center_y - scaled_height // 2
 
         logger.info(
-            "📐 Positioning asset: center at {position} → ({center_x}, {center_y}), top-left at ({x}, {y})"
+            "📐 Positioning asset: center at {position} → "
+            "({center_x}, {center_y}), top-left at ({x}, {y})"
         )
 
         # Create positioned image
