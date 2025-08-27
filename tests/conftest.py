@@ -1,12 +1,13 @@
 """Test configuration and fixtures."""
 
-import pytest
-import tempfile
 import shutil
+import tempfile
 from pathlib import Path
+
 from PIL import Image
 
-from koubou.config import ScreenshotConfig, BackgroundConfig, TextOverlay
+from koubou.config import BackgroundConfig, ScreenshotConfig, TextOverlay
+import pytest
 
 
 @pytest.fixture
@@ -21,11 +22,11 @@ def temp_dir():
 def sample_image(temp_dir):
     """Create a sample test image."""
     image_path = temp_dir / "test_image.png"
-    
+
     # Create a simple test image
-    image = Image.new('RGBA', (100, 200), (255, 0, 0, 255))  # Red image
+    image = Image.new("RGBA", (100, 200), (255, 0, 0, 255))  # Red image
     image.save(image_path)
-    
+
     return str(image_path)
 
 
@@ -36,18 +37,12 @@ def sample_screenshot_config(sample_image):
         name="Test Screenshot",
         source_image=sample_image,
         output_size=(400, 800),
-        background=BackgroundConfig(
-            type="solid",
-            colors=["#0066cc"]
-        ),
+        background=BackgroundConfig(type="solid", colors=["#0066cc"]),
         text_overlays=[
             TextOverlay(
-                content="Test Text",
-                position=(50, 50),
-                font_size=24,
-                color="#ffffff"
+                content="Test Text", position=(50, 50), font_size=24, color="#fffff"
             )
-        ]
+        ],
     )
 
 
@@ -55,9 +50,7 @@ def sample_screenshot_config(sample_image):
 def sample_gradient_background():
     """Create a sample gradient background configuration."""
     return BackgroundConfig(
-        type="linear",
-        colors=["#ff0000", "#00ff00", "#0000ff"],
-        direction=45
+        type="linear", colors=["#ff0000", "#00ff00", "#0000f"], direction=45
     )
 
 
@@ -68,7 +61,7 @@ def sample_text_overlay():
         content="Hello World",
         position=(100, 100),
         font_size=32,
-        color="#ffffff",
+        color="#fffff",
         alignment="center",
-        max_width=300
+        max_width=300,
     )

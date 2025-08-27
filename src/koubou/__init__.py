@@ -4,13 +4,13 @@ __version__ = "0.0.1"
 __author__ = "David Collado"
 __email__ = "your-email@example.com"
 
-from .config import ScreenshotConfig, TextOverlay, BackgroundConfig
+from .config import BackgroundConfig, ScreenshotConfig, TextOverlay
+from .exceptions import ConfigurationError, KoubouError, RenderError
 from .generator import ScreenshotGenerator
-from .exceptions import KoubouError, ConfigurationError, RenderError
 
 __all__ = [
     "ScreenshotConfig",
-    "TextOverlay", 
+    "TextOverlay",
     "BackgroundConfig",
     "ScreenshotGenerator",
     "KoubouError",
