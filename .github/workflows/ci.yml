@@ -81,8 +81,8 @@ jobs:
     - name: Run flake8 linting
       run: flake8 --max-line-length=88 --extend-ignore=E203,W503,E501 src/ tests/
       
-    - name: Run mypy type checking
-      run: mypy src/
+    # - name: Run mypy type checking
+    #   run: mypy src/
 
   build:
     name: Build

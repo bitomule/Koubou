@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class TextRenderer:
     """Renders text overlays on images."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize text renderer."""
         self.font_cache = {}
 

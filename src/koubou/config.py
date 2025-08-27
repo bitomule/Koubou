@@ -38,7 +38,7 @@ class TextOverlay(BaseModel):
     stroke_color: Optional[str] = Field(default=None, description="Text stroke color")
 
     @validator("color", "stroke_color")
-    def validate_color(cls, v):
+    def validate_color(cls, v: str) -> str:
         if v and not v.startswith("#"):
             raise ValueError("Colors must be in hex format (e.g., #FFFFFF)")
         return v
@@ -59,7 +59,7 @@ class BackgroundConfig(BaseModel):
     )
 
     @validator("colors")
-    def validate_colors(cls, v):
+    def validate_colors(cls, v: List[str]) -> List[str]:
         if not v:
             raise ValueError("At least one color is required")
         for color in v:
@@ -68,7 +68,9 @@ class BackgroundConfig(BaseModel):
         return v
 
     @validator("colors")
-    def validate_gradient_colors(cls, v, values):
+    def validate_gradient_colors(
+        cls, v: List[str], values: Dict[str, str]
+    ) -> List[str]:
         bg_type = values.get("type")
         if bg_type in ["linear", "radial", "conic"] and len(v) < 2:
             raise ValueError("Gradient backgrounds require at least 2 colors")
@@ -103,14 +105,14 @@ class ScreenshotConfig(BaseModel):
     )
 
     @validator("source_image")
-    def validate_source_image(cls, v):
+    def validate_source_image(cls, v: str) -> str:
         path = Path(v)
         if not path.exists():
             raise ValueError(f"Source image not found: {v}")
         return v
 
     @validator("output_size")
-    def validate_output_size(cls, v):
+    def validate_output_size(cls, v: Tuple[int, int]) -> Tuple[int, int]:
         width, height = v
         if width <= 0 or height <= 0:
             raise ValueError("Output size must be positive")
@@ -167,6 +169,6 @@ class ProjectConfig(BaseModel):
     )
 
     @validator("project")
-    def create_output_directory(cls, v):
+    def create_output_directory(cls, v: "ProjectInfo") -> "ProjectInfo":
         Path(v.output_dir).mkdir(parents=True, exist_ok=True)
         return v
