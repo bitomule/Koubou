@@ -8,7 +8,6 @@ import pytest
 from PIL import Image
 
 from koubou.config import BackgroundConfig, ProjectConfig, ScreenshotConfig, TextOverlay
-from koubou.exceptions import RenderError
 from koubou.generator import ScreenshotGenerator
 
 

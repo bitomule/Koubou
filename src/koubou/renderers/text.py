@@ -51,7 +51,6 @@ class TextRenderer:
 
             # Calculate total text dimensions
             line_height = int(text_config.font_size * text_config.line_height)
-            _total_height = len(text_lines) * line_height
 
             # Get drawing context
             draw = ImageDraw.Draw(canvas)
@@ -285,7 +284,7 @@ class TextRenderer:
         x, y = position
 
         # Calculate text dimensions
-        _total_height = len(text_lines) * line_height
+        total_height = len(text_lines) * line_height
 
         # Calculate the widest line to determine text width
         if max_width:
@@ -312,9 +311,9 @@ class TextRenderer:
         if anchor.startswith("top-"):
             anchor_y = y
         elif anchor.startswith("center-") or anchor == "center":
-            anchor_y = y - _total_height // 2
+            anchor_y = y - total_height // 2
         elif anchor.startswith("bottom-"):
-            anchor_y = y - _total_height
+            anchor_y = y - total_height
         else:
             anchor_y = y
 

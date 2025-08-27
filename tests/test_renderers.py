@@ -7,7 +7,7 @@ import pytest
 from PIL import Image
 
 from koubou.config import BackgroundConfig, TextOverlay
-from koubou.exceptions import BackgroundRenderError, TextRenderError
+from koubou.exceptions import TextRenderError
 from koubou.renderers.background import BackgroundRenderer
 from koubou.renderers.device_frame import DeviceFrameRenderer
 from koubou.renderers.text import TextRenderer

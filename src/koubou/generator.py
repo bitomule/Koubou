@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class ScreenshotGenerator:
-    """Main class for generating screenshots with backgrounds, text, and device frames."""
+    """Main class for generating screenshots with backgrounds, text, and frames."""
 
     def __init__(self, frame_directory: Optional[str] = None):
         """Initialize the screenshot generator.

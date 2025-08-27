@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from PIL import Image, ImageDraw
+from PIL import Image
 
 from ..exceptions import DeviceFrameError
 

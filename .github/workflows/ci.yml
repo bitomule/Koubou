@@ -79,7 +79,7 @@ jobs:
       run: isort --check-only --diff src/ tests/
       
     - name: Run flake8 linting
-      run: flake8 src/ tests/
+      run: flake8 --max-line-length=88 --extend-ignore=E203,W503 src/ tests/
       
     - name: Run mypy type checking
       run: mypy src/
