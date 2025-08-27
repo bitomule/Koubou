@@ -54,7 +54,9 @@ def generate(
     try:
         # Load configuration
         if not config_file.exists():
-            console.print(f"❌ Configuration file not found: {config_file}", style="red")
+            console.print(
+                f"❌ Configuration file not found: {config_file}", style="red"
+            )
             raise typer.Exit(1)
 
         with open(config_file) as f:
