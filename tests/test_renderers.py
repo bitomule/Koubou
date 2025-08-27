@@ -34,7 +34,7 @@ class TestBackgroundRenderer:
     def test_linear_gradient(self):
         """Test linear gradient rendering."""
         config = BackgroundConfig(
-            type="linear", colors=["#ff0000", "#0000f"], direction=0  # Horizontal
+            type="linear", colors=["#ff0000", "#0000ff"], direction=0  # Horizontal
         )
 
         self.renderer.render(config, self.canvas)
@@ -48,7 +48,7 @@ class TestBackgroundRenderer:
 
     def test_radial_gradient(self):
         """Test radial gradient rendering."""
-        config = BackgroundConfig(type="radial", colors=["#ff0000", "#0000f"])
+        config = BackgroundConfig(type="radial", colors=["#ff0000", "#0000ff"])
 
         self.renderer.render(config, self.canvas)
 
@@ -60,7 +60,7 @@ class TestBackgroundRenderer:
 
     def test_conic_gradient(self):
         """Test conic gradient rendering."""
-        config = BackgroundConfig(type="conic", colors=["#ff0000", "#00ff00", "#0000f"])
+        config = BackgroundConfig(type="conic", colors=["#ff0000", "#00ff00", "#0000ff"])
 
         self.renderer.render(config, self.canvas)
 
@@ -72,10 +72,10 @@ class TestBackgroundRenderer:
 
     def test_invalid_background_type(self):
         """Test invalid background type raises error."""
-        config = BackgroundConfig(type="invalid", colors=["#ff0000"])
-
-        with pytest.raises(BackgroundRenderError, match="Unknown background type"):
-            self.renderer.render(config, self.canvas)
+        from pydantic import ValidationError
+        
+        with pytest.raises(ValidationError, match="Input should be"):
+            BackgroundConfig(type="invalid", colors=["#ff0000"])
 
     def test_color_parsing(self):
         """Test color parsing functionality."""
@@ -148,7 +148,7 @@ class TestTextRenderer:
 
         # Test valid colors
         assert renderer._parse_color("#ff0000") == (255, 0, 0, 255)
-        assert renderer._parse_color("#00ff00f") == (0, 255, 0, 255)
+        assert renderer._parse_color("#00ff00") == (0, 255, 0, 255)
 
         # Test invalid color
         with pytest.raises(TextRenderError, match="Invalid color format"):

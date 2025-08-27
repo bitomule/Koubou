@@ -106,7 +106,7 @@ class ScreenshotConfig(BaseModel):
     def validate_source_image(cls, v):
         path = Path(v)
         if not path.exists():
-            raise ValueError("Source image not found: {v}")
+            raise ValueError(f"Source image not found: {v}")
         return v
 
     @validator("output_size")

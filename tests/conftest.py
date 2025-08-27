@@ -40,7 +40,7 @@ def sample_screenshot_config(sample_image):
         background=BackgroundConfig(type="solid", colors=["#0066cc"]),
         text_overlays=[
             TextOverlay(
-                content="Test Text", position=(50, 50), font_size=24, color="#fffff"
+                content="Test Text", position=(50, 50), font_size=24, color="#ffffff"
             )
         ],
     )
@@ -50,7 +50,7 @@ def sample_screenshot_config(sample_image):
 def sample_gradient_background():
     """Create a sample gradient background configuration."""
     return BackgroundConfig(
-        type="linear", colors=["#ff0000", "#00ff00", "#0000f"], direction=45
+        type="linear", colors=["#ff0000", "#00ff00", "#0000ff"], direction=45
     )
 
 
@@ -61,7 +61,7 @@ def sample_text_overlay():
         content="Hello World",
         position=(100, 100),
         font_size=32,
-        color="#fffff",
+        color="#ffffff",
         alignment="center",
         max_width=300,
     )

@@ -39,10 +39,10 @@ class DeviceFrameRenderer:
                 with open(sizes_json) as f:
                     self.size_metadata = json.load(f)
 
-            logger.info("Loaded metadata for {len(self.frame_metadata)} device frames")
+            logger.info(f"Loaded metadata for {len(self.frame_metadata)} device frames")
 
         except Exception as _e:
-            logger.error("Failed to load frame metadata: {e}")
+            logger.error(f"Failed to load frame metadata: {_e}")
             self.frame_metadata = {}
             self.size_metadata = {}
 
@@ -65,7 +65,7 @@ class DeviceFrameRenderer:
         try:
             # Load device frame image
             frame_image = self._load_frame_image(device_frame_name)
-            logger.info("📱 Loaded frame: {frame_image.size}")
+            logger.info(f"📱 Loaded frame: {frame_image.size}")
 
             # Get frame metadata
             frame_info = self._get_frame_info(device_frame_name)
@@ -87,14 +87,14 @@ class DeviceFrameRenderer:
 
         except Exception as _e:
             raise DeviceFrameError(
-                "Failed to render device frame '{device_frame_name}': {e}"
-            ) from e
+                f"Failed to render device frame '{device_frame_name}': {_e}"
+            ) from _e
 
     def _load_frame_image(self, frame_name: str) -> Image.Image:
         """Load device frame image file."""
         # Try different possible file extensions
         for ext in [".png", ".PNG"]:
-            frame_path = self.frame_directory / "{frame_name}{ext}"
+            frame_path = self.frame_directory / f"{frame_name}{ext}"
             if frame_path.exists():
                 frame_image = Image.open(frame_path)
                 # Ensure RGBA mode for proper compositing
@@ -102,7 +102,7 @@ class DeviceFrameRenderer:
                     frame_image = frame_image.convert("RGBA")
                 return frame_image
 
-        raise DeviceFrameError("Device frame not found: {frame_name}")
+        raise DeviceFrameError(f"Device frame not found: {frame_name}")
 
     def _get_frame_info(self, frame_name: str) -> Optional[Dict[str, Any]]:
         """Get metadata for a device frame."""
@@ -124,7 +124,7 @@ class DeviceFrameRenderer:
             # Navigate nested structure: iPhone -> 15 Pro -> Pro -> Natural Titanium -> Portrait
             current = self.frame_metadata.get(device_type)
             if not current:
-                logger.warning("Device type '{device_type}' not found in metadata")
+                logger.warning(f"Device type '{device_type}' not found in metadata")
                 return None
 
             # Build model key from parts
@@ -132,7 +132,7 @@ class DeviceFrameRenderer:
                 model_key = " ".join(model_parts)  # "15 Pro"
                 current = current.get(model_key)
                 if not current:
-                    logger.warning("Model '{model_key}' not found under {device_type}")
+                    logger.warning(f"Model '{model_key}' not found under {device_type}")
                     return None
 
                 # Navigate to device variant (e.g., "Pro" for iPhone 15 Pro)
@@ -147,18 +147,18 @@ class DeviceFrameRenderer:
                 # Navigate to color
                 current = current.get(color)
                 if not current:
-                    logger.warning("Color '{color}' not found")
+                    logger.warning(f"Color '{color}' not found")
                     return None
 
                 # Navigate to orientation
                 frame_info = current.get(orientation)
                 if frame_info:
-                    logger.info("📱 Found metadata for {frame_name}: {frame_info}")
+                    logger.info(f"📱 Found metadata for {frame_name}: {frame_info}")
                     return frame_info
                 else:
-                    logger.warning("Orientation '{orientation}' not found")
+                    logger.warning(f"Orientation '{orientation}' not found")
 
-        logger.warning("No metadata found for frame: {frame_name}")
+        logger.warning(f"No metadata found for frame: {frame_name}")
         return None
 
     def _compose_with_metadata(
@@ -188,7 +188,7 @@ class DeviceFrameRenderer:
             screen_width = frame_width - (screen_x * 2)  # Assume symmetric margins
             screen_height = frame_height - (screen_y * 2)
 
-            logger.info("📐 Using legacy format: x={screen_x}, y={screen_y}")
+            logger.info(f"📐 Using legacy format: x={screen_x}, y={screen_y}")
 
         logger.info(
             "📐 Screen area: {screen_x}, {screen_y}, {screen_width}×{screen_height}"
@@ -219,7 +219,7 @@ class DeviceFrameRenderer:
         center_x = screen_x + (screen_width - final_width) // 2
         center_y = screen_y + (screen_height - final_height) // 2
 
-        logger.info("📐 Positioning scaled source at ({center_x}, {center_y})")
+        logger.info(f"📐 Positioning scaled source at ({center_x}, {center_y})")
 
         # Create result image the size of the device frame
         result = Image.new("RGBA", frame_image.size, (255, 255, 255, 0))
@@ -334,7 +334,7 @@ class DeviceFrameRenderer:
             return screen_mask
 
         except Exception as _e:
-            logger.error("Failed to generate screen mask for {frame_name}: {e}")
+            logger.error(f"Failed to generate screen mask for {frame_name}: {_e}")
             # Return a fallback mask (full white - no clipping)
             try:
                 frame_image = self._load_frame_image(frame_name)
@@ -460,12 +460,12 @@ class DeviceFrameRenderer:
             # Save debug mask for inspection
             debug_path = "/tmp/debug_mask_{frame_width}x{frame_height}.png"
             debug_mask.save(debug_path)
-            logger.info("📱 DEBUG: Saved tinted mask visualization to {debug_path}")
+            logger.info(f"📱 DEBUG: Saved tinted mask visualization to {debug_path}")
 
             return mask
 
         except Exception as _e:
-            logger.error("Failed to generate screen mask from frame image: {e}")
+            logger.error(f"Failed to generate screen mask from frame image: {_e}")
             # Return a fallback mask (full white - no clipping)
             return Image.new("L", frame_image.size, 255)
 
@@ -514,10 +514,10 @@ class DeviceFrameRenderer:
             # Apply mask to canvas: only show content where mask is white
             masked_canvas = Image.composite(canvas_image, transparent_bg, canvas_mask)
 
-            logger.info("📱 Applied screen mask to canvas at position {asset_position}")
+            logger.info(f"📱 Applied screen mask to canvas at position {asset_position}")
             return masked_canvas
 
         except Exception as _e:
-            logger.error("Failed to apply screen mask to canvas: {e}")
+            logger.error(f"Failed to apply screen mask to canvas: {_e}")
             # Return original canvas if masking fails
             return canvas_image

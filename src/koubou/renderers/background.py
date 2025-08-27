@@ -41,8 +41,8 @@ class BackgroundRenderer:
 
         except Exception as _e:
             raise BackgroundRenderError(
-                "Failed to render {background_config.type} background: {e}"
-            ) from e
+                f"Failed to render {background_config.type} background: {_e}"
+            ) from _e
 
     def _render_solid(self, config: BackgroundConfig, canvas: Image.Image) -> None:
         """Render solid color background."""
@@ -141,7 +141,7 @@ class BackgroundRenderer:
             b = int(hex_color[4:6], 16)
             a = int(hex_color[6:8], 16)
         else:
-            raise BackgroundRenderError("Invalid color format: {color_string}")
+            raise BackgroundRenderError(f"Invalid color format: {color_string}")
 
         return (r, g, b, a)
 

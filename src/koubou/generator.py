@@ -57,18 +57,18 @@ class ScreenshotGenerator:
                 with open(frames_json) as f:
                     self.frame_metadata = json.load(f)
             else:
-                logger.warning("Frames.json not found at {frames_json}")
+                logger.warning(f"Frames.json not found at {frames_json}")
                 self.frame_metadata = {}
 
             if sizes_json.exists():
                 with open(sizes_json) as f:
                     self.size_metadata = json.load(f)
             else:
-                logger.warning("Sizes.json not found at {sizes_json}")
+                logger.warning(f"Sizes.json not found at {sizes_json}")
                 self.size_metadata = {}
 
         except Exception as _e:
-            logger.error("Failed to load frame metadata: {e}")
+            logger.error(f"Failed to load frame metadata: {_e}")
             self.frame_metadata = {}
             self.size_metadata = {}
 
@@ -85,19 +85,19 @@ class ScreenshotGenerator:
             RenderError: If generation fails
         """
         try:
-            logger.info("🎬 Starting generation: {config.name}")
+            logger.info(f"🎬 Starting generation: {config.name}")
 
             # Load source image
             source_image = self._load_source_image(config.source_image)
-            logger.info("📷 Loaded source: {source_image.size}")
+            logger.info(f"📷 Loaded source: {source_image.size}")
 
             # Create canvas at target size
             canvas = Image.new("RGBA", config.output_size, (255, 255, 255, 0))
-            logger.info("🎨 Created canvas: {config.output_size}")
+            logger.info(f"🎨 Created canvas: {config.output_size}")
 
             # Render background if specified
             if config.background:
-                logger.info("🌈 Rendering background: {config.background.type}")
+                logger.info(f"🌈 Rendering background: {config.background.type}")
                 self.background_renderer.render(config.background, canvas)
 
             # Position and composite source image with optional frame
@@ -106,7 +106,7 @@ class ScreenshotGenerator:
 
             # Apply device frame to individual image if frame: true
             if config.image_frame and config.device_frame:
-                logger.info("📱 Applying device frame to asset: {config.device_frame}")
+                logger.info(f"📱 Applying device frame to asset: {config.device_frame}")
                 positioned_image = self._apply_asset_frame(
                     positioned_image, canvas, config
                 )
@@ -115,14 +115,17 @@ class ScreenshotGenerator:
 
             # Render text overlays
             if config.text_overlays:
-                logger.info("✏️  Rendering {len(config.text_overlays)} text overlays")
+                logger.info(f"✏️  Rendering {len(config.text_overlays)} text overlays")
                 for overlay in config.text_overlays:
                     self.text_renderer.render(overlay, canvas)
 
             # Save final image
             output_path = self._get_output_path(config)
-            logger.info("💾 Saving to: {output_path}")
+            logger.info(f"💾 Saving to: {output_path}")
 
+            # Ensure output directory exists
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            
             # Convert to RGB if saving as JPEG, keep RGBA for PNG
             if output_path.suffix.lower() == ".jpg":
                 # Create white background for JPEG
@@ -132,14 +135,14 @@ class ScreenshotGenerator:
             else:
                 canvas.save(output_path, "PNG")
 
-            logger.info("✅ Generated: {config.name}")
+            logger.info(f"✅ Generated: {config.name}")
             return output_path
 
         except Exception as _e:
-            logger.error("❌ Generation failed for {config.name}: {e}")
+            logger.error(f"❌ Generation failed for {config.name}: {_e}")
             raise RenderError(
-                "Failed to generate screenshot '{config.name}': {e}"
-            ) from e
+                f"Failed to generate screenshot '{config.name}': {_e}"
+            ) from _e
 
     def _load_source_image(self, image_path: str) -> Image.Image:
         """Load and validate source image."""
@@ -150,7 +153,7 @@ class ScreenshotGenerator:
                 image = image.convert("RGBA")
             return image
         except Exception as _e:
-            raise RenderError("Failed to load source image '{image_path}': {e}") from e
+            raise RenderError(f"Failed to load source image '{image_path}': {_e}") from _e
 
     def _position_source_image(
         self, source_image: Image.Image, canvas: Image.Image, config: ScreenshotConfig
@@ -214,7 +217,7 @@ class ScreenshotGenerator:
             frame_image = self.device_frame_renderer._load_frame_image(
                 device_frame_name
             )
-            logger.info("📱 Loaded frame overlay: {frame_image.size}")
+            logger.info(f"📱 Loaded frame overlay: {frame_image.size}")
 
             # The canvas should already be sized to match the frame
             # Simply composite the frame over the canvas
@@ -233,7 +236,7 @@ class ScreenshotGenerator:
                 return Image.alpha_composite(resized_canvas, frame_image)
 
         except Exception as _e:
-            logger.error("Failed to apply device frame overlay: {e}")
+            logger.error(f"Failed to apply device frame overlay: {_e}")
             return canvas  # Return original canvas if frame fails
 
     def _apply_asset_frame(
@@ -249,7 +252,7 @@ class ScreenshotGenerator:
                 config.device_frame
             )
             original_frame_size = frame_image.size
-            logger.info("📱 Original frame size: {original_frame_size}")
+            logger.info(f"📱 Original frame size: {original_frame_size}")
 
             # Scale frame to match asset scale
             asset_scale = config.image_scale or 1.0
@@ -267,7 +270,7 @@ class ScreenshotGenerator:
             screen_mask = self.device_frame_renderer.generate_screen_mask_from_image(
                 scaled_frame
             )
-            logger.info("📱 Generated screen mask: {screen_mask.size}")
+            logger.info(f"📱 Generated screen mask: {screen_mask.size}")
 
             # Get asset position to position frame at same location
             position = config.image_position or ["50%", "50%"]
@@ -318,7 +321,7 @@ class ScreenshotGenerator:
             return result
 
         except Exception as _e:
-            logger.error("Failed to apply asset frame: {e}")
+            logger.error(f"Failed to apply asset frame: {_e}")
             return positioned_image  # Return original positioned image if frame fails
 
     def _get_output_path(self, config: ScreenshotConfig) -> Path:
@@ -331,7 +334,7 @@ class ScreenshotGenerator:
             c for c in config.name if c.isalnum() or c in (" ", "-", "_")
         ).rstrip()
         safe_name = safe_name.replace(" ", "_").lower()
-        return Path("output") / "{safe_name}.png"
+        return Path("output") / f"{safe_name}.png"
 
     def generate_project(
         self, project_config: ProjectConfig, config_dir: Optional[Path] = None
@@ -345,9 +348,9 @@ class ScreenshotGenerator:
         Returns:
             List of paths to generated screenshots
         """
-        logger.info("🚀 Starting project: {project_config.project.name}")
-        logger.info("📁 Output directory: {project_config.project.output_dir}")
-        logger.info("🎯 Screenshots to generate: {len(project_config.screenshots)}")
+        logger.info(f"🚀 Starting project: {project_config.project.name}")
+        logger.info(f"📁 Output directory: {project_config.project.output_dir}")
+        logger.info(f"🎯 Screenshots to generate: {len(project_config.screenshots)}")
 
         # Get defaults and devices
         defaults = project_config.defaults or {}
@@ -358,7 +361,7 @@ class ScreenshotGenerator:
 
         results = []
         for i, screenshot_def in enumerate(project_config.screenshots, 1):
-            logger.info("[{i}/{len(project_config.screenshots)}] {screenshot_def.name}")
+            logger.info(f"[{i}/{len(project_config.screenshots)}] {screenshot_def.name}")
             try:
                 # Convert to ScreenshotConfig and generate
                 temp_config = self._convert_to_screenshot_config(
@@ -373,10 +376,10 @@ class ScreenshotGenerator:
                     results.append(output_path)
                 else:
                     logger.warning(
-                        "Skipping {screenshot_def.name}: no source image found"
+                        f"Skipping {screenshot_def.name}: no source image found"
                     )
             except Exception as _e:
-                logger.error("Failed to generate {screenshot_def.name}: {e}")
+                logger.error(f"Failed to generate {screenshot_def.name}: {_e}")
                 # Continue with next screenshot instead of failing entire project
                 continue
 
@@ -389,7 +392,7 @@ class ScreenshotGenerator:
         self, output_dir: str, screenshot_name: str, config_dir: Optional[Path] = None
     ) -> Path:
         """Resolve output path relative to config directory if provided."""
-        output_path = Path(output_dir) / "{screenshot_name}.png"
+        output_path = Path(output_dir) / f"{screenshot_name}.png"
 
         if config_dir:
             # Make path relative to config directory
@@ -443,7 +446,7 @@ class ScreenshotGenerator:
         # Skip if no source image found
         if not source_image_path or not Path(source_image_path).exists():
             logger.warning(
-                "Source image not found for {screenshot_def.name}: {source_image_path}"
+                f"Source image not found for {screenshot_def.name}: {source_image_path}"
             )
             return None
 
@@ -470,7 +473,7 @@ class ScreenshotGenerator:
                 )
             else:
                 logger.warning(
-                    "Could not get frame size for {device_frame}, using content-based sizing"
+                    f"Could not get frame size for {device_frame}, using content-based sizing"
                 )
                 canvas_width = max(
                     scaled_width + 400, 800

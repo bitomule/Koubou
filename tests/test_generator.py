@@ -99,7 +99,7 @@ class TestScreenshotGenerator:
                     content="Hello World",
                     position=(50, 50),
                     font_size=32,
-                    color="#fffff",
+                    color="#ffffff",
                 )
             ],
         )
@@ -138,14 +138,14 @@ class TestScreenshotGenerator:
             output_size=(400, 800),
             output_path=str(self.temp_dir / "output_complete.png"),
             background=BackgroundConfig(
-                type="linear", colors=["#ff0000", "#0000f"], direction=45
+                type="linear", colors=["#ff0000", "#0000ff"], direction=45
             ),
             text_overlays=[
                 TextOverlay(
                     content="Amazing App",
                     position=(100, 100),
                     font_size=36,
-                    color="#fffff",
+                    color="#ffffff",
                     alignment="center",
                     max_width=300,
                 )
@@ -162,14 +162,14 @@ class TestScreenshotGenerator:
 
     def test_nonexistent_source_image(self):
         """Test handling of nonexistent source image."""
-        config = ScreenshotConfig(
-            name="Invalid Test",
-            source_image="/nonexistent/path.png",
-            output_size=(400, 800),
-        )
-
-        with pytest.raises(RenderError, match="Failed to load source image"):
-            self.generator.generate_screenshot(config)
+        from pydantic import ValidationError
+        
+        with pytest.raises(ValidationError, match="Source image not found"):
+            ScreenshotConfig(
+                name="Invalid Test",
+                source_image="/nonexistent/path.png",
+                output_size=(400, 800),
+            )
 
     def test_output_path_generation(self):
         """Test automatic output path generation."""
@@ -188,22 +188,38 @@ class TestScreenshotGenerator:
 
     def test_project_generation(self):
         """Test generating multiple screenshots as a project."""
+        from koubou.config import ProjectInfo, ScreenshotDefinition, ContentItem
+        
         project_config = ProjectConfig(
-            project_name="Test Project",
-            output_directory=str(self.temp_dir / "project_output"),
+            project=ProjectInfo(
+                name="Test Project", 
+                output_dir=str(self.temp_dir / "project_output")
+            ),
             screenshots=[
-                ScreenshotConfig(
+                ScreenshotDefinition(
                     name="Screenshot 1",
-                    source_image=str(self.source_image_path),
-                    output_size=(400, 800),
-                    output_path=str(self.temp_dir / "project_output" / "screen1.png"),
+                    content=[
+                        ContentItem(
+                            type="image",
+                            asset=str(self.source_image_path),
+                            position=("50%", "50%")
+                        )
+                    ]
                 ),
-                ScreenshotConfig(
+                ScreenshotDefinition(
                     name="Screenshot 2",
-                    source_image=str(self.source_image_path),
-                    output_size=(400, 800),
-                    output_path=str(self.temp_dir / "project_output" / "screen2.png"),
-                    background=BackgroundConfig(type="solid", colors=["#00ff00"]),
+                    content=[
+                        ContentItem(
+                            type="image",
+                            asset=str(self.source_image_path),
+                            position=("50%", "50%")
+                        ),
+                        ContentItem(
+                            type="text",
+                            content="Test Text",
+                            position=("50%", "20%")
+                        )
+                    ]
                 ),
             ],
         )

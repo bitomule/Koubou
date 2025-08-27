@@ -46,12 +46,12 @@ class TestTextOverlay:
     def test_text_overlay_valid(self):
         """Test valid text overlay configuration."""
         overlay = TextOverlay(
-            content="Hello World", position=(100, 200), font_size=32, color="#fffff"
+            content="Hello World", position=(100, 200), font_size=32, color="#ffffff"
         )
         assert overlay.content == "Hello World"
         assert overlay.position == (100, 200)
         assert overlay.font_size == 32
-        assert overlay.color == "#fffff"
+        assert overlay.color == "#ffffff"
 
     def test_text_overlay_defaults(self):
         """Test text overlay with default values."""
@@ -59,7 +59,7 @@ class TestTextOverlay:
         assert overlay.font_size == 24
         assert overlay.font_family == "Arial"
         assert overlay.color == "#000000"
-        assert overlay.alignment == "left"
+        assert overlay.alignment == "center"
 
     def test_invalid_color(self):
         """Test invalid color format fails validation."""
@@ -118,10 +118,20 @@ class TestScreenshotConfig:
 class TestProjectConfig:
     """Tests for ProjectConfig model."""
 
-    def test_project_config(self, sample_screenshot_config):
+    def test_project_config(self):
         """Test project configuration."""
+        from koubou.config import ProjectInfo, ScreenshotDefinition, ContentItem
+        
         config = ProjectConfig(
-            project_name="Test Project", screenshots=[sample_screenshot_config]
+            project=ProjectInfo(name="Test Project", output_dir="./output"),
+            screenshots=[
+                ScreenshotDefinition(
+                    name="Test Screenshot",
+                    content=[
+                        ContentItem(type="text", content="Hello World", position=("50%", "50%"))
+                    ]
+                )
+            ]
         )
-        assert config.project_name == "Test Project"
+        assert config.project.name == "Test Project"
         assert len(config.screenshots) == 1

@@ -101,8 +101,8 @@ class TextRenderer:
 
         except Exception as _e:
             raise TextRenderError(
-                "Failed to render text '{text_config.content[:50]}...': {e}"
-            ) from e
+                f"Failed to render text '{text_config.content[:50]}...': {_e}"
+            ) from _e
 
     def _get_font(
         self, font_family: str, font_size: int, font_weight: str = "normal"
@@ -187,7 +187,7 @@ class TextRenderer:
                 except Exception:
                     pass
 
-            raise OSError("Could not load font {font_family} with weight {font_weight}")
+            raise OSError(f"Could not load font {font_family} with weight {font_weight}")
 
     def _parse_color(self, color_string: str) -> Tuple[int, int, int, int]:
         """Parse hex color string to RGBA tuple."""
@@ -212,7 +212,7 @@ class TextRenderer:
             b = int(hex_color[4:6], 16)
             a = int(hex_color[6:8], 16)
         else:
-            raise TextRenderError("Invalid color format: {color_string}")
+            raise TextRenderError(f"Invalid color format: {color_string}")
 
         return (r, g, b, a)
 
@@ -310,9 +310,9 @@ class TextRenderer:
         if anchor.startswith("top-"):
             anchor_y = y
         elif anchor.startswith("center-") or anchor == "center":
-            anchor_y = y - total_height // 2
+            anchor_y = y - _total_height // 2
         elif anchor.startswith("bottom-"):
-            anchor_y = y - total_height
+            anchor_y = y - _total_height
         else:
             anchor_y = y
 
