@@ -60,7 +60,9 @@ class TestBackgroundRenderer:
 
     def test_conic_gradient(self):
         """Test conic gradient rendering."""
-        config = BackgroundConfig(type="conic", colors=["#ff0000", "#00ff00", "#0000ff"])
+        config = BackgroundConfig(
+            type="conic", colors=["#ff0000", "#00ff00", "#0000ff"]
+        )
 
         self.renderer.render(config, self.canvas)
 
@@ -73,7 +75,7 @@ class TestBackgroundRenderer:
     def test_invalid_background_type(self):
         """Test invalid background type raises error."""
         from pydantic import ValidationError
-        
+
         with pytest.raises(ValidationError, match="Input should be"):
             BackgroundConfig(type="invalid", colors=["#ff0000"])
 

@@ -36,7 +36,7 @@ class TestCLI:
         assert "Koubou" in result.stdout
 
     def test_create_config_command(self):
-        """Test create-config command."""
+        """Test create_config command."""
         config_path = self.temp_dir / "test_config.yaml"
 
         result = self.runner.invoke(
@@ -46,13 +46,17 @@ class TestCLI:
         assert result.exit_code == 0
         assert config_path.exists()
 
-        # Verify config content
+        # Verify config content matches new ProjectConfig format
         with open(config_path) as f:
             config = yaml.safe_load(f)
 
-        assert config["project_name"] == "Test Project"
+        assert config["project"]["name"] == "Test Project"
+        assert config["project"]["output_dir"] == "Screenshots/Generated"
+        assert "devices" in config
         assert "screenshots" in config
-        assert len(config["screenshots"]) == 1
+        assert (
+            len(config["screenshots"]) == 2
+        )  # Updated CLI generates 2 sample screenshots
 
     def test_list_frames_command(self):
         """Test list-frames command."""

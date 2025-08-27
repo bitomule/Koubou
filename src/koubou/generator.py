@@ -125,7 +125,6 @@ class ScreenshotGenerator:
 
             # Ensure output directory exists
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            
             # Convert to RGB if saving as JPEG, keep RGBA for PNG
             if output_path.suffix.lower() == ".jpg":
                 # Create white background for JPEG
@@ -153,7 +152,9 @@ class ScreenshotGenerator:
                 image = image.convert("RGBA")
             return image
         except Exception as _e:
-            raise RenderError(f"Failed to load source image '{image_path}': {_e}") from _e
+            raise RenderError(
+                f"Failed to load source image '{image_path}': {_e}"
+            ) from _e
 
     def _position_source_image(
         self, source_image: Image.Image, canvas: Image.Image, config: ScreenshotConfig
@@ -361,7 +362,9 @@ class ScreenshotGenerator:
 
         results = []
         for i, screenshot_def in enumerate(project_config.screenshots, 1):
-            logger.info(f"[{i}/{len(project_config.screenshots)}] {screenshot_def.name}")
+            logger.info(
+                f"[{i}/{len(project_config.screenshots)}] {screenshot_def.name}"
+            )
             try:
                 # Convert to ScreenshotConfig and generate
                 temp_config = self._convert_to_screenshot_config(

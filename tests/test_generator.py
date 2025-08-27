@@ -163,7 +163,7 @@ class TestScreenshotGenerator:
     def test_nonexistent_source_image(self):
         """Test handling of nonexistent source image."""
         from pydantic import ValidationError
-        
+
         with pytest.raises(ValidationError, match="Source image not found"):
             ScreenshotConfig(
                 name="Invalid Test",
@@ -189,11 +189,10 @@ class TestScreenshotGenerator:
     def test_project_generation(self):
         """Test generating multiple screenshots as a project."""
         from koubou.config import ProjectInfo, ScreenshotDefinition, ContentItem
-        
+
         project_config = ProjectConfig(
             project=ProjectInfo(
-                name="Test Project", 
-                output_dir=str(self.temp_dir / "project_output")
+                name="Test Project", output_dir=str(self.temp_dir / "project_output")
             ),
             screenshots=[
                 ScreenshotDefinition(
@@ -202,9 +201,9 @@ class TestScreenshotGenerator:
                         ContentItem(
                             type="image",
                             asset=str(self.source_image_path),
-                            position=("50%", "50%")
+                            position=("50%", "50%"),
                         )
-                    ]
+                    ],
                 ),
                 ScreenshotDefinition(
                     name="Screenshot 2",
@@ -212,14 +211,12 @@ class TestScreenshotGenerator:
                         ContentItem(
                             type="image",
                             asset=str(self.source_image_path),
-                            position=("50%", "50%")
+                            position=("50%", "50%"),
                         ),
                         ContentItem(
-                            type="text",
-                            content="Test Text",
-                            position=("50%", "20%")
-                        )
-                    ]
+                            type="text", content="Test Text", position=("50%", "20%")
+                        ),
+                    ],
                 ),
             ],
         )

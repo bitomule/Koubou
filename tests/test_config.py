@@ -121,17 +121,19 @@ class TestProjectConfig:
     def test_project_config(self):
         """Test project configuration."""
         from koubou.config import ProjectInfo, ScreenshotDefinition, ContentItem
-        
+
         config = ProjectConfig(
             project=ProjectInfo(name="Test Project", output_dir="./output"),
             screenshots=[
                 ScreenshotDefinition(
                     name="Test Screenshot",
                     content=[
-                        ContentItem(type="text", content="Hello World", position=("50%", "50%"))
-                    ]
+                        ContentItem(
+                            type="text", content="Hello World", position=("50%", "50%")
+                        )
+                    ],
                 )
-            ]
+            ],
         )
         assert config.project.name == "Test Project"
         assert len(config.screenshots) == 1

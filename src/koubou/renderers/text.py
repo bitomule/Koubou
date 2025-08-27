@@ -187,7 +187,9 @@ class TextRenderer:
                 except Exception:
                     pass
 
-            raise OSError(f"Could not load font {font_family} with weight {font_weight}")
+            raise OSError(
+                f"Could not load font {font_family} with weight {font_weight}"
+            )
 
     def _parse_color(self, color_string: str) -> Tuple[int, int, int, int]:
         """Parse hex color string to RGBA tuple."""

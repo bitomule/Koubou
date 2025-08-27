@@ -177,16 +177,13 @@ def create_config(
 
     # Create sample configuration using real ProjectConfig format
     sample_config = {
-        "project": {
-            "name": name,
-            "output_dir": "Screenshots/Generated"
-        },
+        "project": {"name": name, "output_dir": "Screenshots/Generated"},
         "devices": ["iPhone 15 Pro Portrait"],
         "defaults": {
             "background": {
                 "type": "linear",
                 "colors": ["#E8F0FE", "#F8FBFF"],
-                "direction": 180
+                "direction": 180,
             }
         },
         "screenshots": [
@@ -199,23 +196,23 @@ def create_config(
                         "position": ["50%", "15%"],
                         "size": 48,
                         "color": "#8E4EC6",
-                        "weight": "bold"
+                        "weight": "bold",
                     },
                     {
-                        "type": "text", 
+                        "type": "text",
                         "content": "Transform your workflow today",
                         "position": ["50%", "25%"],
                         "size": 24,
-                        "color": "#1A73E8"
+                        "color": "#1A73E8",
                     },
                     {
                         "type": "image",
                         "asset": "screenshots/home.png",
                         "position": ["50%", "60%"],
                         "scale": 0.6,
-                        "frame": True
-                    }
-                ]
+                        "frame": True,
+                    },
+                ],
             },
             {
                 "name": "features_screen",
@@ -226,18 +223,18 @@ def create_config(
                         "position": ["50%", "10%"],
                         "size": 42,
                         "color": "#8E4EC6",
-                        "weight": "bold"
+                        "weight": "bold",
                     },
                     {
                         "type": "image",
-                        "asset": "screenshots/features.png", 
+                        "asset": "screenshots/features.png",
                         "position": ["50%", "65%"],
                         "scale": 0.5,
-                        "frame": True
-                    }
-                ]
-            }
-        ]
+                        "frame": True,
+                    },
+                ],
+            },
+        ],
     }
 
     with open(output_file, "w") as f:
