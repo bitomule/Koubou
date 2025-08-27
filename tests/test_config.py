@@ -120,7 +120,7 @@ class TestProjectConfig:
 
     def test_project_config(self):
         """Test project configuration."""
-        from koubou.config import ProjectInfo, ScreenshotDefinition, ContentItem
+        from koubou.config import ContentItem, ProjectInfo, ScreenshotDefinition
 
         config = ProjectConfig(
             project=ProjectInfo(name="Test Project", output_dir="./output"),

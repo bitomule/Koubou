@@ -188,7 +188,7 @@ class TestScreenshotGenerator:
 
     def test_project_generation(self):
         """Test generating multiple screenshots as a project."""
-        from koubou.config import ProjectInfo, ScreenshotDefinition, ContentItem
+        from koubou.config import ContentItem, ProjectInfo, ScreenshotDefinition
 
         project_config = ProjectConfig(
             project=ProjectInfo(

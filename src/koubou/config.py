@@ -1,7 +1,7 @@
 """Configuration models using Pydantic for type safety and validation."""
 
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional, Tuple
 
 from pydantic import BaseModel, Field, validator
 

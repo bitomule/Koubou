@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
 
-from .config import ProjectConfig, ScreenshotConfig
+from .config import ProjectConfig
 from .exceptions import KoubouError
 from .generator import ScreenshotGenerator
 

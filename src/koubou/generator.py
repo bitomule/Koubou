@@ -3,17 +3,12 @@
 import json
 import logging
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from PIL import Image
 
 from .config import BackgroundConfig, ProjectConfig, ScreenshotConfig, TextOverlay
-from .exceptions import (
-    BackgroundRenderError,
-    DeviceFrameError,
-    RenderError,
-    TextRenderError,
-)
+from .exceptions import RenderError
 from .renderers.background import BackgroundRenderer
 from .renderers.device_frame import DeviceFrameRenderer
 from .renderers.text import TextRenderer
