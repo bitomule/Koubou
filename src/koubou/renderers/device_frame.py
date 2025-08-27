@@ -514,9 +514,7 @@ class DeviceFrameRenderer:
             # Apply mask to canvas: only show content where mask is white
             masked_canvas = Image.composite(canvas_image, transparent_bg, canvas_mask)
 
-            logger.info(
-                f"📱 Applied screen mask to canvas at position {asset_position}"
-            )
+            logger.info(f"📱 Applied screen mask to canvas at position {asset_position}")
             return masked_canvas
 
         except Exception as _e:
