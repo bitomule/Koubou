@@ -1,6 +1,6 @@
 """Koubou (工房) - The artisan workshop for App Store screenshots."""
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "David Collado"
 __email__ = "your-email@example.com"
 
