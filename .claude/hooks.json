@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'file_path=\"$1\"; if [[ \"$file_path\" == *.py ]]; then echo \"🧹 Running linters on $file_path...\"; cd \"$(dirname \"$file_path\")\" && while [[ ! -d .venv && \"$PWD\" != \"/\" ]]; do cd ..; done; if [[ -d .venv ]]; then source .venv/bin/activate && black \"$file_path\" && isort \"$file_path\" && echo \"✅ Formatted $file_path\"; else echo \"⚠️  No .venv found for $file_path\"; fi; fi' _ \"$(echo '$TOOL_INPUT' | jq -r '.file_path // empty')\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash.*commit",
+        "hooks": [
+          {
+            "type": "command", 
+            "command": "bash -c 'echo \"🔍 Running pre-commit linters...\"; if [[ -d .venv ]]; then source .venv/bin/activate && echo \"Running Black...\" && black --check src/ tests/ && echo \"Running isort...\" && isort --check-only src/ tests/ && echo \"Running flake8...\" && flake8 src/koubou/cli.py tests/test_cli.py && echo \"✅ All linters passed!\"; else echo \"⚠️  No .venv found, skipping linters\"; fi'"
+          }
+        ]
+      }
+    ]
+  }
+}
