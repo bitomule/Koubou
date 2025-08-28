@@ -29,9 +29,15 @@ class TestCLI:
 
         shutil.rmtree(self.temp_dir)
 
-    def test_version_command(self):
-        """Test version command."""
-        result = self.runner.invoke(app, ["version"])
+    def test_version_flag(self):
+        """Test --version flag."""
+        result = self.runner.invoke(app, ["--version"])
+        assert result.exit_code == 0
+        assert "Koubou" in result.stdout
+
+    def test_version_short_flag(self):
+        """Test -v flag."""
+        result = self.runner.invoke(app, ["-v"])
         assert result.exit_code == 0
         assert "Koubou" in result.stdout
 
@@ -58,24 +64,8 @@ class TestCLI:
             len(config["screenshots"]) == 3
         )  # Updated CLI generates 3 sample screenshots
 
-    def test_list_frames_command(self):
-        """Test list-frames command."""
-        # Create mock frame directory
-        frame_dir = self.temp_dir / "frames"
-        frame_dir.mkdir()
-
-        # Create mock frame
-        frame_image = Image.new("RGBA", (300, 600), (128, 128, 128, 255))
-        frame_path = frame_dir / "Test Frame.png"
-        frame_image.save(frame_path)
-
-        result = self.runner.invoke(app, ["list-frames", "--frames", str(frame_dir)])
-
-        assert result.exit_code == 0
-        assert "Test Frame" in result.stdout
-
-    def test_generate_command(self):
-        """Test generate command."""
+    def test_direct_config_command(self):
+        """Test direct config file command."""
         # Create test configuration
         config_data = {
             "project": {
@@ -102,7 +92,7 @@ class TestCLI:
         with open(config_path, "w") as f:
             yaml.dump(config_data, f)
 
-        result = self.runner.invoke(app, ["generate", str(config_path), "--verbose"])
+        result = self.runner.invoke(app, [str(config_path), "--verbose"])
 
         assert result.exit_code == 0
 
@@ -114,15 +104,15 @@ class TestCLI:
         output_files = list(output_dir.glob("*.png"))
         assert len(output_files) >= 1
 
-    def test_generate_nonexistent_config(self):
-        """Test generate command with nonexistent config."""
-        result = self.runner.invoke(app, ["generate", "nonexistent_config.yaml"])
+    def test_nonexistent_config(self):
+        """Test direct command with nonexistent config."""
+        result = self.runner.invoke(app, ["nonexistent_config.yaml"])
 
         assert result.exit_code == 1
         assert "not found" in result.stdout
 
-    def test_generate_invalid_config(self):
-        """Test generate command with invalid config."""
+    def test_invalid_config(self):
+        """Test direct command with invalid config."""
         # Create invalid config (missing required fields)
         config_data = {
             "project": {"name": "Invalid Project"},
@@ -138,16 +128,19 @@ class TestCLI:
         with open(config_path, "w") as f:
             yaml.dump(config_data, f)
 
-        result = self.runner.invoke(app, ["generate", str(config_path)])
+        result = self.runner.invoke(app, [str(config_path)])
 
         assert result.exit_code == 1
         assert "Invalid configuration" in result.stdout
 
-    def test_generate_with_custom_output(self):
-        """Test generate command with custom output directory."""
+    def test_config_with_output_dir(self):
+        """Test config file with output directory specified in YAML."""
         # Create test configuration
         config_data = {
-            "project": {"name": "Custom Output Test", "output_dir": str(self.temp_dir)},
+            "project": {
+                "name": "Output Dir Test",
+                "output_dir": str(self.temp_dir / "yaml_output"),
+            },
             "devices": ["iPhone 15 Pro Portrait"],
             "screenshots": [
                 {
@@ -168,15 +161,13 @@ class TestCLI:
         with open(config_path, "w") as f:
             yaml.dump(config_data, f)
 
-        custom_output = self.temp_dir / "custom_output"
-
-        result = self.runner.invoke(
-            app, ["generate", str(config_path), "--output", str(custom_output)]
-        )
+        result = self.runner.invoke(app, [str(config_path)])
 
         assert result.exit_code == 0
-        assert custom_output.exists()
 
-        # Should have generated a screenshot in custom directory
-        output_files = list(custom_output.glob("*.png"))
+        yaml_output = self.temp_dir / "yaml_output"
+        assert yaml_output.exists()
+
+        # Should have generated a screenshot in YAML-specified directory
+        output_files = list(yaml_output.glob("*.png"))
         assert len(output_files) >= 1
