@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=64", "wheel"]
+requires = ["setuptools>=64", "setuptools_scm", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "koubou"
-version = "0.1.0"
+dynamic = ["version"]
 description = "🎯 Koubou (工房) - The artisan workshop for App Store screenshots"
 authors = [
     {name = "David Collado", email = "your-email@example.com"},
@@ -52,6 +52,9 @@ Homepage = "https://github.com/bitomule/koubou"
 Repository = "https://github.com/bitomule/koubou"
 Documentation = "https://koubou.readthedocs.io"
 Issues = "https://github.com/bitomule/koubou/issues"
+
+[tool.setuptools_scm]
+# Automatically gets version from git tags
 
 [project.scripts]
 kou = "koubou.cli:main"
