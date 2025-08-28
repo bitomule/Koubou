@@ -7,7 +7,7 @@ from typing import List, Optional
 
 from PIL import Image
 
-from .config import BackgroundConfig, ProjectConfig, ScreenshotConfig, TextOverlay
+from .config import GradientConfig, ProjectConfig, ScreenshotConfig, TextOverlay
 from .exceptions import RenderError
 from .renderers.background import BackgroundRenderer
 from .renderers.device_frame import DeviceFrameRenderer
@@ -524,7 +524,7 @@ class ScreenshotGenerator:
         # Create background config
         background_config = None
         if default_background:
-            background_config = BackgroundConfig(
+            background_config = GradientConfig(
                 type=default_background.get("type", "solid"),
                 colors=default_background.get("colors", ["#fffff"]),
                 direction=default_background.get("direction", 0),

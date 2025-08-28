@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 from ..config import TextOverlay
 from ..exceptions import ConfigurationError, TextRenderError
-from .text_gradient import TextGradientRenderer
+from .gradient import GradientRenderer
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class TextRenderer:
     def __init__(self) -> None:
         """Initialize text renderer."""
         self.font_cache = {}
-        self.gradient_renderer = TextGradientRenderer()
+        self.gradient_renderer = GradientRenderer()
 
     def render(self, text_config: TextOverlay, canvas: Image.Image) -> None:
         """Render text overlay on the provided canvas.
@@ -422,7 +422,7 @@ class TextRenderer:
         )
 
         # Generate gradient image for text bounds
-        gradient_image = self.gradient_renderer.create_gradient_for_text(
+        gradient_image = self.gradient_renderer.create_gradient(
             text_bounds, text_config.gradient
         )
 
@@ -478,7 +478,7 @@ class TextRenderer:
                     )
 
                 # Generate stroke gradient
-                stroke_gradient_image = self.gradient_renderer.create_gradient_for_text(
+                stroke_gradient_image = self.gradient_renderer.create_gradient(
                     text_bounds, text_config.stroke_gradient
                 )
 

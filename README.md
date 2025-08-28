@@ -14,6 +14,7 @@
 - **🎨 100+ Device Frames** - iPhone 16 Pro, iPad Air M2, MacBook Pro, Apple Watch Ultra, and more
 - **🌈 Professional Backgrounds** - Linear, radial, conic gradients with precise color control
 - **✨ Rich Typography** - Advanced text overlays with stroke, alignment, wrapping, and custom fonts
+- **🌈 Gradient Typography** - Linear, radial, and conic gradients for text with custom color stops
 - **📱 YAML-First Configuration** - Elegant, declarative screenshot definitions
 - **🚀 Batch Processing** - Generate multiple screenshots efficiently from a single config
 - **🔧 Flexible API** - Both simple and advanced configuration options
@@ -150,6 +151,46 @@ screenshots:
         frame: true
 ```
 
+### Gradient Text Configuration
+
+```yaml
+screenshots:
+  - name: "gradient_showcase"
+    content:
+      - type: "text"
+        content: "🌈 Gradient Magic"
+        position: ["50%", "15%"]
+        size: 48
+        gradient:
+          type: linear
+          colors: ["#FF6B6B", "#4ECDC4", "#45B7D1"]
+          direction: 45
+        weight: "bold"
+      - type: "text"
+        content: "Beautiful gradients for stunning text"
+        position: ["50%", "25%"]
+        size: 24
+        gradient:
+          type: radial
+          colors: ["#667eea", "#764ba2"]
+          center: ["50%", "50%"]
+          radius: "70%"
+      - type: "text"
+        content: "Advanced Color Control"
+        position: ["50%", "35%"]
+        size: 28
+        gradient:
+          type: linear
+          colors: ["#f093fb", "#f5576c", "#4facfe"]
+          positions: [0.0, 0.3, 1.0]
+          direction: 90
+        stroke_width: 2
+        stroke_gradient:
+          type: linear
+          colors: ["#333333", "#666666"]
+          direction: 45
+```
+
 ## 🎯 Commands
 
 - `kou generate <config.yaml>` - Generate screenshots from configuration
@@ -248,9 +289,27 @@ background:
   content: string            # Text to display
   position: [string, string] # Position as ["50%", "20%"] or ["100px", "50px"]
   size: int                  # Font size in pixels (default: 24)
-  color: string              # Hex color (default: "#000000")
+  
+  # Fill Options (choose exactly one):
+  color: string              # Solid color (hex format, e.g., "#000000")
+  # OR
+  gradient:                  # Text gradient
+    type: "linear" | "radial" | "conic"
+    colors: [string, ...]    # Hex colors array (minimum 2)
+    positions: [float, ...]? # Color stops 0.0-1.0 (optional)
+    direction: float?        # Angle in degrees (linear)
+    center: [string, string]? # Center point (radial/conic)
+    radius: string?          # Radius for radial ("50%", "100px")
+    start_angle: float?      # Starting angle (conic)
+  
   weight: string             # "normal" or "bold" (default: "normal")
   alignment: string          # "left", "center", "right" (default: "center")
+  
+  # Stroke Options (optional):
+  stroke_width: int?         # Stroke width in pixels
+  stroke_color: string?      # Solid stroke color (hex format)
+  # OR
+  stroke_gradient:           # Gradient stroke (same structure as gradient)
 
 # Image Content Item
 - type: "image"

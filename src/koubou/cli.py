@@ -234,6 +234,56 @@ def create_config(
                     },
                 ],
             },
+            {
+                "name": "gradient_showcase",
+                "content": [
+                    {
+                        "type": "text",
+                        "content": "🌈 Gradient Magic",
+                        "position": ["50%", "15%"],
+                        "size": 48,
+                        "gradient": {
+                            "type": "linear",
+                            "colors": ["#FF6B6B", "#4ECDC4", "#45B7D1"],
+                            "direction": 45,
+                        },
+                        "weight": "bold",
+                    },
+                    {
+                        "type": "text",
+                        "content": "Beautiful gradients for stunning text",
+                        "position": ["50%", "25%"],
+                        "size": 24,
+                        "gradient": {
+                            "type": "radial",
+                            "colors": ["#667eea", "#764ba2"],
+                            "center": ["50%", "50%"],
+                            "radius": "70%",
+                        },
+                    },
+                    {
+                        "type": "text",
+                        "content": "Advanced Color Control",
+                        "position": ["50%", "35%"],
+                        "size": 28,
+                        "gradient": {
+                            "type": "linear",
+                            "colors": ["#f093fb", "#f5576c", "#4facfe"],
+                            "positions": [0.0, 0.3, 1.0],
+                            "direction": 90,
+                        },
+                        "stroke_width": 2,
+                        "stroke_color": "#333333",
+                    },
+                    {
+                        "type": "image",
+                        "asset": "screenshots/gradient_demo.png",
+                        "position": ["50%", "70%"],
+                        "scale": 0.5,
+                        "frame": True,
+                    },
+                ],
+            },
         ],
     }
 

@@ -1,19 +1,19 @@
-"""Tests for text gradient functionality."""
+"""Tests for universal gradient functionality."""
 
 import pytest
 from PIL import Image
 
-from koubou.config import TextGradientConfig, TextOverlay
+from koubou.config import GradientConfig, TextOverlay
 from koubou.exceptions import TextGradientError
-from koubou.renderers.text_gradient import TextGradientRenderer
+from koubou.renderers.gradient import GradientRenderer
 
 
-class TestTextGradientConfig:
-    """Test TextGradientConfig model validation."""
+class TestGradientConfig:
+    """Test GradientConfig model validation."""
 
     def test_valid_linear_gradient(self):
         """Test valid linear gradient configuration."""
-        config = TextGradientConfig(
+        config = GradientConfig(
             type="linear",
             colors=["#FF0000", "#00FF00"],
             direction=45
@@ -25,7 +25,7 @@ class TestTextGradientConfig:
 
     def test_valid_radial_gradient(self):
         """Test valid radial gradient configuration."""
-        config = TextGradientConfig(
+        config = GradientConfig(
             type="radial",
             colors=["#FF0000", "#00FF00", "#0000FF"],
             center=["50%", "50%"],
@@ -38,7 +38,7 @@ class TestTextGradientConfig:
 
     def test_valid_conic_gradient(self):
         """Test valid conic gradient configuration."""
-        config = TextGradientConfig(
+        config = GradientConfig(
             type="conic",
             colors=["#FF0000", "#00FF00"],
             start_angle=90,
@@ -50,7 +50,7 @@ class TestTextGradientConfig:
 
     def test_gradient_with_color_stops(self):
         """Test gradient with custom color stop positions."""
-        config = TextGradientConfig(
+        config = GradientConfig(
             type="linear",
             colors=["#FF0000", "#00FF00", "#0000FF"],
             positions=[0.0, 0.3, 1.0],
@@ -61,7 +61,7 @@ class TestTextGradientConfig:
     def test_invalid_single_color(self):
         """Test that single color gradients are invalid."""
         with pytest.raises(ValueError, match="Gradients require at least 2 colors"):
-            TextGradientConfig(
+            GradientConfig(
                 type="linear",
                 colors=["#FF0000"]
             )
@@ -69,7 +69,7 @@ class TestTextGradientConfig:
     def test_invalid_color_format(self):
         """Test that invalid color formats are rejected."""
         with pytest.raises(ValueError, match="Colors must be in hex format"):
-            TextGradientConfig(
+            GradientConfig(
                 type="linear",
                 colors=["red", "#00FF00"]
             )
@@ -77,7 +77,7 @@ class TestTextGradientConfig:
     def test_invalid_color_stop_count(self):
         """Test that mismatched colors and positions arrays are invalid."""
         with pytest.raises(ValueError, match="Positions array must match colors array length"):
-            TextGradientConfig(
+            GradientConfig(
                 type="linear",
                 colors=["#FF0000", "#00FF00"],
                 positions=[0.0, 0.5, 1.0]  # 3 positions for 2 colors
@@ -86,7 +86,7 @@ class TestTextGradientConfig:
     def test_invalid_color_stop_range(self):
         """Test that color stops outside 0.0-1.0 range are invalid."""
         with pytest.raises(ValueError, match="Color stop positions must be between 0.0 and 1.0"):
-            TextGradientConfig(
+            GradientConfig(
                 type="linear",
                 colors=["#FF0000", "#00FF00"],
                 positions=[0.0, 1.5]  # 1.5 is outside valid range
@@ -95,7 +95,7 @@ class TestTextGradientConfig:
     def test_invalid_color_stop_order(self):
         """Test that unsorted color stops are invalid."""
         with pytest.raises(ValueError, match="Color stop positions must be in ascending order"):
-            TextGradientConfig(
+            GradientConfig(
                 type="linear",
                 colors=["#FF0000", "#00FF00"],
                 positions=[0.5, 0.2]  # Not in ascending order
@@ -104,7 +104,7 @@ class TestTextGradientConfig:
     def test_invalid_direction_range(self):
         """Test that direction outside 0-359 range is invalid."""
         with pytest.raises(ValueError, match="Direction must be between 0 and 359 degrees"):
-            TextGradientConfig(
+            GradientConfig(
                 type="linear",
                 colors=["#FF0000", "#00FF00"],
                 direction=360  # Outside valid range
@@ -113,7 +113,7 @@ class TestTextGradientConfig:
     def test_invalid_start_angle_range(self):
         """Test that start_angle outside 0-359 range is invalid."""
         with pytest.raises(ValueError, match="Start angle must be between 0 and 359 degrees"):
-            TextGradientConfig(
+            GradientConfig(
                 type="conic",
                 colors=["#FF0000", "#00FF00"],
                 start_angle=-10  # Outside valid range
@@ -135,7 +135,7 @@ class TestTextOverlayGradientValidation:
 
     def test_valid_gradient_text(self):
         """Test valid gradient text overlay."""
-        gradient = TextGradientConfig(
+        gradient = GradientConfig(
             type="linear",
             colors=["#FF0000", "#00FF00"]
         )
@@ -158,7 +158,7 @@ class TestTextOverlayGradientValidation:
 
     def test_cannot_specify_both_color_and_gradient(self):
         """Test that both color and gradient cannot be specified."""
-        gradient = TextGradientConfig(
+        gradient = GradientConfig(
             type="linear",
             colors=["#FF0000", "#00FF00"]
         )
@@ -172,11 +172,11 @@ class TestTextOverlayGradientValidation:
 
     def test_valid_gradient_stroke(self):
         """Test valid gradient stroke configuration."""
-        gradient = TextGradientConfig(
+        gradient = GradientConfig(
             type="linear",
             colors=["#FF0000", "#00FF00"]
         )
-        stroke_gradient = TextGradientConfig(
+        stroke_gradient = GradientConfig(
             type="radial",
             colors=["#000000", "#333333"]
         )
@@ -192,11 +192,11 @@ class TestTextOverlayGradientValidation:
 
     def test_cannot_specify_both_stroke_types(self):
         """Test that both stroke_color and stroke_gradient cannot be specified."""
-        gradient = TextGradientConfig(
+        gradient = GradientConfig(
             type="linear",
             colors=["#FF0000", "#00FF00"]
         )
-        stroke_gradient = TextGradientConfig(
+        stroke_gradient = GradientConfig(
             type="linear",
             colors=["#000000", "#333333"]
         )
@@ -212,7 +212,7 @@ class TestTextOverlayGradientValidation:
 
     def test_stroke_width_requires_stroke_option(self):
         """Test that stroke_width requires either stroke_color or stroke_gradient."""
-        gradient = TextGradientConfig(
+        gradient = GradientConfig(
             type="linear",
             colors=["#FF0000", "#00FF00"]
         )
@@ -226,23 +226,23 @@ class TestTextOverlayGradientValidation:
             )
 
 
-class TestTextGradientRenderer:
-    """Test TextGradientRenderer functionality."""
+class TestGradientRenderer:
+    """Test GradientRenderer functionality."""
 
     def setup_method(self):
         """Set up test fixtures."""
-        self.renderer = TextGradientRenderer()
+        self.renderer = GradientRenderer()
         self.test_bounds = (0, 0, 200, 100)  # x, y, width, height
 
     def test_create_linear_gradient(self):
         """Test linear gradient creation."""
-        config = TextGradientConfig(
+        config = GradientConfig(
             type="linear",
             colors=["#FF0000", "#0000FF"],
             direction=90
         )
         
-        gradient = self.renderer.create_gradient_for_text(self.test_bounds, config)
+        gradient = self.renderer.create_gradient(self.test_bounds, config)
         
         assert isinstance(gradient, Image.Image)
         assert gradient.size == (200, 100)
@@ -250,14 +250,14 @@ class TestTextGradientRenderer:
 
     def test_create_radial_gradient(self):
         """Test radial gradient creation."""
-        config = TextGradientConfig(
+        config = GradientConfig(
             type="radial",
             colors=["#FF0000", "#0000FF"],
             center=["50%", "50%"],
             radius="50%"
         )
         
-        gradient = self.renderer.create_gradient_for_text(self.test_bounds, config)
+        gradient = self.renderer.create_gradient(self.test_bounds, config)
         
         assert isinstance(gradient, Image.Image)
         assert gradient.size == (200, 100)
@@ -265,13 +265,13 @@ class TestTextGradientRenderer:
 
     def test_create_conic_gradient(self):
         """Test conic gradient creation."""
-        config = TextGradientConfig(
+        config = GradientConfig(
             type="conic",
             colors=["#FF0000", "#0000FF"],
             start_angle=0
         )
         
-        gradient = self.renderer.create_gradient_for_text(self.test_bounds, config)
+        gradient = self.renderer.create_gradient(self.test_bounds, config)
         
         assert isinstance(gradient, Image.Image)
         assert gradient.size == (200, 100)
@@ -279,14 +279,14 @@ class TestTextGradientRenderer:
 
     def test_gradient_with_color_stops(self):
         """Test gradient with custom color stops."""
-        config = TextGradientConfig(
+        config = GradientConfig(
             type="linear",
             colors=["#FF0000", "#00FF00", "#0000FF"],
             positions=[0.0, 0.3, 1.0],
             direction=0
         )
         
-        gradient = self.renderer.create_gradient_for_text(self.test_bounds, config)
+        gradient = self.renderer.create_gradient(self.test_bounds, config)
         
         assert isinstance(gradient, Image.Image)
         assert gradient.size == (200, 100)
@@ -359,7 +359,7 @@ class TestTextGradientRenderer:
 
     def test_invalid_gradient_type(self):
         """Test handling of invalid gradient types."""
-        config = TextGradientConfig(
+        config = GradientConfig(
             type="linear",
             colors=["#FF0000", "#0000FF"]
         )
@@ -367,4 +367,4 @@ class TestTextGradientRenderer:
         config.type = "invalid_type"
         
         with pytest.raises(TextGradientError, match="Unknown gradient type"):
-            self.renderer.create_gradient_for_text(self.test_bounds, config)
+            self.renderer.create_gradient(self.test_bounds, config)

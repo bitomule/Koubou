@@ -1,4 +1,4 @@
-"""Text gradient rendering functionality using Pillow."""
+"""Universal gradient rendering functionality using Pillow."""
 
 import logging
 import math
@@ -6,22 +6,22 @@ from typing import List, Optional, Tuple
 
 from PIL import Image, ImageDraw
 
-from ..config import TextGradientConfig
+from ..config import GradientConfig
 from ..exceptions import TextGradientError
 
 logger = logging.getLogger(__name__)
 
 
-class TextGradientRenderer:
-    """Renders gradient effects for text overlays."""
+class GradientRenderer:
+    """Renders gradient effects for any rectangular area."""
 
-    def create_gradient_for_text(
-        self, text_bounds: Tuple[int, int, int, int], gradient_config: TextGradientConfig
+    def create_gradient(
+        self, bounds: Tuple[int, int, int, int], gradient_config: GradientConfig
     ) -> Image.Image:
-        """Create gradient image for text bounds.
+        """Create gradient image for any rectangular bounds.
 
         Args:
-            text_bounds: (x, y, width, height) bounding box for text
+            bounds: (x, y, width, height) bounding box for gradient area
             gradient_config: Gradient configuration
 
         Returns:
@@ -31,17 +31,17 @@ class TextGradientRenderer:
             TextGradientError: If gradient creation fails
         """
         try:
-            x, y, width, height = text_bounds
+            x, y, width, height = bounds
             
             if gradient_config.type == "linear":
-                return self._create_linear_text_gradient(
+                return self._create_linear_gradient(
                     (width, height), 
                     gradient_config.colors,
                     gradient_config.direction or 0,
                     gradient_config.positions
                 )
             elif gradient_config.type == "radial":
-                return self._create_radial_text_gradient(
+                return self._create_radial_gradient(
                     (width, height),
                     gradient_config.colors,
                     gradient_config.center,
@@ -49,7 +49,7 @@ class TextGradientRenderer:
                     gradient_config.positions
                 )
             elif gradient_config.type == "conic":
-                return self._create_conic_text_gradient(
+                return self._create_conic_gradient(
                     (width, height),
                     gradient_config.colors,
                     gradient_config.center,
@@ -61,10 +61,10 @@ class TextGradientRenderer:
 
         except Exception as e:
             raise TextGradientError(
-                f"Failed to create {gradient_config.type} gradient for text: {e}"
+                f"Failed to create {gradient_config.type} gradient: {e}"
             ) from e
 
-    def _create_linear_text_gradient(
+    def _create_linear_gradient(
         self,
         size: Tuple[int, int],
         colors: List[str],
@@ -106,7 +106,7 @@ class TextGradientRenderer:
         gradient.putdata(pixels)
         return gradient
 
-    def _create_radial_text_gradient(
+    def _create_radial_gradient(
         self,
         size: Tuple[int, int],
         colors: List[str],
@@ -160,7 +160,7 @@ class TextGradientRenderer:
         gradient.putdata(pixels)
         return gradient
 
-    def _create_conic_text_gradient(
+    def _create_conic_gradient(
         self,
         size: Tuple[int, int],
         colors: List[str],

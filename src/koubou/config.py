@@ -6,10 +6,10 @@ from typing import Dict, List, Literal, Optional, Tuple
 from pydantic import BaseModel, Field, validator
 
 
-class TextGradientConfig(BaseModel):
-    """Configuration for text gradient effects."""
+class GradientConfig(BaseModel):
+    """Universal gradient configuration for text and backgrounds."""
 
-    type: Literal["linear", "radial", "conic"] = Field(
+    type: Literal["solid", "linear", "radial", "conic"] = Field(
         ..., description="Gradient type"
     )
     colors: List[str] = Field(..., description="List of hex colors")
@@ -30,9 +30,18 @@ class TextGradientConfig(BaseModel):
     )
 
     @validator("colors")
-    def validate_colors(cls, v: List[str]) -> List[str]:
-        if len(v) < 2:
+    def validate_colors(cls, v: List[str], values: Dict) -> List[str]:
+        gradient_type = values.get("type")
+        
+        # Validate minimum colors based on type
+        if gradient_type == "solid" and len(v) != 1:
+            raise ValueError("Solid backgrounds require exactly 1 color")
+        elif gradient_type in ["linear", "radial", "conic"] and len(v) < 2:
             raise ValueError("Gradients require at least 2 colors")
+        elif not v:
+            raise ValueError("At least one color is required")
+            
+        # Validate color format
         for color in v:
             if not color.startswith("#"):
                 raise ValueError("Colors must be in hex format (e.g., #FFFFFF)")
@@ -79,7 +88,7 @@ class TextOverlay(BaseModel):
     
     # Text fill options (mutually exclusive)
     color: Optional[str] = Field(default=None, description="Solid text color in hex format")
-    gradient: Optional[TextGradientConfig] = Field(default=None, description="Text gradient configuration")
+    gradient: Optional[GradientConfig] = Field(default=None, description="Text gradient configuration")
     
     alignment: Literal["left", "center", "right"] = Field(default="center")
     anchor: Literal[
@@ -104,7 +113,7 @@ class TextOverlay(BaseModel):
     
     # Stroke options (mutually exclusive)
     stroke_color: Optional[str] = Field(default=None, description="Solid stroke color")
-    stroke_gradient: Optional[TextGradientConfig] = Field(default=None, description="Stroke gradient configuration")
+    stroke_gradient: Optional[GradientConfig] = Field(default=None, description="Stroke gradient configuration")
 
     @validator("color")
     def validate_color(cls, v: Optional[str]) -> Optional[str]:
@@ -119,7 +128,7 @@ class TextOverlay(BaseModel):
         return v
 
     @validator("gradient")
-    def validate_fill_options(cls, v: Optional[TextGradientConfig], values: Dict) -> Optional[TextGradientConfig]:
+    def validate_fill_options(cls, v: Optional[GradientConfig], values: Dict) -> Optional[GradientConfig]:
         color = values.get("color")
         
         if color is None and v is None:
@@ -131,7 +140,7 @@ class TextOverlay(BaseModel):
         return v
 
     @validator("stroke_gradient")
-    def validate_stroke_options(cls, v: Optional[TextGradientConfig], values: Dict) -> Optional[TextGradientConfig]:
+    def validate_stroke_options(cls, v: Optional[GradientConfig], values: Dict) -> Optional[GradientConfig]:
         stroke_color = values.get("stroke_color")
         stroke_width = values.get("stroke_width")
         
@@ -144,38 +153,6 @@ class TextOverlay(BaseModel):
         
         return v
 
-
-class BackgroundConfig(BaseModel):
-    """Configuration for screenshot backgrounds."""
-
-    type: Literal["solid", "linear", "radial", "conic"] = Field(
-        ..., description="Background type"
-    )
-    colors: List[str] = Field(..., description="List of hex colors")
-    direction: Optional[float] = Field(
-        default=0, description="Gradient direction in degrees"
-    )
-    center: Optional[Tuple[str, str]] = Field(
-        default=None, description="Center point for radial/conic gradients"
-    )
-
-    @validator("colors")
-    def validate_colors(cls, v: List[str]) -> List[str]:
-        if not v:
-            raise ValueError("At least one color is required")
-        for color in v:
-            if not color.startswith("#"):
-                raise ValueError("Colors must be in hex format (e.g., #FFFFFF)")
-        return v
-
-    @validator("colors")
-    def validate_gradient_colors(
-        cls, v: List[str], values: Dict[str, str]
-    ) -> List[str]:
-        bg_type = values.get("type")
-        if bg_type in ["linear", "radial", "conic"] and len(v) < 2:
-            raise ValueError("Gradient backgrounds require at least 2 colors")
-        return v
 
 
 class ScreenshotConfig(BaseModel):
@@ -190,7 +167,7 @@ class ScreenshotConfig(BaseModel):
         ..., description="Final output size (width, height)"
     )
     output_path: Optional[str] = Field(default=None, description="Custom output path")
-    background: Optional[BackgroundConfig] = Field(
+    background: Optional[GradientConfig] = Field(
         default=None, description="Background configuration"
     )
     text_overlays: List[TextOverlay] = Field(
@@ -235,7 +212,7 @@ class ContentItem(BaseModel):
     
     # Text fill options (mutually exclusive)
     color: Optional[str] = Field(default=None, description="Solid text color")
-    gradient: Optional[TextGradientConfig] = Field(default=None, description="Text gradient")
+    gradient: Optional[GradientConfig] = Field(default=None, description="Text gradient")
     
     weight: Optional[str] = Field(default="normal", description="Font weight")
     alignment: Optional[str] = Field(
@@ -245,7 +222,7 @@ class ContentItem(BaseModel):
     # Stroke options
     stroke_width: Optional[int] = Field(default=None, description="Text stroke width")
     stroke_color: Optional[str] = Field(default=None, description="Solid stroke color")
-    stroke_gradient: Optional[TextGradientConfig] = Field(default=None, description="Stroke gradient")
+    stroke_gradient: Optional[GradientConfig] = Field(default=None, description="Stroke gradient")
     
     scale: Optional[float] = Field(default=1.0, description="Image scale factor")
     frame: Optional[bool] = Field(
@@ -265,7 +242,7 @@ class ContentItem(BaseModel):
         return v
 
     @validator("gradient")
-    def validate_text_fill_options(cls, v: Optional[TextGradientConfig], values: Dict) -> Optional[TextGradientConfig]:
+    def validate_text_fill_options(cls, v: Optional[GradientConfig], values: Dict) -> Optional[GradientConfig]:
         color = values.get("color")
         
         if color is None and v is None:
@@ -277,7 +254,7 @@ class ContentItem(BaseModel):
         return v
 
     @validator("stroke_gradient")
-    def validate_stroke_fill_options(cls, v: Optional[TextGradientConfig], values: Dict) -> Optional[TextGradientConfig]:
+    def validate_stroke_fill_options(cls, v: Optional[GradientConfig], values: Dict) -> Optional[GradientConfig]:
         stroke_color = values.get("stroke_color")
         stroke_width = values.get("stroke_width")
         
