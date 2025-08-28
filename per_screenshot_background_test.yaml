@@ -1,0 +1,66 @@
+project:
+  name: "Per-Screenshot Background Test"
+  output_dir: "test_output"
+
+# Default background (radial gradient)
+defaults:
+  background:
+    type: radial
+    colors: ["#FFE5E5", "#E5F0FF"]  # Light pink to light blue
+    center: ["50%", "50%"]
+    radius: "80%"
+
+screenshots:
+  # Test 1: Screenshot with custom linear background (overrides default)
+  - name: custom_linear_background
+    background:
+      type: linear
+      colors: ["#FF6B6B", "#4ECDC4", "#45B7D1"] 
+      positions: [0.0, 0.3, 1.0]
+      direction: 45
+    content:
+      - type: text
+        content: "Custom Linear Background"
+        position: ["50%", "50%"]
+        size: 48
+        color: "#FFFFFF"
+        weight: bold
+        
+  # Test 2: Screenshot with custom conic background (overrides default)  
+  - name: custom_conic_background
+    background:
+      type: conic
+      colors: ["#667eea", "#764ba2", "#f093fb"]
+      positions: [0.0, 0.5, 1.0]
+      center: ["30%", "70%"]
+      start_angle: 90
+    content:
+      - type: text
+        content: "Custom Conic Background" 
+        position: ["50%", "50%"]
+        size: 48
+        color: "#FFFFFF"
+        weight: bold
+        
+  # Test 3: Screenshot with custom solid background (overrides default)
+  - name: custom_solid_background  
+    background:
+      type: solid
+      colors: ["#8B5CF6"]
+    content:
+      - type: text
+        content: "Custom Solid Background"
+        position: ["50%", "50%"]
+        size: 48
+        color: "#FFFFFF"
+        weight: bold
+        
+  # Test 4: Screenshot with NO background specified (uses default radial)
+  - name: default_background
+    content:
+      - type: text
+        content: "Using Default Background"
+        position: ["50%", "50%"]
+        size: 48
+        color: "#333333"
+        weight: bold

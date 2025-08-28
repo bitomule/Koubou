@@ -1,0 +1,51 @@
+# Per-Screenshot Background Test using Undolly structure
+
+project:
+  name: "Per-Screenshot Background Test"
+  output_dir: "test_output"
+
+devices:
+  - "iPhone 15 Pro Portrait"
+
+# Default background
+defaults:
+  background:
+    type: radial
+    colors: ["#FFE5E5", "#E5F0FF"]  # Default: light pink to blue radial
+    center: ["50%", "50%"]
+    radius: "80%"
+
+screenshots:
+  # Test 1: Custom linear background (should override default)
+  - name: "01_custom_linear"
+    background:
+      type: linear
+      colors: ["#FF6B6B", "#4ECDC4"] 
+      direction: 45
+    content:
+      - type: "text"
+        content: "Custom Linear Background"
+        position: ["50%", "20%"]
+        size: 120
+        color: "#FFFFFF"
+        weight: bold
+      - type: "text"
+        content: "Overrides project default"
+        position: ["50%", "80%"]
+        size: 48
+        color: "#FFFFFF"
+        
+  # Test 2: No background specified (should use default radial)
+  - name: "02_default_radial"
+    content:
+      - type: "text"
+        content: "Default Radial Background"
+        position: ["50%", "20%"]
+        size: 120
+        color: "#333333"
+        weight: bold  
+      - type: "text"
+        content: "From project defaults"
+        position: ["50%", "80%"]
+        size: 48
+        color: "#333333"

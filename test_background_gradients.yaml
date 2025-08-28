@@ -1,0 +1,80 @@
+project:
+  name: "Background Gradient Test"
+  output_dir: "test_output"
+
+screenshots:
+  - name: linear_gradient_test
+    background:
+      type: linear
+      colors: ["#FF6B6B", "#4ECDC4", "#45B7D1"] 
+      positions: [0.0, 0.3, 1.0]
+      direction: 45
+    content:
+      - type: image
+        source: "/Users/davidcollado/Projects/Undolly/Marketing/Screenshots/Sources/01_dashboard_home.png"
+        position: ["50%", "40%"]
+        scale: 0.8
+        frame: true
+      - type: text
+        content: "Linear Gradient with Positions"
+        position: ["50%", "85%"]
+        size: 48
+        color: "#FFFFFF"
+        weight: bold
+        
+  - name: radial_gradient_test
+    background:
+      type: radial
+      colors: ["#667eea", "#764ba2"]
+      positions: [0.0, 1.0]
+      center: ["30%", "70%"]
+      radius: "80%"
+    content:
+      - type: image
+        source: "/Users/davidcollado/Projects/Undolly/Marketing/Screenshots/Sources/01_dashboard_home.png"
+        position: ["50%", "40%"]
+        scale: 0.8
+        frame: true
+      - type: text
+        content: "Radial Gradient with Custom Radius"
+        position: ["50%", "85%"]
+        size: 48
+        color: "#FFFFFF"
+        weight: bold
+        
+  - name: conic_gradient_test
+    background:
+      type: conic
+      colors: ["#FF6B6B", "#4ECDC4", "#45B7D1"]
+      positions: [0.0, 0.5, 1.0]
+      center: ["50%", "50%"] 
+      start_angle: 45
+    content:
+      - type: image
+        source: "/Users/davidcollado/Projects/Undolly/Marketing/Screenshots/Sources/01_dashboard_home.png"
+        position: ["50%", "40%"]
+        scale: 0.8
+        frame: true
+      - type: text
+        content: "Conic Gradient with Rotation"
+        position: ["50%", "85%"]
+        size: 48
+        color: "#FFFFFF"
+        weight: bold
+        
+  - name: solid_background_test
+    background:
+      type: solid
+      colors: ["#8B5CF6"]
+    content:
+      - type: image
+        source: "/Users/davidcollado/Projects/Undolly/Marketing/Screenshots/Sources/01_dashboard_home.png"
+        position: ["50%", "40%"]
+        scale: 0.8
+        frame: true
+      - type: text
+        content: "Solid Background"
+        position: ["50%", "85%"]
+        size: 48
+        color: "#FFFFFF"
+        weight: bold

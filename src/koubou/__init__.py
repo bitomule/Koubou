@@ -3,11 +3,13 @@
 # Modern version detection using importlib.metadata (Python 3.8+)
 try:
     from importlib.metadata import version
+
     __version__ = version("koubou")
 except ImportError:
     # Python < 3.8 fallback
     try:
         from importlib_metadata import version
+
         __version__ = version("koubou")
     except ImportError:
         __version__ = "dev"
