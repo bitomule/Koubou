@@ -14,7 +14,6 @@ from .config import ProjectConfig
 from .exceptions import KoubouError
 from .generator import ScreenshotGenerator
 
-
 app = typer.Typer(
     name="kou",
     help="🎯 Koubou (工房) - The artisan workshop for App Store screenshots",
