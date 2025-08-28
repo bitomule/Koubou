@@ -60,9 +60,7 @@ class TestBackgroundRenderer:
 
     def test_conic_gradient(self):
         """Test conic gradient rendering."""
-        config = GradientConfig(
-            type="conic", colors=["#ff0000", "#00ff00", "#0000ff"]
-        )
+        config = GradientConfig(type="conic", colors=["#ff0000", "#00ff00", "#0000ff"])
 
         self.renderer.render(config, self.canvas)
 
