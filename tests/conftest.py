@@ -37,7 +37,7 @@ def sample_screenshot_config(sample_image):
         name="Test Screenshot",
         source_image=sample_image,
         output_size=(400, 800),
-        background=BackgroundConfig(type="solid", colors=["#0066cc"]),
+        background=GradientConfig(type="solid", colors=["#0066cc"]),
         text_overlays=[
             TextOverlay(
                 content="Test Text", position=(50, 50), font_size=24, color="#ffffff"
@@ -49,7 +49,7 @@ def sample_screenshot_config(sample_image):
 @pytest.fixture
 def sample_gradient_background():
     """Create a sample gradient background configuration."""
-    return BackgroundConfig(
+    return GradientConfig(
         type="linear", colors=["#ff0000", "#00ff00", "#0000ff"], direction=45
     )
 

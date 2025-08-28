@@ -152,14 +152,25 @@ class TextRenderer:
             "Helvetica Neue",
             "Helvetica",
             "Arial",
+            # Linux common fonts (available in most distros and CI)
+            "DejaVu Sans",
+            "Liberation Sans",
+            "Ubuntu",
+            "Noto Sans",
+            # Fallback system fonts
+            "sans-serif",
         ]
 
         # Try bold variants for bold weight
         if font_weight == "bold":
-            bold_fonts = [f"{font} Bold" for font in default_fonts[:3]] + [
+            bold_fonts = [f"{font} Bold" for font in default_fonts[:7]] + [
                 "Helvetica Neue Bold",
-                "Helvetica-Bold",
+                "Helvetica-Bold", 
                 "Arial Bold",
+                "DejaVu Sans Bold",
+                "Liberation Sans Bold",
+                "Ubuntu Bold",
+                "Noto Sans Bold",
             ]
             default_fonts = bold_fonts + default_fonts
 
@@ -171,13 +182,20 @@ class TextRenderer:
             except (OSError, IOError):
                 continue
 
-        # If all high-quality fonts fail, this is a system issue
+        # Last resort: try PIL's default font before failing
+        try:
+            logger.warning("Using PIL default font as last resort")
+            return ImageFont.load_default()
+        except Exception:
+            pass
+            
+        # If even the default font fails, this is a serious system issue
         raise ConfigurationError(
-            "No high-quality system fonts found.\n"
-            "Please install at least one of: Arial, Helvetica, or San Francisco fonts.\n"
-            "On macOS: Install Xcode or use Font Book to install system fonts.\n"
-            "On Linux: Install fonts-liberation or fonts-dejavu packages.\n"
-            "On Windows: Arial should be pre-installed."
+            "No fonts found on this system.\n"
+            "Please install system fonts:\n"
+            "- macOS: Arial, Helvetica, or San Francisco (install Xcode or use Font Book)\n"
+            "- Linux: fonts-liberation, fonts-dejavu, or fonts-noto packages\n"
+            "- Windows: Arial should be pre-installed"
         )
 
     def _load_font_with_weight(
