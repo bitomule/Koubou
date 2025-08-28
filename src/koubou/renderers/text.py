@@ -165,7 +165,7 @@ class TextRenderer:
         if font_weight == "bold":
             bold_fonts = [f"{font} Bold" for font in default_fonts[:7]] + [
                 "Helvetica Neue Bold",
-                "Helvetica-Bold", 
+                "Helvetica-Bold",
                 "Arial Bold",
                 "DejaVu Sans Bold",
                 "Liberation Sans Bold",
@@ -188,7 +188,7 @@ class TextRenderer:
             return ImageFont.load_default()
         except Exception:
             pass
-            
+
         # If even the default font fails, this is a serious system issue
         raise ConfigurationError(
             "No fonts found on this system.\n"
