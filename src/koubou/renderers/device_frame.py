@@ -426,7 +426,8 @@ class DeviceFrameRenderer:
                         mask_pixels[x, y] = 255  # White = show content
 
             logger.info(
-                "📱 Flood fill completed: {len(visited)} pixels marked as outside, {(frame_width*frame_height-len(visited))} as screen area"
+                f"📱 Flood fill completed: {len(visited)} pixels marked as outside, "
+                f"{(frame_width*frame_height-len(visited))} as screen area"
             )
 
             logger.info(

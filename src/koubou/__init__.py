@@ -10,7 +10,7 @@ from .generator import ScreenshotGenerator
 
 __all__ = [
     "ScreenshotConfig",
-    "TextOverlay", 
+    "TextOverlay",
     "GradientConfig",
     "ScreenshotGenerator",
     "KoubouError",

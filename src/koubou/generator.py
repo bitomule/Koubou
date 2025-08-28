@@ -439,7 +439,8 @@ class ScreenshotGenerator:
                     "frame": getattr(item, "frame", False),  # Capture frame setting
                 }
                 logger.info(
-                    "📏 Image: scale={image_scale * 100:.0f}%, position={image_position}, frame={getattr(item, 'frame', False)}"
+                    f"📏 Image: scale={image_scale * 100:.0f}%, "
+                    f"position={image_position}, frame={getattr(item, 'frame', False)}"
                 )
                 break  # Use first image found
 
@@ -521,14 +522,25 @@ class ScreenshotGenerator:
                     )
                     text_overlays.append(text_overlay)
 
-        # Create background config
+        # Create background config with priority: screenshot background > default background > white
         background_config = None
-        if default_background:
+        if screenshot_def.background:
+            # Use per-screenshot background if specified
+            background_config = screenshot_def.background
+        elif default_background:
+            # Fallback to project default background
             background_config = GradientConfig(
                 type=default_background.get("type", "solid"),
-                colors=default_background.get("colors", ["#fffff"]),
+                colors=default_background.get("colors", ["#ffffff"]),
                 direction=default_background.get("direction", 0),
+                positions=default_background.get("positions"),
+                center=default_background.get("center"),
+                radius=default_background.get("radius"),
+                start_angle=default_background.get("start_angle"),
             )
+        else:
+            # Final fallback to white background
+            background_config = GradientConfig(type="solid", colors=["#ffffff"])
 
         # Create screenshot config with calculated dimensions
         # Store scale factor for use during generation

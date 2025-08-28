@@ -55,8 +55,8 @@ class TestCLI:
         assert "devices" in config
         assert "screenshots" in config
         assert (
-            len(config["screenshots"]) == 2
-        )  # Updated CLI generates 2 sample screenshots
+            len(config["screenshots"]) == 3
+        )  # Updated CLI generates 3 sample screenshots
 
     def test_list_frames_command(self):
         """Test list-frames command."""

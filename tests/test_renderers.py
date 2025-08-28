@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from koubou.config import BackgroundConfig, TextOverlay
+from koubou.config import GradientConfig, TextOverlay
 from koubou.exceptions import TextRenderError
 from koubou.renderers.background import BackgroundRenderer
 from koubou.renderers.device_frame import DeviceFrameRenderer
@@ -23,7 +23,7 @@ class TestBackgroundRenderer:
 
     def test_solid_background(self):
         """Test solid background rendering."""
-        config = BackgroundConfig(type="solid", colors=["#ff0000"])
+        config = GradientConfig(type="solid", colors=["#ff0000"])
 
         self.renderer.render(config, self.canvas)
 
@@ -33,7 +33,7 @@ class TestBackgroundRenderer:
 
     def test_linear_gradient(self):
         """Test linear gradient rendering."""
-        config = BackgroundConfig(
+        config = GradientConfig(
             type="linear", colors=["#ff0000", "#0000ff"], direction=0  # Horizontal
         )
 
@@ -48,7 +48,7 @@ class TestBackgroundRenderer:
 
     def test_radial_gradient(self):
         """Test radial gradient rendering."""
-        config = BackgroundConfig(type="radial", colors=["#ff0000", "#0000ff"])
+        config = GradientConfig(type="radial", colors=["#ff0000", "#0000ff"])
 
         self.renderer.render(config, self.canvas)
 
@@ -60,7 +60,7 @@ class TestBackgroundRenderer:
 
     def test_conic_gradient(self):
         """Test conic gradient rendering."""
-        config = BackgroundConfig(
+        config = GradientConfig(
             type="conic", colors=["#ff0000", "#00ff00", "#0000ff"]
         )
 
@@ -77,7 +77,7 @@ class TestBackgroundRenderer:
         from pydantic import ValidationError
 
         with pytest.raises(ValidationError, match="Input should be"):
-            BackgroundConfig(type="invalid", colors=["#ff0000"])
+            GradientConfig(type="invalid", colors=["#ff0000"])
 
     def test_color_parsing(self):
         """Test color parsing functionality."""

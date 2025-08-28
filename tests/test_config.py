@@ -3,21 +3,21 @@
 import pytest
 from pydantic import ValidationError
 
-from koubou.config import BackgroundConfig, ProjectConfig, ScreenshotConfig, TextOverlay
+from koubou.config import GradientConfig, ProjectConfig, ScreenshotConfig, TextOverlay
 
 
-class TestBackgroundConfig:
-    """Tests for BackgroundConfig model."""
+class TestGradientConfig:
+    """Tests for GradientConfig model."""
 
     def test_solid_background_valid(self):
         """Test valid solid background configuration."""
-        config = BackgroundConfig(type="solid", colors=["#ff0000"])
+        config = GradientConfig(type="solid", colors=["#ff0000"])
         assert config.type == "solid"
         assert config.colors == ["#ff0000"]
 
     def test_gradient_background_valid(self):
         """Test valid gradient background configuration."""
-        config = BackgroundConfig(
+        config = GradientConfig(
             type="linear", colors=["#ff0000", "#00ff00"], direction=45
         )
         assert config.type == "linear"
@@ -27,17 +27,17 @@ class TestBackgroundConfig:
     def test_gradient_insufficient_colors(self):
         """Test gradient with insufficient colors fails validation."""
         with pytest.raises(ValidationError, match="at least 2 colors"):
-            BackgroundConfig(type="linear", colors=["#ff0000"])
+            GradientConfig(type="linear", colors=["#ff0000"])
 
     def test_invalid_color_format(self):
         """Test invalid color format fails validation."""
         with pytest.raises(ValidationError, match="hex format"):
-            BackgroundConfig(type="solid", colors=["red"])  # Invalid format
+            GradientConfig(type="solid", colors=["red"])  # Invalid format
 
     def test_empty_colors(self):
         """Test empty colors list fails validation."""
-        with pytest.raises(ValidationError, match="At least one color"):
-            BackgroundConfig(type="solid", colors=[])
+        with pytest.raises(ValidationError, match="exactly 1 color"):
+            GradientConfig(type="solid", colors=[])
 
 
 class TestTextOverlay:
@@ -58,7 +58,7 @@ class TestTextOverlay:
         overlay = TextOverlay(content="Test", position=(0, 0))
         assert overlay.font_size == 24
         assert overlay.font_family == "Arial"
-        assert overlay.color == "#000000"
+        assert overlay.color is None
         assert overlay.alignment == "center"
 
     def test_invalid_color(self):
@@ -87,7 +87,7 @@ class TestScreenshotConfig:
             name="Full Test",
             source_image=sample_image,
             output_size=(400, 800),
-            background=BackgroundConfig(type="solid", colors=["#ff0000"]),
+            background=GradientConfig(type="solid", colors=["#ff0000"]),
             text_overlays=[TextOverlay(content="Test", position=(50, 50))],
         )
         assert config.background is not None

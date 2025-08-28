@@ -3,7 +3,7 @@
 import logging
 from typing import Optional, Tuple
 
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 from ..config import TextOverlay
 from ..exceptions import ConfigurationError, TextRenderError
@@ -77,14 +77,27 @@ class TextRenderer:
             if text_config.gradient:
                 # Render with gradient
                 self._render_gradient_text(
-                    canvas, text_config, text_lines, font, line_height,
-                    anchor_x, anchor_y, text_block_width, text_bounds
+                    canvas,
+                    text_config,
+                    text_lines,
+                    font,
+                    line_height,
+                    anchor_x,
+                    anchor_y,
+                    text_block_width,
+                    text_bounds,
                 )
             else:
                 # Render with solid color
                 self._render_solid_text(
-                    canvas, text_config, text_lines, font, line_height,
-                    anchor_x, anchor_y, text_block_width
+                    canvas,
+                    text_config,
+                    text_lines,
+                    font,
+                    line_height,
+                    anchor_x,
+                    anchor_y,
+                    text_block_width,
                 )
 
         except Exception as _e:
@@ -105,13 +118,16 @@ class TextRenderer:
             else:
                 # User specified font - must load exactly or fail
                 try:
-                    font = self._load_font_with_weight(font_family, font_size, font_weight)
+                    font = self._load_font_with_weight(
+                        font_family, font_size, font_weight
+                    )
                 except (OSError, IOError) as e:
                     # Provide helpful error message with font installation tips
                     error_msg = (
                         f"Font '{font_family}' not found on this system.\n"
                         f"Options:\n"
-                        f"1. Install the font: Copy '{font_family}.ttf' or '{font_family}.otf' to your system fonts directory\n"
+                        f"1. Install the font: Copy '{font_family}.ttf' or "
+                        f"'{font_family}.otf' to your system fonts directory\n"
                         f"2. Use a system font: 'Arial', 'Helvetica', or 'System'\n"
                         f"3. Check font name spelling and case sensitivity\n"
                         f"System error: {e}"
@@ -130,23 +146,23 @@ class TextRenderer:
         default_fonts = [
             # macOS system fonts (highest quality)
             ".SF NS Text",
-            ".SFNS-Display", 
+            ".SFNS-Display",
             "San Francisco",
             # Cross-platform high-quality fonts
             "Helvetica Neue",
             "Helvetica",
             "Arial",
         ]
-        
+
         # Try bold variants for bold weight
         if font_weight == "bold":
             bold_fonts = [f"{font} Bold" for font in default_fonts[:3]] + [
                 "Helvetica Neue Bold",
-                "Helvetica-Bold", 
-                "Arial Bold"
+                "Helvetica-Bold",
+                "Arial Bold",
             ]
             default_fonts = bold_fonts + default_fonts
-        
+
         for font_name in default_fonts:
             try:
                 font = ImageFont.truetype(font_name, font_size)
@@ -154,7 +170,7 @@ class TextRenderer:
                 return font
             except (OSError, IOError):
                 continue
-        
+
         # If all high-quality fonts fail, this is a system issue
         raise ConfigurationError(
             "No high-quality system fonts found.\n"
@@ -398,8 +414,16 @@ class TextRenderer:
 
         # Use high-resolution rendering for better quality
         self._render_high_res_text(
-            canvas, text_lines, font, line_height, anchor_x, anchor_y,
-            text_block_width, text_config, text_color, stroke_color
+            canvas,
+            text_lines,
+            font,
+            line_height,
+            anchor_x,
+            anchor_y,
+            text_block_width,
+            text_config,
+            text_color,
+            stroke_color,
         )
 
     def _render_gradient_text(
@@ -417,8 +441,14 @@ class TextRenderer:
         """Render text with gradient using high-res mask-based composition."""
         # Use high-resolution rendering for gradient masks too
         text_mask = self._create_high_res_text_mask(
-            canvas, text_lines, font, line_height, anchor_x, anchor_y,
-            text_block_width, text_config
+            canvas,
+            text_lines,
+            font,
+            line_height,
+            anchor_x,
+            anchor_y,
+            text_block_width,
+            text_config,
         )
 
         # Generate gradient image for text bounds
@@ -466,7 +496,7 @@ class TextRenderer:
                     line_x = self._calculate_line_x(
                         anchor_x, line, font, text_config.alignment, text_block_width
                     )
-                    
+
                     # Create stroke-only mask by drawing stroked text and subtracting filled text
                     stroke_draw.text(
                         (line_x, current_y),
@@ -484,7 +514,9 @@ class TextRenderer:
 
                 # Create full-canvas stroke gradient
                 canvas_stroke_gradient = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-                canvas_stroke_gradient.paste(stroke_gradient_image, (anchor_x, anchor_y))
+                canvas_stroke_gradient.paste(
+                    stroke_gradient_image, (anchor_x, anchor_y)
+                )
 
                 # Apply stroke mask using alpha blending
                 canvas_stroke_gradient.putalpha(stroke_mask)
@@ -511,37 +543,38 @@ class TextRenderer:
     ) -> None:
         """Render text at 3x resolution and downsample for optimal anti-aliasing quality."""
         scale_factor = 3  # Research shows 3x often better than 4x for text quality
-        
+
         # Calculate text bounds for high-resolution rendering
         total_height = len(text_lines) * line_height
-        text_bounds = (anchor_x, anchor_y, text_block_width, total_height)
-        
+
         # Create high-resolution canvas for text region only (optimization)
         hr_width = text_block_width * scale_factor
         hr_height = total_height * scale_factor
         hr_canvas = Image.new("RGBA", (hr_width, hr_height), (0, 0, 0, 0))
-        
+
         # Create scaled font
         hr_font_size = text_config.font_size * scale_factor
-        hr_font = self._get_font(text_config.font_family, hr_font_size, text_config.font_weight)
+        hr_font = self._get_font(
+            text_config.font_family, hr_font_size, text_config.font_weight
+        )
         hr_line_height = int(hr_font_size * text_config.line_height)
-        
+
         # Render text at high resolution
         hr_draw = ImageDraw.Draw(hr_canvas)
-        
+
         for i, line in enumerate(text_lines):
             # Calculate positions in high-resolution space
             hr_y = i * hr_line_height
-            
+
             # Calculate line x position based on alignment
             hr_line_x = self._calculate_line_x(
                 0,  # Start from 0 since we're in cropped canvas
-                line, 
-                hr_font, 
-                text_config.alignment, 
-                text_block_width * scale_factor
+                line,
+                hr_font,
+                text_config.alignment,
+                text_block_width * scale_factor,
             )
-            
+
             # Draw text with stroke if specified
             if text_config.stroke_width and stroke_color:
                 hr_stroke_width = text_config.stroke_width * scale_factor
@@ -555,25 +588,24 @@ class TextRenderer:
                 )
             else:
                 hr_draw.text((hr_line_x, hr_y), line, font=hr_font, fill=text_color)
-        
+
         # Downsample using high-quality resampling
         downsampled_text = hr_canvas.resize(
-            (text_block_width, total_height), 
-            Image.Resampling.LANCZOS
+            (text_block_width, total_height), Image.Resampling.LANCZOS
         )
-        
+
         # Apply very subtle blur for smoother edges (optional - can be disabled if too soft)
         # Only apply to text edges, not the whole text
         alpha = downsampled_text.split()[-1]  # Get alpha channel
         blurred_alpha = alpha.filter(ImageFilter.GaussianBlur(radius=0.3))
-        
+
         # Reconstruct text with smoothed alpha
         if downsampled_text.mode == "RGBA":
             r, g, b, _ = downsampled_text.split()
             smoothed_text = Image.merge("RGBA", (r, g, b, blurred_alpha))
         else:
             smoothed_text = downsampled_text
-            
+
         # Paste the downsampled text onto the original canvas
         canvas.paste(smoothed_text, (anchor_x, anchor_y), smoothed_text)
 
@@ -590,23 +622,25 @@ class TextRenderer:
     ) -> Image.Image:
         """Create high-resolution text mask for gradient rendering with optimal anti-aliasing."""
         scale_factor = 3  # Research shows 3x often better than 4x for text quality
-        
+
         # Calculate text bounds for high-resolution rendering
         total_height = len(text_lines) * line_height
-        
+
         # Create high-resolution mask for text region only
         hr_width = text_block_width * scale_factor
         hr_height = total_height * scale_factor
         hr_mask = Image.new("L", (hr_width, hr_height), 0)  # Black background
-        
+
         # Create scaled font
         hr_font_size = text_config.font_size * scale_factor
-        hr_font = self._get_font(text_config.font_family, hr_font_size, text_config.font_weight)
+        hr_font = self._get_font(
+            text_config.font_family, hr_font_size, text_config.font_weight
+        )
         hr_line_height = int(hr_font_size * text_config.line_height)
-        
+
         # Render text mask at high resolution
         hr_draw = ImageDraw.Draw(hr_mask)
-        
+
         for i, line in enumerate(text_lines):
             hr_y = i * hr_line_height
             hr_line_x = self._calculate_line_x(
@@ -614,7 +648,7 @@ class TextRenderer:
                 line,
                 hr_font,
                 text_config.alignment,
-                text_block_width * scale_factor
+                text_block_width * scale_factor,
             )
 
             # Handle stroke on mask
@@ -641,19 +675,18 @@ class TextRenderer:
                     )
             else:
                 hr_draw.text((hr_line_x, hr_y), line, font=hr_font, fill=255)
-        
+
         # Downsample mask using high-quality resampling
         downsampled_mask = hr_mask.resize(
-            (text_block_width, total_height),
-            Image.Resampling.LANCZOS
+            (text_block_width, total_height), Image.Resampling.LANCZOS
         )
-        
+
         # Apply very subtle Gaussian blur for smoother edges (research-backed approach)
         # Blur radius of 0.5 is subtle enough to smooth without affecting text sharpness
         smoothed_mask = downsampled_mask.filter(ImageFilter.GaussianBlur(radius=0.5))
-        
+
         # Create full canvas mask
         full_mask = Image.new("L", canvas.size, 0)
         full_mask.paste(smoothed_mask, (anchor_x, anchor_y))
-        
+
         return full_mask

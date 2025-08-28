@@ -35,8 +35,7 @@ class BackgroundRenderer:
             else:
                 # Use unified gradient renderer for all gradients
                 gradient = self.gradient_renderer.create_gradient(
-                    (0, 0, canvas.width, canvas.height), 
-                    background_config
+                    (0, 0, canvas.width, canvas.height), background_config
                 )
                 canvas.paste(gradient, (0, 0))
 

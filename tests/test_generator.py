@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from koubou.config import BackgroundConfig, ProjectConfig, ScreenshotConfig, TextOverlay
+from koubou.config import GradientConfig, ProjectConfig, ScreenshotConfig, TextOverlay
 from koubou.generator import ScreenshotGenerator
 
 
@@ -75,7 +75,7 @@ class TestScreenshotGenerator:
             source_image=str(self.source_image_path),
             output_size=(400, 800),
             output_path=str(self.temp_dir / "output_bg.png"),
-            background=BackgroundConfig(type="solid", colors=["#0066cc"]),
+            background=GradientConfig(type="solid", colors=["#0066cc"]),
         )
 
         result_path = self.generator.generate_screenshot(config)
@@ -136,7 +136,7 @@ class TestScreenshotGenerator:
             source_image=str(self.source_image_path),
             output_size=(400, 800),
             output_path=str(self.temp_dir / "output_complete.png"),
-            background=BackgroundConfig(
+            background=GradientConfig(
                 type="linear", colors=["#ff0000", "#0000ff"], direction=45
             ),
             text_overlays=[

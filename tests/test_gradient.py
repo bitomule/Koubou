@@ -33,7 +33,7 @@ class TestGradientConfig:
         )
         assert config.type == "radial"
         assert config.colors == ["#FF0000", "#00FF00", "#0000FF"]
-        assert config.center == ["50%", "50%"]
+        assert config.center == ("50%", "50%")
         assert config.radius == "70%"
 
     def test_valid_conic_gradient(self):
@@ -46,7 +46,7 @@ class TestGradientConfig:
         )
         assert config.type == "conic"
         assert config.start_angle == 90
-        assert config.center == ["25%", "75%"]
+        assert config.center == ("25%", "75%")
 
     def test_gradient_with_color_stops(self):
         """Test gradient with custom color stop positions."""
@@ -153,7 +153,7 @@ class TestTextOverlayGradientValidation:
             content="Test Text",
             position=(100, 100)
         )
-        assert overlay.color == "#000000"  # Default color should be set
+        assert overlay.color is None  # No default color set
         assert overlay.gradient is None
 
     def test_cannot_specify_both_color_and_gradient(self):
