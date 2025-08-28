@@ -1,7 +1,7 @@
 class Koubou < Formula
   desc "🎯 Koubou (工房) - The artisan workshop for App Store screenshots"
   homepage "https://github.com/bitomule/koubou"
-  url "https://github.com/bitomule/koubou/archive/refs/tags/v0.0.1.tar.gz"
+  url "https://github.com/bitomule/koubou/archive/refs/tags/v0.1.0.tar.gz"
   sha256 :no_check # Skip checksum for now, auto-generated releases
   license "MIT"
   head "https://github.com/bitomule/koubou.git", branch: "main"
@@ -9,8 +9,8 @@ class Koubou < Formula
   depends_on "python@3.12"
 
   def install
-    # Install the package using pip
-    system "pip3", "install", "."
+    # Install the package using pip with proper Python environment
+    virtualenv_install_with_resources
     
     # Generate shell completions if supported
     # Note: This will be added once the CLI supports completion generation
