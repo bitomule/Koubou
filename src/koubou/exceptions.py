@@ -35,3 +35,9 @@ class TextRenderError(RenderError):
     """Raised when there's an error rendering text overlays."""
 
     pass
+
+
+class TextGradientError(TextRenderError):
+    """Raised when there's an error rendering text gradients."""
+
+    pass

@@ -6,6 +6,68 @@ from typing import Dict, List, Literal, Optional, Tuple
 from pydantic import BaseModel, Field, validator
 
 
+class TextGradientConfig(BaseModel):
+    """Configuration for text gradient effects."""
+
+    type: Literal["linear", "radial", "conic"] = Field(
+        ..., description="Gradient type"
+    )
+    colors: List[str] = Field(..., description="List of hex colors")
+    positions: Optional[List[float]] = Field(
+        default=None, description="Color stop positions (0.0-1.0)"
+    )
+    direction: Optional[float] = Field(
+        default=0, description="Gradient direction in degrees (linear gradients)"
+    )
+    center: Optional[Tuple[str, str]] = Field(
+        default=None, description="Center point for radial/conic gradients"
+    )
+    radius: Optional[str] = Field(
+        default=None, description="Radius for radial gradients (e.g., '50%', '100px')"
+    )
+    start_angle: Optional[float] = Field(
+        default=0, description="Starting angle in degrees (conic gradients)"
+    )
+
+    @validator("colors")
+    def validate_colors(cls, v: List[str]) -> List[str]:
+        if len(v) < 2:
+            raise ValueError("Gradients require at least 2 colors")
+        for color in v:
+            if not color.startswith("#"):
+                raise ValueError("Colors must be in hex format (e.g., #FFFFFF)")
+        return v
+
+    @validator("positions")
+    def validate_positions(cls, v: Optional[List[float]], values: Dict) -> Optional[List[float]]:
+        if v is None:
+            return v
+        
+        colors = values.get("colors", [])
+        if len(v) != len(colors):
+            raise ValueError("Positions array must match colors array length")
+        
+        if not all(0.0 <= pos <= 1.0 for pos in v):
+            raise ValueError("Color stop positions must be between 0.0 and 1.0")
+        
+        if v != sorted(v):
+            raise ValueError("Color stop positions must be in ascending order")
+        
+        return v
+
+    @validator("direction")
+    def validate_direction(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None and (v < 0 or v >= 360):
+            raise ValueError("Direction must be between 0 and 359 degrees")
+        return v
+
+    @validator("start_angle")
+    def validate_start_angle(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None and (v < 0 or v >= 360):
+            raise ValueError("Start angle must be between 0 and 359 degrees")
+        return v
+
+
 class TextOverlay(BaseModel):
     """Configuration for text overlays on screenshots."""
 
@@ -14,7 +76,11 @@ class TextOverlay(BaseModel):
     font_size: int = Field(default=24, description="Font size in pixels")
     font_family: str = Field(default="Arial", description="Font family name")
     font_weight: str = Field(default="normal", description="Font weight (normal, bold)")
-    color: str = Field(default="#000000", description="Text color in hex format")
+    
+    # Text fill options (mutually exclusive)
+    color: Optional[str] = Field(default=None, description="Solid text color in hex format")
+    gradient: Optional[TextGradientConfig] = Field(default=None, description="Text gradient configuration")
+    
     alignment: Literal["left", "center", "right"] = Field(default="center")
     anchor: Literal[
         "top-left",
@@ -35,12 +101,47 @@ class TextOverlay(BaseModel):
     )
     line_height: float = Field(default=1.2, description="Line height multiplier")
     stroke_width: Optional[int] = Field(default=None, description="Text stroke width")
-    stroke_color: Optional[str] = Field(default=None, description="Text stroke color")
+    
+    # Stroke options (mutually exclusive)
+    stroke_color: Optional[str] = Field(default=None, description="Solid stroke color")
+    stroke_gradient: Optional[TextGradientConfig] = Field(default=None, description="Stroke gradient configuration")
 
-    @validator("color", "stroke_color")
-    def validate_color(cls, v: str) -> str:
+    @validator("color")
+    def validate_color(cls, v: Optional[str]) -> Optional[str]:
         if v and not v.startswith("#"):
             raise ValueError("Colors must be in hex format (e.g., #FFFFFF)")
+        return v
+
+    @validator("stroke_color")
+    def validate_stroke_color(cls, v: Optional[str]) -> Optional[str]:
+        if v and not v.startswith("#"):
+            raise ValueError("Stroke colors must be in hex format (e.g., #FFFFFF)")
+        return v
+
+    @validator("gradient")
+    def validate_fill_options(cls, v: Optional[TextGradientConfig], values: Dict) -> Optional[TextGradientConfig]:
+        color = values.get("color")
+        
+        if color is None and v is None:
+            # Set default color if neither is specified
+            values["color"] = "#000000"
+        elif color is not None and v is not None:
+            raise ValueError("Cannot specify both 'color' and 'gradient'. Choose exactly one.")
+        
+        return v
+
+    @validator("stroke_gradient")
+    def validate_stroke_options(cls, v: Optional[TextGradientConfig], values: Dict) -> Optional[TextGradientConfig]:
+        stroke_color = values.get("stroke_color")
+        stroke_width = values.get("stroke_width")
+        
+        # Only validate if stroke is being used
+        if stroke_width is not None and stroke_width > 0:
+            if stroke_color is not None and v is not None:
+                raise ValueError("Cannot specify both 'stroke_color' and 'stroke_gradient'. Choose exactly one.")
+            elif stroke_color is None and v is None:
+                raise ValueError("When 'stroke_width' is specified, must provide either 'stroke_color' or 'stroke_gradient'.")
+        
         return v
 
 
@@ -131,15 +232,63 @@ class ContentItem(BaseModel):
         default=("50%", "50%"), description="Position as percentage or pixels"
     )
     size: Optional[int] = Field(default=24, description="Font size for text")
-    color: Optional[str] = Field(default="#000000", description="Text color")
+    
+    # Text fill options (mutually exclusive)
+    color: Optional[str] = Field(default=None, description="Solid text color")
+    gradient: Optional[TextGradientConfig] = Field(default=None, description="Text gradient")
+    
     weight: Optional[str] = Field(default="normal", description="Font weight")
     alignment: Optional[str] = Field(
         default="center", description="Text alignment (left, center, right)"
     )
+    
+    # Stroke options
+    stroke_width: Optional[int] = Field(default=None, description="Text stroke width")
+    stroke_color: Optional[str] = Field(default=None, description="Solid stroke color")
+    stroke_gradient: Optional[TextGradientConfig] = Field(default=None, description="Stroke gradient")
+    
     scale: Optional[float] = Field(default=1.0, description="Image scale factor")
     frame: Optional[bool] = Field(
         default=False, description="Apply device frame to image"
     )
+
+    @validator("color")
+    def validate_color_format(cls, v: Optional[str]) -> Optional[str]:
+        if v and not v.startswith("#"):
+            raise ValueError("Colors must be in hex format (e.g., #FFFFFF)")
+        return v
+
+    @validator("stroke_color")  
+    def validate_stroke_color_format(cls, v: Optional[str]) -> Optional[str]:
+        if v and not v.startswith("#"):
+            raise ValueError("Stroke colors must be in hex format (e.g., #FFFFFF)")
+        return v
+
+    @validator("gradient")
+    def validate_text_fill_options(cls, v: Optional[TextGradientConfig], values: Dict) -> Optional[TextGradientConfig]:
+        color = values.get("color")
+        
+        if color is None and v is None:
+            # Set default color if neither is specified
+            values["color"] = "#000000"
+        elif color is not None and v is not None:
+            raise ValueError("Cannot specify both 'color' and 'gradient'. Choose exactly one.")
+        
+        return v
+
+    @validator("stroke_gradient")
+    def validate_stroke_fill_options(cls, v: Optional[TextGradientConfig], values: Dict) -> Optional[TextGradientConfig]:
+        stroke_color = values.get("stroke_color")
+        stroke_width = values.get("stroke_width")
+        
+        # Only validate if stroke is being used
+        if stroke_width is not None and stroke_width > 0:
+            if stroke_color is not None and v is not None:
+                raise ValueError("Cannot specify both 'stroke_color' and 'stroke_gradient'. Choose exactly one.")
+            elif stroke_color is None and v is None:
+                raise ValueError("When 'stroke_width' is specified, must provide either 'stroke_color' or 'stroke_gradient'.")
+        
+        return v
 
 
 class ScreenshotDefinition(BaseModel):

@@ -505,7 +505,8 @@ class ScreenshotGenerator:
                         position=position,
                         font_size=item.size or 24,
                         font_weight=getattr(item, "weight", "normal") or "normal",
-                        color=item.color or "#000000",
+                        color=item.color,  # Don't default to black if gradient is provided
+                        gradient=item.gradient,  # Pass gradient configuration
                         alignment=getattr(item, "alignment", "center") or "center",
                         anchor="center",  # Use center anchor for percentage-based positioning
                         max_width=getattr(
@@ -514,6 +515,9 @@ class ScreenshotGenerator:
                         max_lines=getattr(
                             item, "maxLines", None
                         ),  # None means unlimited lines with wrapping
+                        stroke_width=getattr(item, "stroke_width", None),
+                        stroke_color=getattr(item, "stroke_color", None),
+                        stroke_gradient=getattr(item, "stroke_gradient", None),
                     )
                     text_overlays.append(text_overlay)
 
