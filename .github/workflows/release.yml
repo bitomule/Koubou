@@ -113,40 +113,11 @@ jobs:
       continue-on-error: true
         
     - name: Update Homebrew formula
-      env:
-        GITHUB_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
-        TAG_NAME: ${{ steps.tag.outputs.tag }}
-      run: |
-        # Clone the homebrew-tap repository
-        git clone https://github.com/bitomule/homebrew-tap.git /tmp/homebrew-tap
-        cd /tmp/homebrew-tap
-        
-        # Configure git
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        
-        # Get version (remove 'v' prefix)
-        VERSION=${TAG_NAME#v}
-        
-        # Download and calculate checksum for the PyPI release 
-        PYPI_URL="https://files.pythonhosted.org/packages/source/k/koubou/koubou-${VERSION}.tar.gz"
-        curl -L -o "koubou-${VERSION}.tar.gz" "$PYPI_URL"
-        SHA256=$(sha256sum "koubou-${VERSION}.tar.gz" | cut -d' ' -f1)
-        
-        # Update the formula with PyPI URL and checksum
-        sed -i "s|url \".*\"|url \"$PYPI_URL\"|" Formula/koubou.rb
-        sed -i "s|sha256 \".*\"|sha256 \"$SHA256\"|" Formula/koubou.rb
-        
-        # Update version in test assertion
-        sed -i "s|assert_match \"🎯 Koubou v.*\".*|assert_match \"🎯 Koubou v$VERSION\", shell_output(\"#{bin}/kou --version\")|" Formula/koubou.rb
-        
-        # Commit and push changes
-        git add Formula/koubou.rb
-        git commit -m "koubou: update to $TAG_NAME
-
-        - Update URL to GitHub release tarball
-        - Update SHA256 checksum: $SHA256
-        - Update version assertion in tests"
-        
-        git push https://x-access-token:${GITHUB_TOKEN}@github.com/bitomule/homebrew-tap.git master
+      uses: dawidd6/action-homebrew-bump-formula@v4
+      with:
+        token: ${{ secrets.COMMITTER_TOKEN }}
+        tap: bitomule/homebrew-tap
+        formula: koubou
+        tag: ${{ steps.tag.outputs.tag }}
+        revision: ${{ github.sha }}
       continue-on-error: true
