@@ -113,15 +113,38 @@ jobs:
       continue-on-error: true
         
     - name: Update Homebrew formula
-      uses: Justintime50/homebrew-releaser@v2
-      with:
-        homebrew_owner: bitomule
-        homebrew_tap: homebrew-tap
-        formula_folder: Formula
-        github_token: ${{ secrets.COMMITTER_TOKEN }}
-        depends_on: '"python@3.12"'
-        install: virtualenv_install_with_resources
-        formula_includes: 'include Language::Python::Virtualenv'
-        update_python_resources: true
-        debug: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
+        TAG_NAME: ${{ steps.tag.outputs.tag }}
+      run: |
+        # Clone the homebrew-tap repository
+        git clone https://github.com/bitomule/homebrew-tap.git /tmp/homebrew-tap
+        cd /tmp/homebrew-tap
+        
+        # Configure git
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        
+        # Download and calculate checksum for the release tarball
+        TARBALL_URL="https://github.com/bitomule/Koubou/archive/refs/tags/${TAG_NAME}.tar.gz"
+        curl -L -o "${TAG_NAME}.tar.gz" "$TARBALL_URL"
+        SHA256=$(sha256sum "${TAG_NAME}.tar.gz" | cut -d' ' -f1)
+        
+        # Update the formula
+        sed -i "s|url \".*\"|url \"$TARBALL_URL\"|" Formula/koubou.rb
+        sed -i "s|sha256 \".*\"|sha256 \"$SHA256\"|" Formula/koubou.rb
+        
+        # Update version in test assertion (remove 'v' prefix for version)
+        VERSION=${TAG_NAME#v}
+        sed -i "s|assert_match \"🎯 Koubou v.*\"|assert_match \"🎯 Koubou v$VERSION\"|" Formula/koubou.rb
+        
+        # Commit and push changes
+        git add Formula/koubou.rb
+        git commit -m "koubou: update to $TAG_NAME
+
+        - Update URL to GitHub release tarball
+        - Update SHA256 checksum: $SHA256
+        - Update version assertion in tests"
+        
+        git push https://x-access-token:${GITHUB_TOKEN}@github.com/bitomule/homebrew-tap.git main
       continue-on-error: true
