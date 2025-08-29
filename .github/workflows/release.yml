@@ -118,6 +118,7 @@ jobs:
         homebrew_owner: bitomule
         homebrew_tap: homebrew-tap
         formula_folder: Formula
+        formula_name: koubou
         github_token: ${{ secrets.COMMITTER_TOKEN }}
         depends_on: '"python@3.12"'
         install: virtualenv_install_with_resources
