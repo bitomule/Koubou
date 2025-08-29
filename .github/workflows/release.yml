@@ -136,7 +136,7 @@ jobs:
         
         # Update version in test assertion (remove 'v' prefix for version)
         VERSION=${TAG_NAME#v}
-        sed -i "s|assert_match \"🎯 Koubou v.*\"|assert_match \"🎯 Koubou v$VERSION\"|" Formula/koubou.rb
+        sed -i "s|assert_match \"🎯 Koubou v.*\".*|assert_match \"🎯 Koubou v$VERSION\", shell_output(\"#{bin}/kou --version\")|" Formula/koubou.rb
         
         # Commit and push changes
         git add Formula/koubou.rb
