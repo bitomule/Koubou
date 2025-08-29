@@ -120,4 +120,5 @@ jobs:
         formula: koubou
         tag: ${{ steps.tag.outputs.tag }}
         revision: ${{ github.sha }}
+        no_fork: true
       continue-on-error: true
