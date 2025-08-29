@@ -146,5 +146,5 @@ jobs:
         - Update SHA256 checksum: $SHA256
         - Update version assertion in tests"
         
-        git push https://x-access-token:${GITHUB_TOKEN}@github.com/bitomule/homebrew-tap.git main
+        git push https://x-access-token:${GITHUB_TOKEN}@github.com/bitomule/homebrew-tap.git master
       continue-on-error: true
