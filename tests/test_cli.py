@@ -3,7 +3,6 @@
 import tempfile
 from pathlib import Path
 
-import pytest
 import yaml
 from PIL import Image
 from typer.testing import CliRunner
@@ -11,7 +10,6 @@ from typer.testing import CliRunner
 from koubou.cli import app
 
 
-@pytest.mark.skip(reason="CLI tests need to be updated for new callback structure")
 class TestCLI:
     """Tests for command-line interface."""
 
@@ -43,12 +41,12 @@ class TestCLI:
         assert result.exit_code == 0
         assert "Koubou" in result.stdout
 
-    def test_create_config_command(self):
-        """Test create_config command."""
+    def test_create_config_option(self):
+        """Test --create-config option."""
         config_path = self.temp_dir / "test_config.yaml"
 
         result = self.runner.invoke(
-            app, ["create-config", str(config_path), "--name", "Test Project"]
+            app, ["--create-config", str(config_path), "--name", "Test Project"]
         )
 
         assert result.exit_code == 0
@@ -65,6 +63,12 @@ class TestCLI:
         assert (
             len(config["screenshots"]) == 3
         )  # Updated CLI generates 3 sample screenshots
+
+    def test_help_when_no_arguments(self):
+        """Test help is shown when no arguments provided."""
+        result = self.runner.invoke(app, [])
+        assert result.exit_code == 0
+        assert "Koubou" in result.stdout or "help" in result.stdout.lower()
 
     def test_direct_config_command(self):
         """Test direct config file command."""
@@ -94,7 +98,7 @@ class TestCLI:
         with open(config_path, "w") as f:
             yaml.dump(config_data, f)
 
-        result = self.runner.invoke(app, [str(config_path), "--verbose"])
+        result = self.runner.invoke(app, ["generate", str(config_path), "--verbose"])
 
         assert result.exit_code == 0
 
@@ -108,7 +112,7 @@ class TestCLI:
 
     def test_nonexistent_config(self):
         """Test direct command with nonexistent config."""
-        result = self.runner.invoke(app, ["nonexistent_config.yaml"])
+        result = self.runner.invoke(app, ["generate", "nonexistent_config.yaml"])
 
         assert result.exit_code == 1
         assert "not found" in result.stdout
@@ -130,7 +134,7 @@ class TestCLI:
         with open(config_path, "w") as f:
             yaml.dump(config_data, f)
 
-        result = self.runner.invoke(app, [str(config_path)])
+        result = self.runner.invoke(app, ["generate", str(config_path)])
 
         assert result.exit_code == 1
         assert "Invalid configuration" in result.stdout
@@ -163,7 +167,7 @@ class TestCLI:
         with open(config_path, "w") as f:
             yaml.dump(config_data, f)
 
-        result = self.runner.invoke(app, [str(config_path)])
+        result = self.runner.invoke(app, ["generate", str(config_path)])
 
         assert result.exit_code == 0
 

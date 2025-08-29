@@ -34,15 +34,8 @@ def setup_logging(verbose: bool = False) -> None:
     )
 
 
-@app.command("create-config")
-def create_config(
-    output_file: Path = typer.Argument(..., help="Output configuration file path"),
-    name: str = typer.Option(
-        "My Screenshot Project", "--name", "-n", help="Project name"
-    ),
-) -> None:
+def _create_config_file(output_file: Path, name: str) -> None:
     """Create a sample configuration file."""
-
     if output_file.exists():
         if not typer.confirm(f"File {output_file} already exists. Overwrite?"):
             raise typer.Exit(0)
@@ -195,17 +188,22 @@ def _show_results(results, output_dir: str) -> None:
     console.print(f"\n📁 Output directory: {Path(output_dir).absolute()}", style="blue")
 
 
-# Add global version option and primary config file handling
-@app.callback()
+# Main callback for global options
+@app.callback(invoke_without_command=True)
 def main_callback(
-    config_file: Optional[Path] = typer.Argument(None, help="YAML configuration file"),
+    ctx: typer.Context,
+    create_config: Optional[Path] = typer.Option(
+        None, "--create-config", help="Create a sample configuration file"
+    ),
+    name: str = typer.Option(
+        "My Screenshot Project", "--name", "-n", help="Project name for config creation"
+    ),
     version: bool = typer.Option(
         False,
         "--version",
         "-v",
         help="Show version and exit",
     ),
-    verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
 ):
     """🎯 Koubou (工房) - The artisan workshop for App Store screenshots"""
 
@@ -216,9 +214,24 @@ def main_callback(
         console.print(f"🎯 Koubou v{__version__}", style="green")
         raise typer.Exit()
 
-    # If no config file provided, just show help
-    if config_file is None:
-        return
+    # Handle create-config functionality
+    if create_config:
+        _create_config_file(create_config, name)
+        raise typer.Exit()
+
+    # If no subcommand invoked, show help
+    if ctx.invoked_subcommand is None:
+        console.print(ctx.get_help())
+        raise typer.Exit()
+
+
+# Generate command (default when config file is provided)
+@app.command()
+def generate(
+    config_file: Path = typer.Argument(..., help="YAML configuration file"),
+    verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
+):
+    """Generate screenshots from YAML configuration file"""
 
     # Generate screenshots from config file
     setup_logging(verbose)
