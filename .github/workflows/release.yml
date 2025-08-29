@@ -125,17 +125,19 @@ jobs:
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
         
-        # Download and calculate checksum for the release tarball
-        TARBALL_URL="https://github.com/bitomule/Koubou/archive/refs/tags/${TAG_NAME}.tar.gz"
-        curl -L -o "${TAG_NAME}.tar.gz" "$TARBALL_URL"
-        SHA256=$(sha256sum "${TAG_NAME}.tar.gz" | cut -d' ' -f1)
+        # Get version (remove 'v' prefix)
+        VERSION=${TAG_NAME#v}
         
-        # Update the formula
-        sed -i "s|url \".*\"|url \"$TARBALL_URL\"|" Formula/koubou.rb
+        # Download and calculate checksum for the PyPI release 
+        PYPI_URL="https://files.pythonhosted.org/packages/source/k/koubou/koubou-${VERSION}.tar.gz"
+        curl -L -o "koubou-${VERSION}.tar.gz" "$PYPI_URL"
+        SHA256=$(sha256sum "koubou-${VERSION}.tar.gz" | cut -d' ' -f1)
+        
+        # Update the formula with PyPI URL and checksum
+        sed -i "s|url \".*\"|url \"$PYPI_URL\"|" Formula/koubou.rb
         sed -i "s|sha256 \".*\"|sha256 \"$SHA256\"|" Formula/koubou.rb
         
-        # Update version in test assertion (remove 'v' prefix for version)
-        VERSION=${TAG_NAME#v}
+        # Update version in test assertion
         sed -i "s|assert_match \"🎯 Koubou v.*\".*|assert_match \"🎯 Koubou v$VERSION\", shell_output(\"#{bin}/kou --version\")|" Formula/koubou.rb
         
         # Commit and push changes
