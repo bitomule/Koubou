@@ -34,6 +34,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "rich>=13.0.0",  # For beautiful CLI output
     "typer>=0.9.0",  # Modern CLI framework
+    "watchdog>=3.0.0",  # File system monitoring for live editing
 ]
 
 [project.optional-dependencies]

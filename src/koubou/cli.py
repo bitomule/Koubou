@@ -1,18 +1,24 @@
 """Command line interface for Koubou."""
 
 import logging
+import signal
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Set
 
 import typer
 import yaml
 from rich.console import Console
+from rich.live import Live
 from rich.logging import RichHandler
+from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
 
 from .config import ProjectConfig
 from .exceptions import KoubouError
 from .generator import ScreenshotGenerator
+from .live_generator import LiveScreenshotGenerator
+from .watcher import LiveWatcher
 
 app = typer.Typer(
     name="kou",
@@ -51,9 +57,8 @@ def _create_config_file(output_file: Path, name: str) -> None:
                 "direction": 180,
             }
         },
-        "screenshots": [
-            {
-                "name": "welcome_screen",
+        "screenshots": {
+            "welcome_screen": {
                 "content": [
                     {
                         "type": "text",
@@ -79,8 +84,7 @@ def _create_config_file(output_file: Path, name: str) -> None:
                     },
                 ],
             },
-            {
-                "name": "features_screen",
+            "features_screen": {
                 "content": [
                     {
                         "type": "text",
@@ -99,8 +103,7 @@ def _create_config_file(output_file: Path, name: str) -> None:
                     },
                 ],
             },
-            {
-                "name": "gradient_showcase",
+            "gradient_showcase": {
                 "content": [
                     {
                         "type": "text",
@@ -149,7 +152,7 @@ def _create_config_file(output_file: Path, name: str) -> None:
                     },
                 ],
             },
-        ],
+        },
     }
 
     with open(output_file, "w") as f:
@@ -272,7 +275,7 @@ def generate(
             result_paths = generator.generate_project(project_config, config_dir)
             # Convert to results format for display
             results = []
-            for i, screenshot_def in enumerate(project_config.screenshots):
+            for i, (screenshot_id, screenshot_def) in enumerate(project_config.screenshots.items()):
                 if i < len(result_paths):
                     results.append((screenshot_def.name, result_paths[i], True, None))
                 else:
@@ -308,6 +311,166 @@ def generate(
         if verbose:
             console.print_exception()
         raise typer.Exit(1)
+
+
+@app.command()
+def live(
+    config_file: Path = typer.Argument(..., help="YAML configuration file to watch"),
+    verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
+    debounce: float = typer.Option(0.5, "--debounce", help="Debounce delay in seconds"),
+):
+    """🔄 Live editing mode - regenerate screenshots when config or assets change"""
+
+    setup_logging(verbose)
+
+    try:
+        # Validate config file exists
+        if not config_file.exists():
+            console.print(
+                f"❌ Configuration file not found: {config_file}", style="red"
+            )
+            raise typer.Exit(1)
+
+        # Initialize live generator and watcher
+        live_generator = LiveScreenshotGenerator(config_file)
+        watcher = LiveWatcher(config_file, debounce_delay=debounce)
+
+        # Setup signal handling for graceful shutdown
+        stop_event = False
+
+        def signal_handler(signum, frame):
+            nonlocal stop_event
+            stop_event = True
+            console.print("\n🛑 Shutting down live mode...", style="yellow")
+
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+
+        # Create status display
+        status_display = _create_live_status_display()
+
+        with Live(
+            status_display, console=console, refresh_per_second=4
+        ):
+            # Initial generation
+            console.print("🚀 Starting initial generation...", style="blue")
+            initial_result = live_generator.initial_generation()
+
+            if initial_result.has_errors:
+                console.print("❌ Initial generation had errors:", style="red")
+                for error in initial_result.config_errors:
+                    console.print(f"  • {error}", style="red")
+                for screenshot_id, error in initial_result.failed_screenshots.items():
+                    console.print(f"  • {screenshot_id}: {error}", style="red")
+            else:
+                console.print(
+                    f"✅ Initial generation complete: "
+                    f"{initial_result.success_count} screenshots",
+                    style="green",
+                )
+
+            # Setup file change callback
+            def on_files_changed(changed_files: Set[Path]):
+                console.print(
+                    f"📝 {len(changed_files)} file(s) changed, processing...",
+                    style="cyan",
+                )
+                result = live_generator.handle_file_changes(changed_files)
+
+                if result.regenerated_screenshots:
+                    console.print(
+                        f"✅ Regenerated "
+                        f"{len(result.regenerated_screenshots)} screenshot(s): "
+                        f"{', '.join(result.regenerated_screenshots)}",
+                        style="green",
+                    )
+
+                if result.failed_screenshots:
+                    console.print("❌ Some regenerations failed:", style="red")
+                    for screenshot_id, error in result.failed_screenshots.items():
+                        console.print(f"  • {screenshot_id}: {error}", style="red")
+
+                if result.config_errors:
+                    console.print("❌ Config errors:", style="red")
+                    for error in result.config_errors:
+                        console.print(f"  • {error}", style="red")
+
+            # Start watching
+            watcher.set_change_callback(on_files_changed)
+
+            # Add asset paths to watcher
+            asset_paths = live_generator.get_asset_paths()
+            if asset_paths:
+                watcher.add_asset_paths(asset_paths)
+                console.print(
+                    f"👁️  Watching {len(asset_paths)} asset file(s)", style="blue"
+                )
+
+            watcher.start()
+
+            # Update status display
+            _update_live_status(
+                status_display,
+                live_generator,
+                watcher,
+                initial_result.success_count,
+                initial_result.error_count,
+            )
+
+            console.print("👁️  Live mode active - press Ctrl+C to stop", style="green")
+            console.print(f"📁 Config: {config_file}", style="blue")
+            console.print(f"⏱️  Debounce: {debounce}s", style="blue")
+
+            # Keep running until signal received
+            try:
+                while not stop_event:
+                    import time
+
+                    time.sleep(0.1)
+            except KeyboardInterrupt:
+                pass
+
+        # Cleanup
+        watcher.stop()
+        console.print("✅ Live mode stopped", style="green")
+
+    except KoubouError as e:
+        console.print(f"❌ {e}", style="red")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"❌ Unexpected error: {e}", style="red")
+        if verbose:
+            console.print_exception()
+        raise typer.Exit(1)
+
+
+def _create_live_status_display():
+    """Create the status display for live mode."""
+    return Panel(
+        Text("Starting live mode...", style="cyan"),
+        title="🔄 Live Mode Status",
+        border_style="blue",
+    )
+
+
+def _update_live_status(
+    status_display, live_generator, watcher, success_count, error_count
+):
+    """Update the live status display with current information."""
+    status_text = Text()
+    status_text.append(f"✅ Screenshots generated: {success_count}\n", style="green")
+    if error_count > 0:
+        status_text.append(f"❌ Errors: {error_count}\n", style="red")
+
+    watched_files = watcher.get_watched_files()
+    status_text.append(f"👁️  Watching {len(watched_files)} file(s)\n", style="blue")
+
+    dependency_info = live_generator.get_dependency_summary()
+    status_text.append(
+        f"📦 Dependencies: {dependency_info['total_dependencies']}\n", style="cyan"
+    )
+
+    status_display.renderable = status_text
 
 
 def main() -> None:

@@ -319,8 +319,8 @@ class ProjectConfig(BaseModel):
         default=["iPhone 15 Pro Portrait"], description="Target devices"
     )
     defaults: Optional[Dict] = Field(default=None, description="Default settings")
-    screenshots: List[ScreenshotDefinition] = Field(
-        ..., description="Screenshot definitions"
+    screenshots: Dict[str, ScreenshotDefinition] = Field(
+        ..., description="Screenshot definitions mapped by ID"
     )
 
     @validator("project")

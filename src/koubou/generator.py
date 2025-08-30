@@ -358,10 +358,9 @@ class ScreenshotGenerator:
             device_frame = self._map_device_name(project_config.devices[0])
 
         results = []
-        for i, screenshot_def in enumerate(project_config.screenshots, 1):
-            logger.info(
-                f"[{i}/{len(project_config.screenshots)}] {screenshot_def.name}"
-            )
+        screenshot_items = list(project_config.screenshots.items())
+        for i, (screenshot_id, screenshot_def) in enumerate(screenshot_items, 1):
+            logger.info(f"[{i}/{len(project_config.screenshots)}] {screenshot_id}")
             try:
                 # Convert to ScreenshotConfig and generate
                 temp_config = self._convert_to_screenshot_config(
@@ -370,16 +369,15 @@ class ScreenshotGenerator:
                     default_background,
                     project_config.project.output_dir,
                     config_dir,
+                    screenshot_id,  # Pass the screenshot ID
                 )
                 if temp_config:
                     output_path = self.generate_screenshot(temp_config)
                     results.append(output_path)
                 else:
-                    logger.warning(
-                        f"Skipping {screenshot_def.name}: no source image found"
-                    )
+                    logger.warning(f"Skipping {screenshot_id}: no source image found")
             except Exception as _e:
-                logger.error(f"Failed to generate {screenshot_def.name}: {_e}")
+                logger.error(f"Failed to generate {screenshot_id}: {_e}")
                 # Continue with next screenshot instead of failing entire project
                 continue
 
@@ -408,6 +406,7 @@ class ScreenshotGenerator:
         default_background,
         output_dir,
         config_dir=None,
+        screenshot_id=None,
     ):
         """Convert ScreenshotDefinition to ScreenshotConfig for generation."""
 
@@ -447,7 +446,7 @@ class ScreenshotGenerator:
         # Skip if no source image found
         if not source_image_path or not Path(source_image_path).exists():
             logger.warning(
-                f"Source image not found for {screenshot_def.name}: {source_image_path}"
+                f"Source image not found for {screenshot_id}: {source_image_path}"
             )
             return None
 
@@ -545,7 +544,7 @@ class ScreenshotGenerator:
         # Create screenshot config with calculated dimensions
         # Store scale factor for use during generation
         config = ScreenshotConfig(
-            name=screenshot_def.name,
+            name=screenshot_id,
             source_image=source_image_path,
             device_frame=device_frame,
             output_size=(canvas_width, canvas_height),  # Dynamic size based on content
@@ -555,7 +554,7 @@ class ScreenshotGenerator:
             image_scale=image_config["scale"] if image_config else 1.0,
             image_frame=image_config["frame"] if image_config else False,
             output_path=str(
-                self._resolve_output_path(output_dir, screenshot_def.name, config_dir)
+                self._resolve_output_path(output_dir, screenshot_id, config_dir)
             ),
         )
 
