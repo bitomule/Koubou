@@ -299,22 +299,11 @@ class ScreenshotGenerator:
             result = Image.composite(result, transparent_bg, canvas_mask)
 
             # Step 3: Overlay the scaled and positioned frame on top of masked content
-            if (
-                frame_x >= 0
-                and frame_y >= 0
-                and frame_x + scaled_frame_width <= canvas.width
-                and frame_y + scaled_frame_height <= canvas.height
-            ):
-                # Frame fits within canvas - paste it
-                frame_overlay = Image.new("RGBA", canvas.size, (255, 255, 255, 0))
-                frame_overlay.paste(scaled_frame, (frame_x, frame_y), scaled_frame)
-                result = Image.alpha_composite(result, frame_overlay)
-                logger.info("📱 Applied device frame overlay successfully")
-
-            else:
-                logger.warning(
-                    "Frame would extend beyond canvas bounds - skipping frame overlay"
-                )
+            # Apply frame regardless of canvas bounds - let user control positioning
+            frame_overlay = Image.new("RGBA", canvas.size, (255, 255, 255, 0))
+            frame_overlay.paste(scaled_frame, (frame_x, frame_y), scaled_frame)
+            result = Image.alpha_composite(result, frame_overlay)
+            logger.info("📱 Applied device frame overlay successfully")
 
             return result
 
