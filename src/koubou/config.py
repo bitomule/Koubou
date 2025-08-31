@@ -157,11 +157,13 @@ class TextOverlay(BaseModel):
         if self.stroke_width is not None and self.stroke_width > 0:
             if self.stroke_color is not None and self.stroke_gradient is not None:
                 raise ValueError(
-                    "Cannot specify both 'stroke_color' and 'stroke_gradient'. Choose exactly one."
+                    "Cannot specify both 'stroke_color' and 'stroke_gradient'. "
+                    "Choose exactly one."
                 )
             elif self.stroke_color is None and self.stroke_gradient is None:
                 raise ValueError(
-                    "When 'stroke_width' is specified, must provide either 'stroke_color' or 'stroke_gradient'."
+                    "When 'stroke_width' is specified, must provide either "
+                    "'stroke_color' or 'stroke_gradient'."
                 )
         return self
 
@@ -283,11 +285,13 @@ class ContentItem(BaseModel):
         if stroke_width is not None and stroke_width > 0:
             if stroke_color is not None and v is not None:
                 raise ValueError(
-                    "Cannot specify both 'stroke_color' and 'stroke_gradient'. Choose exactly one."
+                    "Cannot specify both 'stroke_color' and 'stroke_gradient'. "
+                    "Choose exactly one."
                 )
             elif stroke_color is None and v is None:
                 raise ValueError(
-                    "When 'stroke_width' is specified, must provide either 'stroke_color' or 'stroke_gradient'."
+                    "When 'stroke_width' is specified, must provide either "
+                    "'stroke_color' or 'stroke_gradient'."
                 )
 
         return v
@@ -298,7 +302,9 @@ class ScreenshotDefinition(BaseModel):
 
     background: Optional[GradientConfig] = Field(
         default=None,
-        description="Background configuration (optional - uses default if not specified)",
+        description=(
+            "Background configuration (optional - uses default if not specified)"
+        ),
     )
     content: List[ContentItem] = Field(..., description="List of content items")
 
