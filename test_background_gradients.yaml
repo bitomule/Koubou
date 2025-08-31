@@ -3,7 +3,7 @@ project:
   output_dir: "test_output"
 
 screenshots:
-  - name: linear_gradient_test
+  linear_gradient_test:
     background:
       type: linear
       colors: ["#FF6B6B", "#4ECDC4", "#45B7D1"] 
@@ -11,7 +11,7 @@ screenshots:
       direction: 45
     content:
       - type: image
-        source: "/Users/davidcollado/Projects/Undolly/Marketing/Screenshots/Sources/01_dashboard_home.png"
+        asset: "/Users/davidcollado/Projects/Undolly/Marketing/Screenshots/Sources/01_dashboard_home.png"
         position: ["50%", "40%"]
         scale: 0.8
         frame: true
@@ -22,7 +22,7 @@ screenshots:
         color: "#FFFFFF"
         weight: bold
         
-  - name: radial_gradient_test
+  radial_gradient_test:
     background:
       type: radial
       colors: ["#667eea", "#764ba2"]
@@ -31,7 +31,7 @@ screenshots:
       radius: "80%"
     content:
       - type: image
-        source: "/Users/davidcollado/Projects/Undolly/Marketing/Screenshots/Sources/01_dashboard_home.png"
+        asset: "/Users/davidcollado/Projects/Undolly/Marketing/Screenshots/Sources/01_dashboard_home.png"
         position: ["50%", "40%"]
         scale: 0.8
         frame: true
@@ -42,7 +42,7 @@ screenshots:
         color: "#FFFFFF"
         weight: bold
         
-  - name: conic_gradient_test
+  conic_gradient_test:
     background:
       type: conic
       colors: ["#FF6B6B", "#4ECDC4", "#45B7D1"]
@@ -51,7 +51,7 @@ screenshots:
       start_angle: 45
     content:
       - type: image
-        source: "/Users/davidcollado/Projects/Undolly/Marketing/Screenshots/Sources/01_dashboard_home.png"
+        asset: "/Users/davidcollado/Projects/Undolly/Marketing/Screenshots/Sources/01_dashboard_home.png"
         position: ["50%", "40%"]
         scale: 0.8
         frame: true
@@ -62,13 +62,13 @@ screenshots:
         color: "#FFFFFF"
         weight: bold
         
-  - name: solid_background_test
+  solid_background_test:
     background:
       type: solid
       colors: ["#8B5CF6"]
     content:
       - type: image
-        source: "/Users/davidcollado/Projects/Undolly/Marketing/Screenshots/Sources/01_dashboard_home.png"
+        asset: "/Users/davidcollado/Projects/Undolly/Marketing/Screenshots/Sources/01_dashboard_home.png"
         position: ["50%", "40%"]
         scale: 0.8
         frame: true

@@ -124,16 +124,15 @@ class TestProjectConfig:
 
         config = ProjectConfig(
             project=ProjectInfo(name="Test Project", output_dir="./output"),
-            screenshots=[
-                ScreenshotDefinition(
-                    name="Test Screenshot",
+            screenshots={
+                "test_screenshot": ScreenshotDefinition(
                     content=[
                         ContentItem(
                             type="text", content="Hello World", position=("50%", "50%")
                         )
                     ],
                 )
-            ],
+            },
         )
         assert config.project.name == "Test Project"
         assert len(config.screenshots) == 1

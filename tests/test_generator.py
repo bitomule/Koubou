@@ -193,9 +193,8 @@ class TestScreenshotGenerator:
             project=ProjectInfo(
                 name="Test Project", output_dir=str(self.temp_dir / "project_output")
             ),
-            screenshots=[
-                ScreenshotDefinition(
-                    name="Screenshot 1",
+            screenshots={
+                "screenshot1": ScreenshotDefinition(
                     content=[
                         ContentItem(
                             type="image",
@@ -204,8 +203,7 @@ class TestScreenshotGenerator:
                         )
                     ],
                 ),
-                ScreenshotDefinition(
-                    name="Screenshot 2",
+                "screenshot2": ScreenshotDefinition(
                     content=[
                         ContentItem(
                             type="image",
@@ -217,7 +215,7 @@ class TestScreenshotGenerator:
                         ),
                     ],
                 ),
-            ],
+            },
         )
 
         results = self.generator.generate_project(project_config)

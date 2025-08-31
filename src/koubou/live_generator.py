@@ -44,7 +44,7 @@ class LiveGenerationResult:
 
 
 class LiveScreenshotGenerator:
-    """Handles live screenshot generation with change detection and selective 
+    """Handles live screenshot generation with change detection and selective
     rebuilding."""
 
     def __init__(self, config_file: Path):

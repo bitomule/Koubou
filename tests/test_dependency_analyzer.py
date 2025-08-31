@@ -111,7 +111,7 @@ class TestDependencyAnalyzer:
                             asset="assets/welcome.png",
                             position=("50%", "50%"),
                         ),
-                    ]
+                    ],
                 ),
                 "features_screen": ScreenshotDefinition(
                     name="Features Screen",
@@ -122,11 +122,11 @@ class TestDependencyAnalyzer:
                             asset="assets/features.png",
                             position=("50%", "50%"),
                         ),
-                    ]
+                    ],
                 ),
                 "text_only_screen": ScreenshotDefinition(
                     name="Text Only Screen",
-                    content=[ContentItem(type="text", content="Text Only")]
+                    content=[ContentItem(type="text", content="Text Only")],
                 ),
             },
         )

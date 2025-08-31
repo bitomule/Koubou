@@ -275,12 +275,14 @@ def generate(
             result_paths = generator.generate_project(project_config, config_dir)
             # Convert to results format for display
             results = []
-            for i, (screenshot_id, screenshot_def) in enumerate(project_config.screenshots.items()):
+            for i, (screenshot_id, screenshot_def) in enumerate(
+                project_config.screenshots.items()
+            ):
                 if i < len(result_paths):
-                    results.append((screenshot_def.name, result_paths[i], True, None))
+                    results.append((screenshot_id, result_paths[i], True, None))
                 else:
                     results.append(
-                        (screenshot_def.name, None, False, "Generation failed")
+                        (screenshot_id, None, False, "Generation failed")
                     )
         except Exception as _e:
             console.print(f"❌ Project generation failed: {_e}", style="red")
@@ -349,9 +351,7 @@ def live(
         # Create status display
         status_display = _create_live_status_display()
 
-        with Live(
-            status_display, console=console, refresh_per_second=4
-        ):
+        with Live(status_display, console=console, refresh_per_second=4):
             # Initial generation
             console.print("🚀 Starting initial generation...", style="blue")
             initial_result = live_generator.initial_generation()

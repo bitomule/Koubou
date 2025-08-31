@@ -296,7 +296,6 @@ class ContentItem(BaseModel):
 class ScreenshotDefinition(BaseModel):
     """Screenshot definition with content items."""
 
-    name: str = Field(..., description="Screenshot name")
     background: Optional[GradientConfig] = Field(
         default=None,
         description="Background configuration (optional - uses default if not specified)",

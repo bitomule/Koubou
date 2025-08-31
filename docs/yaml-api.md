@@ -1,75 +1,195 @@
-# 🎯 Koubou YAML API Reference
+# 🎯 Koubou v0.5.0 YAML API Reference
 
-Complete reference for Koubou's YAML configuration format with all options, defaults, and examples.
+Complete reference for Koubou's YAML configuration format with all options, defaults, and examples. This documentation covers the v0.5.0 API with live editing support and dictionary-based screenshot configuration.
 
 ## Table of Contents
 
 - [Project Configuration](#project-configuration)
+- [Device Configuration](#device-configuration)
+- [Default Settings](#default-settings)
 - [Screenshot Configuration](#screenshot-configuration)
+- [Content Items](#content-items)
 - [Background Configuration](#background-configuration)
-- [Text Overlays](#text-overlays)
-- [Device Frames](#device-frames)
+- [Live Editing Features](#live-editing-features)
 - [Complete Examples](#complete-examples)
+- [Breaking Changes in v0.5.0](#breaking-changes-in-v050)
 
 ## Project Configuration
 
-The root level configuration for your Koubou project.
+The root-level configuration for your Koubou project.
 
 ```yaml
-project_name: string          # Project name/identifier
-output_directory: string      # Output directory path
+project:
+  name: string               # Project name/identifier (required)
+  output_dir: string         # Output directory path (default: "output")
 ```
 
 ### Defaults
-- `project_name`: `"Koubou Project"`
-- `output_directory`: `"output"`
+- `output_dir`: `"output"`
 
 ### Example
 ```yaml
-project_name: "My Beautiful App Screenshots"
-output_directory: "app-store-assets"
+project:
+  name: "My Beautiful App Screenshots"
+  output_dir: "Screenshots/Generated"
+```
+
+---
+
+## Device Configuration
+
+Target devices for screenshot generation. Each screenshot will be generated for all specified devices.
+
+```yaml
+devices: [string, ...]       # Array of device frame names
+```
+
+### Example
+```yaml
+devices:
+  - "iPhone 15 Pro Portrait"
+  - "iPad Air 13\" - M2 - Space Gray - Portrait"
+  - "MacBook Pro 2021 16"
+```
+
+### Available Device Frames
+
+Popular device frame options include:
+
+#### iPhone Frames
+- `"iPhone 16 Pro Portrait"`, `"iPhone 16 Pro Landscape"`
+- `"iPhone 15 Pro Max Portrait"`, `"iPhone 15 Pro Max Landscape"`
+- `"iPhone 14 Pro Portrait"`, `"iPhone 14 Pro Landscape"`
+
+#### iPad Frames  
+- `"iPad Air 11\" - M2 - Space Gray - Portrait"`
+- `"iPad Pro 13 - M4 - Silver - Landscape"`
+
+#### Mac Frames
+- `"MacBook Pro 2021 14"`, `"MacBook Pro 2021 16"`
+- `"MacBook Air 2022"`, `"iMac 24\" - Silver"`
+
+---
+
+## Default Settings
+
+Settings applied to all screenshots unless overridden at the screenshot level.
+
+```yaml
+defaults:
+  background: object?        # Default background configuration
+  # Future: Additional default settings
+```
+
+### Example
+```yaml
+defaults:
+  background:
+    type: linear
+    colors: ["#E8F0FE", "#F8FBFF"]
+    direction: 180
 ```
 
 ---
 
 ## Screenshot Configuration
 
-Individual screenshot definitions within the `screenshots` array.
+**Breaking Change in v0.5.0**: Screenshots are now organized as a dictionary with IDs as keys, not an array.
 
 ```yaml
 screenshots:
-  - name: string              # Screenshot identifier (required)
-    source_image: string      # Path to source image (required)
-    output_size: [int, int]   # Output dimensions [width, height] (required)
-    device_frame: string?     # Device frame name (optional)
-    output_path: string?      # Custom output path (optional)
-    background: object?       # Background configuration (optional)
-    text_overlays: array?     # Text overlay definitions (optional)
-    image_position: [string, string]?  # Image position ["x%", "y%"] (optional)
-    image_scale: float?       # Image scale factor (optional)
-    image_frame: boolean?     # Apply frame to positioned image (optional)
+  screenshot_id:             # Unique identifier for this screenshot
+    content: [object, ...]   # Array of content items (text, images)
+    background: object?      # Override default background (optional)
 ```
-
-### Defaults
-- `device_frame`: `null` (no frame)
-- `output_path`: Generated from `name` and `output_directory`
-- `background`: `null` (transparent/white)
-- `text_overlays`: `[]` (empty array)
-- `image_position`: `null` (centered)
-- `image_scale`: `null` (auto-fit)
-- `image_frame`: `false`
 
 ### Example
 ```yaml
 screenshots:
-  - name: "Home Screen"
-    source_image: "screenshots/home.png"
-    output_size: [1320, 2868]
-    device_frame: "iPhone 16 Pro - Black Titanium - Portrait"
-    background:
-      type: "linear"
-      colors: ["#667eea", "#764ba2"]
+  welcome_screen:            # Screenshot ID
+    content:
+      - type: "text"
+        content: "Welcome!"
+        position: ["50%", "20%"]
+        size: 48
+        color: "#8E4EC6"
+      - type: "image" 
+        asset: "screenshots/welcome.png"
+        position: ["50%", "60%"]
+        frame: true
+  
+  features_overview:         # Another screenshot ID
+    content:
+      - type: "text"
+        content: "Amazing Features"
+        position: ["50%", "15%"]
 ```
+
+---
+
+## Content Items
+
+Content items define the visual elements within each screenshot.
+
+### Text Content Item
+
+```yaml
+- type: "text"
+  content: string            # Text to display (required)
+  position: [string, string] # Position as ["50%", "20%"] or ["100px", "50px"] (required)
+  size: int?                 # Font size in pixels (default: 24)
+  
+  # Fill Options (choose exactly one):
+  color: string?             # Solid color (hex format, e.g., "#000000")
+  # OR
+  gradient: object?          # Text gradient (see Gradient Configuration below)
+  
+  weight: string?            # "normal" or "bold" (default: "normal")
+  alignment: string?         # "left", "center", "right" (default: "center")
+  
+  # Stroke Options (optional):
+  stroke_width: int?         # Stroke width in pixels
+  stroke_color: string?      # Solid stroke color (hex format)
+  # OR
+  stroke_gradient: object?   # Gradient stroke (same structure as gradient)
+```
+
+#### Text Gradient Configuration
+
+```yaml
+gradient:
+  type: "linear" | "radial" | "conic"  # Gradient type (required)
+  colors: [string, ...]      # Hex colors array (minimum 2) (required)
+  positions: [float, ...]?   # Color stops 0.0-1.0 (optional)
+  
+  # Linear gradient options:
+  direction: float?          # Angle in degrees (default: 0)
+  
+  # Radial gradient options:
+  center: [string, string]?  # Center point ["50%", "50%"] (default: ["50%", "50%"])
+  radius: string?            # Radius "50%" or "100px" (default: "50%")
+  
+  # Conic gradient options:
+  center: [string, string]?  # Center point (default: ["50%", "50%"])
+  start_angle: float?        # Starting angle in degrees (default: 0)
+```
+
+### Image Content Item
+
+```yaml
+- type: "image"
+  asset: string              # Path to image file (required)
+  position: [string, string] # Position as ["50%", "60%"] or ["200px", "300px"] (required)
+  scale: float?              # Scale factor (default: 1.0)
+  frame: bool?               # Apply device frame around image (default: false)
+```
+
+### Position Format
+
+Positions can be specified as:
+- **Percentages**: `["50%", "20%"]` - Relative to canvas size
+- **Pixels**: `["100px", "50px"]` - Absolute positioning
+- **Mixed**: `["50%", "100px"]` - Percentage width, pixel height
 
 ---
 
@@ -81,8 +201,12 @@ Professional background rendering with gradients and solid colors.
 background:
   type: "solid" | "linear" | "radial" | "conic"  # Background type (required)
   colors: [string, ...]      # Array of hex colors (required)
-  direction: float?          # Direction in degrees (optional)
-  center: [string, string]?  # Center point ["x%", "y%"] (optional)
+  
+  # Linear gradient options:
+  direction: float?          # Direction in degrees (default: 0)
+  
+  # Radial/Conic gradient options:
+  center: [string, string]?  # Center point ["x%", "y%"] (default: ["50%", "50%"])
 ```
 
 ### Background Types
@@ -118,152 +242,64 @@ background:
   center: ["50%", "50%"]     # Center point (default: ["50%", "50%"])
 ```
 
-### Defaults
-- `direction`: `0` (degrees, for linear gradients)
-- `center`: `["50%", "50%"]` (for radial and conic gradients)
-
 ### Color Format
 Colors must be in hex format: `#RRGGBB` or `#RRGGBBAA`
 
 ---
 
-## Text Overlays
+## Live Editing Features
 
-Rich typography system with advanced text rendering capabilities.
+**New in v0.5.0**: Live editing automatically regenerates screenshots when files change.
 
-```yaml
-text_overlays:
-  - content: string          # Text content (required)
-    position: [int, int]     # X, Y position in pixels (required)
-    font_size: int           # Font size in pixels
-    font_family: string      # Font family name
-    font_weight: string      # Font weight
-    color: string            # Text color in hex
-    alignment: string        # Text alignment
-    anchor: string           # Anchor point for positioning
-    max_width: int?          # Maximum width for text wrapping
-    max_lines: int?          # Maximum number of lines
-    line_height: float       # Line height multiplier
-    stroke_width: int?       # Text outline width
-    stroke_color: string?    # Text outline color
-```
-
-### Defaults
-- `font_size`: `24`
-- `font_family`: `"Arial"`
-- `font_weight`: `"normal"`
-- `color`: `"#000000"`
-- `alignment`: `"center"`
-- `anchor`: `"center"`
-- `max_width`: `null` (no wrapping)
-- `max_lines`: `null` (no limit)
-- `line_height`: `1.2`
-- `stroke_width`: `null` (no stroke)
-- `stroke_color`: `null`
-
-### Font Weights
-- `"normal"` - Regular weight
-- `"bold"` - Bold weight
-
-### Text Alignment
-- `"left"` - Left aligned
-- `"center"` - Center aligned  
-- `"right"` - Right aligned
-
-### Anchor Points
-Determines how the position relates to the text:
-- `"top-left"`, `"top-center"`, `"top-right"`
-- `"center-left"`, `"center"`, `"center-right"`
-- `"bottom-left"`, `"bottom-center"`, `"bottom-right"`
-
-### Examples
-
-#### Basic Text
-```yaml
-text_overlays:
-  - content: "Beautiful App"
-    position: [100, 200]
-    font_size: 48
-    color: "#ffffff"
-```
-
-#### Advanced Text with Stroke
-```yaml
-text_overlays:
-  - content: "Professional Quality"
-    position: [640, 100]
-    font_size: 52
-    font_weight: "bold"
-    color: "#ffffff"
-    alignment: "center"
-    anchor: "center"
-    max_width: 800
-    line_height: 1.3
-    stroke_width: 2
-    stroke_color: "#000000"
-```
-
-#### Multi-line Text Block
-```yaml
-text_overlays:
-  - content: "Create stunning screenshots with professional quality and artisan attention to detail."
-    position: [50, 300]
-    font_size: 24
-    color: "#333333"
-    alignment: "left"
-    max_width: 600
-    max_lines: 3
-    line_height: 1.4
-```
-
----
-
-## Device Frames
-
-Koubou includes 100+ professionally crafted device frames.
-
-### Frame Categories
-
-#### iPhone Frames
-- `iPhone 16 Pro - Black Titanium - Portrait`
-- `iPhone 16 Pro - Desert Titanium - Portrait`
-- `iPhone 16 Pro - Natural Titanium - Portrait`
-- `iPhone 16 Pro - White Titanium - Portrait`
-- `iPhone 16 - Black - Portrait`
-- `iPhone 16 - Pink - Portrait`
-- `iPhone 16 - Teal - Portrait`
-- `iPhone 16 - Ultramarine - Portrait`
-- `iPhone 16 - White - Portrait`
-- `iPhone 15 Pro Max - Black Titanium - Portrait`
-- And many more...
-
-#### iPad Frames
-- `iPad Air 11" - M2 - Space Gray - Portrait`
-- `iPad Air 11" - M2 - Space Gray - Landscape`
-- `iPad Air 13" - M2 - Blue - Portrait`
-- `iPad Air 13" - M2 - Blue - Landscape`
-- `iPad Pro 11 - M4 - Silver - Portrait`
-- `iPad Pro 13 - M4 - Space Gray - Landscape`
-- And many more...
-
-#### Mac Frames
-- `MacBook Pro 2021 14`
-- `MacBook Pro 2021 16`
-- `MacBook Air 2022`
-- `iMac 24" - Silver`
-- And more...
-
-#### Apple Watch Frames
-- `Watch Series 7 45 Midnight`
-- `Watch Series 7 45 Starlight`
-- `Watch Ultra 2022`
-- And more...
-
-### Finding Available Frames
-Use the CLI to list all available frames:
+### Usage
 ```bash
-kou list-frames
+# Start live editing mode
+kou live my-screenshots.yaml
+
+# With custom debounce delay  
+kou live my-screenshots.yaml --debounce 1.0
+
+# With verbose logging
+kou live my-screenshots.yaml --verbose
 ```
+
+### How It Works
+
+1. **File Monitoring**: Watches your YAML config file and all referenced assets
+2. **Dependency Analysis**: Automatically detects which assets each screenshot uses
+3. **Smart Regeneration**: Only regenerates affected screenshots when changes occur
+4. **Debounced Updates**: Prevents excessive regeneration during rapid edits
+
+### Live Editing Workflow
+
+```yaml
+# my-app.yaml
+project:
+  name: "My App"
+  output_dir: "Screenshots/Live"
+
+screenshots:
+  main_screen:
+    content:
+      - type: "image"
+        asset: "assets/main-screen.png"    # Monitored for changes
+        position: ["50%", "60%"]
+        frame: true
+      - type: "text"
+        content: "Revolutionary App"        # Text changes trigger regeneration
+        position: ["50%", "15%"]
+        size: 48
+        color: "#8E4EC6"
+```
+
+**Live editing monitors:**
+- Changes to the YAML configuration file
+- Changes to referenced asset files (images)
+- Supports both absolute and relative asset paths
+
+### Platform Support
+- **Live Editing**: macOS and Linux only
+- **Standard Generation**: macOS, Linux, and Windows
 
 ---
 
@@ -271,132 +307,238 @@ kou list-frames
 
 ### Minimal Configuration
 ```yaml
-project_name: "Simple App"
-output_directory: "output"
+project:
+  name: "Simple App"
+  output_dir: "output"
+
+devices:
+  - "iPhone 15 Pro Portrait"
 
 screenshots:
-  - name: "Launch Screen"
-    source_image: "app-screenshot.png"
-    output_size: [1320, 2868]
+  launch_screen:
+    content:
+      - type: "image"
+        asset: "app-screenshot.png"
+        position: ["50%", "50%"]
 ```
 
 ### Professional App Store Screenshot
 ```yaml
-project_name: "Professional App Screenshots"
-output_directory: "app-store"
+project:
+  name: "Professional App Screenshots"
+  output_dir: "AppStore"
+
+devices:
+  - "iPhone 16 Pro Portrait"
+  - "iPad Air 13\" - M2 - Space Gray - Portrait"
+
+defaults:
+  background:
+    type: linear
+    colors: ["#667eea", "#764ba2"]
+    direction: 135
 
 screenshots:
-  - name: "iPhone Main Feature"
-    source_image: "screenshots/main.png"
-    device_frame: "iPhone 16 Pro - Black Titanium - Portrait"
-    output_size: [1320, 2868]
-    
-    background:
-      type: "linear"
-      colors: ["#667eea", "#764ba2"]
-      direction: 135
-    
-    text_overlays:
-      - content: "Revolutionary App"
-        position: [660, 150]
-        font_size: 56
-        font_weight: "bold"
+  main_feature:
+    content:
+      - type: "text"
+        content: "Revolutionary App"
+        position: ["50%", "15%"]
+        size: 56
+        weight: "bold"
         color: "#ffffff"
-        alignment: "center"
-        anchor: "center"
         stroke_width: 2
         stroke_color: "#000000"
       
-      - content: "Experience the future of mobile productivity with our award-winning design and lightning-fast performance."
-        position: [660, 250]
-        font_size: 24
+      - type: "text"
+        content: "Experience the future of mobile productivity with award-winning design."
+        position: ["50%", "25%"]
+        size: 24
         color: "#ffffff"
         alignment: "center"
-        anchor: "center"
-        max_width: 1000
-        line_height: 1.4
+      
+      - type: "image"
+        asset: "screenshots/main.png"
+        position: ["50%", "65%"]
+        scale: 0.8
+        frame: true
 
-  - name: "iPad Landscape Showcase"
-    source_image: "screenshots/ipad-features.png" 
-    device_frame: "iPad Air 13\" - M2 - Space Gray - Landscape"
-    output_size: [2732, 2048]
-    
+  gradient_showcase:
     background:
-      type: "radial"
+      type: radial
       colors: ["#ff9a9e", "#fecfef", "#feca57"]
       center: ["30%", "30%"]
-    
-    text_overlays:
-      - content: "Built for iPad"
-        position: [1366, 200]
-        font_size: 48
-        font_weight: "bold"
-        color: "#2c2c54"
-        alignment: "center"
-        anchor: "center"
+    content:
+      - type: "text"
+        content: "🌈 Gradient Magic"
+        position: ["50%", "15%"]
+        size: 48
+        gradient:
+          type: linear
+          colors: ["#FF6B6B", "#4ECDC4", "#45B7D1"]
+          direction: 45
+        weight: "bold"
+      
+      - type: "text"
+        content: "Beautiful gradients for stunning text"
+        position: ["50%", "25%"]
+        size: 24
+        gradient:
+          type: radial
+          colors: ["#667eea", "#764ba2"]
+          center: ["50%", "50%"]
+          radius: "70%"
 ```
 
 ### Multi-Device Campaign
 ```yaml
-project_name: "Cross-Platform Campaign"
-output_directory: "campaign-assets"
+project:
+  name: "Cross-Platform Campaign"
+  output_dir: "Campaign"
+
+devices:
+  - "iPhone 16 Pro Portrait"
+  - "iPhone 16 Pro Landscape"  
+  - "iPad Air 13\" - M2 - Space Gray - Portrait"
+  - "MacBook Pro 2021 16"
+
+defaults:
+  background:
+    type: linear
+    colors: ["#667eea", "#764ba2"]
 
 screenshots:
-  - name: "iPhone Portrait"
-    source_image: "screenshots/phone.png"
-    device_frame: "iPhone 16 Pro - Natural Titanium - Portrait"
-    output_size: [1320, 2868]
-    background:
-      type: "linear"
-      colors: ["#667eea", "#764ba2"]
+  phone_portrait:
+    content:
+      - type: "text"
+        content: "Mobile First"
+        position: ["50%", "15%"]
+        size: 42
+        color: "#ffffff"
+        weight: "bold"
+      - type: "image"
+        asset: "screenshots/phone.png"
+        position: ["50%", "60%"]
+        frame: true
 
-  - name: "iPhone Landscape"  
-    source_image: "screenshots/phone-landscape.png"
-    device_frame: "iPhone 16 Pro - Natural Titanium - Landscape"
-    output_size: [2868, 1320]
-    background:
-      type: "linear"
-      colors: ["#667eea", "#764ba2"]
+  phone_landscape:
+    content:
+      - type: "text"
+        content: "Landscape Ready"
+        position: ["50%", "15%"]
+        size: 42
+        color: "#ffffff" 
+        weight: "bold"
+      - type: "image"
+        asset: "screenshots/phone-landscape.png"
+        position: ["50%", "60%"]
+        frame: true
 
-  - name: "iPad Portrait"
-    source_image: "screenshots/tablet.png"
-    device_frame: "iPad Air 13\" - M2 - Space Gray - Portrait"
-    output_size: [2048, 2732]
-    background:
-      type: "linear"
-      colors: ["#667eea", "#764ba2"]
+  tablet:
+    content:
+      - type: "text"
+        content: "Built for iPad"
+        position: ["50%", "15%"]
+        size: 48
+        color: "#ffffff"
+        weight: "bold"
+      - type: "image"
+        asset: "screenshots/tablet.png"
+        position: ["50%", "65%"]
+        frame: true
 
-  - name: "Mac Desktop"
-    source_image: "screenshots/desktop.png"
-    device_frame: "MacBook Pro 2021 16"
-    output_size: [3024, 1964]
-    background:
-      type: "linear"
-      colors: ["#667eea", "#764ba2"]
+  desktop:
+    content:
+      - type: "text"
+        content: "Desktop Power"
+        position: ["50%", "15%"]
+        size: 54
+        color: "#ffffff"
+        weight: "bold"
+      - type: "image"
+        asset: "screenshots/desktop.png" 
+        position: ["50%", "65%"]
+        scale: 0.9
+        frame: true
 ```
+
+---
+
+## Breaking Changes in v0.5.0
+
+### Screenshot Configuration Format
+
+**v0.4.x and earlier** (Array format):
+```yaml
+screenshots:
+  - name: "welcome_screen"
+    content: [...]
+  - name: "features_screen" 
+    content: [...]
+```
+
+**v0.5.0+** (Dictionary format):
+```yaml
+screenshots:
+  welcome_screen:           # ID as key
+    content: [...]
+  features_screen:          # ID as key
+    content: [...]
+```
+
+### Migration Guide
+
+1. **Remove `name` fields** from screenshot definitions
+2. **Convert array to dictionary** using the `name` values as keys
+3. **Update any references** to screenshot names in scripts/tools
+4. **Test with `kou generate`** to ensure compatibility
+
+### Benefits of New Format
+
+- **Live Editing Support**: Enables selective regeneration by screenshot ID
+- **Better Performance**: Faster lookups and change detection
+- **Cleaner Configuration**: No duplicate `name` fields
+- **Future Features**: Enables advanced features like screenshot dependencies
+
+---
 
 ## Best Practices
 
 ### Color Harmony
-- Use professional color palettes
-- Ensure sufficient contrast for text readability
+- Use professional color palettes from tools like Coolors.co
+- Ensure sufficient contrast for text readability (WCAG AA: 4.5:1 minimum)
 - Consider App Store guidelines for screenshot aesthetics
 
 ### Typography
-- Use system fonts for compatibility
-- Maintain consistent font sizes across screenshots
-- Apply stroke to text over complex backgrounds
+- Use system fonts for compatibility across platforms
+- Maintain consistent font sizes across screenshots in a set
+- Apply stroke to text over complex backgrounds for readability
+- Test gradient text on various backgrounds
 
 ### Device Frame Selection
-- Choose frames that match your target audience
-- Use consistent device families across a campaign
+- Choose frames that match your target audience and app category
+- Use consistent device families across a marketing campaign
 - Consider the latest device models for modern appeal
+- Test frame positioning - frames can extend beyond canvas bounds
+
+### Asset Organization
+- Use relative paths for better project portability
+- Organize assets in logical directory structures
+- Use consistent naming conventions for screenshots
+- Consider asset resolution for crisp output
+
+### Live Editing Workflow
+- Start with `kou live config.yaml` for iterative design
+- Use `--verbose` flag to understand what's being regenerated
+- Adjust `--debounce` for faster/slower response to changes
+- Keep asset files organized to avoid path issues
 
 ### Composition
 - Follow the rule of thirds for text placement
-- Leave breathing room around text elements
+- Leave sufficient breathing room around text elements
 - Balance visual weight across the composition
+- Consider how the content will appear on different device sizes
 
 ---
 
-*This documentation covers all available options in Koubou's YAML API. For more examples and tutorials, see the `examples/` directory.*
+*This documentation covers all available options in Koubou's v0.5.0 YAML API with live editing support. For more examples and tutorials, visit the project repository.*

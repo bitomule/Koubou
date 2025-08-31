@@ -3,7 +3,7 @@ project:
   output_dir: "test_output"
 
 screenshots:
-  - name: linear_background_test
+  linear_background_test:
     background:
       type: linear
       colors: ["#FF6B6B", "#4ECDC4"] 

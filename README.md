@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-%3E%3D3.9-blue.svg)](https://python.org/)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey.svg)]()
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey.svg)]()
 [![PyPI Version](https://img.shields.io/pypi/v/koubou)](https://pypi.org/project/koubou/)
 
 **Koubou (工房) transforms YAML into handcrafted App Store screenshots with artisan quality.**
@@ -11,6 +11,7 @@
 
 ## ✨ Features
 
+- **🔄 Live Editing** - Real-time screenshot regeneration when config or assets change
 - **🎨 100+ Device Frames** - iPhone 16 Pro, iPad Air M2, MacBook Pro, Apple Watch Ultra, and more
 - **🌈 Professional Backgrounds** - Linear, radial, conic gradients with precise color control
 - **✨ Rich Typography** - Advanced text overlays with stroke, alignment, wrapping, and custom fonts
@@ -67,14 +68,62 @@ kou --help
 
 ```bash
 # Create a sample configuration
-kou create_config my-screenshots.yaml
+kou --create-config my-screenshots.yaml
 
 # Generate screenshots
 kou generate my-screenshots.yaml
 
-# List available device frames
-kou list_frames
+# Live editing mode - regenerate automatically when files change
+kou live my-screenshots.yaml
 ```
+
+## 🔄 Live Editing
+
+**New in v0.5.0:** Koubou now supports real-time screenshot generation! The `live` command automatically regenerates screenshots when your YAML configuration or referenced assets change.
+
+```bash
+# Start live editing mode
+kou live my-screenshots.yaml
+
+# Optional: Adjust debounce delay (default: 0.5s)
+kou live my-screenshots.yaml --debounce 1.0
+
+# Enable verbose logging to see what's happening
+kou live my-screenshots.yaml --verbose
+```
+
+### How Live Editing Works
+
+1. **Smart Change Detection**: Monitors your YAML config file and all referenced assets
+2. **Selective Regeneration**: Only regenerates screenshots affected by changes
+3. **Dependency Tracking**: Automatically detects which assets each screenshot uses
+4. **Debounced Updates**: Prevents excessive regeneration during rapid edits
+
+### Live Editing Workflow
+
+```yaml
+# my-app-screenshots.yaml
+project:
+  name: "My App"
+  output_dir: "Screenshots/Generated"
+
+screenshots:
+  welcome_screen:
+    content:
+      - type: "image"
+        asset: "app-screens/welcome.png"  # Live editing watches this file
+        frame: true
+      - type: "text"
+        content: "Welcome to the future"     # Changes to this regenerate instantly
+```
+
+**Perfect for iterative design workflows** - edit your assets in design tools, update text content, or tweak positioning, and see results instantly without manual regeneration!
+
+### Platform Support
+- **Live Editing**: macOS and Linux only
+- **Standard Generation**: macOS, Linux, and Windows
+
+---
 
 ## 🎨 Configuration
 
@@ -95,7 +144,7 @@ defaults:
     direction: 180
 
 screenshots:
-  - name: "welcome_screen"
+  welcome_screen:
     content:
       - type: "text"
         content: "Beautiful App"
@@ -131,7 +180,7 @@ defaults:
     colors: ["#ff9a9e", "#fecfef", "#feca57"]
 
 screenshots:
-  - name: "ai_analysis"
+  ai_analysis:
     content:
       - type: "text"
         content: "✨ AI-Powered Analysis"
@@ -155,7 +204,7 @@ screenshots:
 
 ```yaml
 screenshots:
-  - name: "gradient_showcase"
+  gradient_showcase:
     content:
       - type: "text"
         content: "🌈 Gradient Magic"
@@ -193,14 +242,17 @@ screenshots:
 
 ## 🎯 Commands
 
+### Core Commands
+
 - `kou generate <config.yaml>` - Generate screenshots from configuration
-- `kou create_config <output.yaml>` - Create a sample configuration file
-- `kou list_frames` - List all available device frames
+- `kou live <config.yaml>` - **[New]** Live editing mode with real-time regeneration
+- `kou --create-config <output.yaml>` - Create a sample configuration file
 - `kou --version` - Show version information
 - `kou --help` - Show detailed help
 
 ### Command Options
 
+#### Generate Command
 ```bash
 # Override output directory
 kou generate config.yaml --output ./custom-screenshots
@@ -210,12 +262,25 @@ kou generate config.yaml --frames ./my-frames
 
 # Enable verbose logging
 kou generate config.yaml --verbose
-
-# Create config with custom project name
-kou create_config config.yaml --name "My App Screenshots"
 ```
 
-> **Note**: Commands use underscores (`create_config`, `list_frames`) following Python naming conventions.
+#### Live Editing Command
+```bash
+# Start live editing with default settings
+kou live config.yaml
+
+# Adjust debounce delay (default: 0.5s)
+kou live config.yaml --debounce 1.0
+
+# Enable verbose logging to see file changes
+kou live config.yaml --verbose
+```
+
+#### Configuration Creation
+```bash
+# Create config with custom project name
+kou --create-config config.yaml --name "My App Screenshots"
+```
 
 ## 🎨 Device Frames
 
@@ -257,7 +322,7 @@ defaults:                    # Default settings applied to all screenshots
 ### Screenshot Configuration  
 ```yaml
 screenshots:
-  - name: string             # Screenshot identifier
+  screenshot_id:             # Screenshots are now organized by ID (breaking change in v0.5.0)
     content:                 # Array of content items
       - type: "text" | "image"
         # Text content properties

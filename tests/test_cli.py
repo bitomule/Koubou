@@ -79,9 +79,8 @@ class TestCLI:
                 "output_dir": str(self.temp_dir / "output"),
             },
             "devices": ["iPhone 15 Pro Portrait"],
-            "screenshots": [
-                {
-                    "name": "CLI Test Screenshot",
+            "screenshots": {
+                "cli_test_screenshot": {
                     "content": [
                         {
                             "type": "image",
@@ -91,7 +90,7 @@ class TestCLI:
                         }
                     ],
                 }
-            ],
+            },
         }
 
         config_path = self.temp_dir / "test_config.yaml"
@@ -148,9 +147,8 @@ class TestCLI:
                 "output_dir": str(self.temp_dir / "yaml_output"),
             },
             "devices": ["iPhone 15 Pro Portrait"],
-            "screenshots": [
-                {
-                    "name": "Test Screenshot",
+            "screenshots": {
+                "test_screenshot": {
                     "content": [
                         {
                             "type": "image",
@@ -160,7 +158,7 @@ class TestCLI:
                         }
                     ],
                 }
-            ],
+            },
         }
 
         config_path = self.temp_dir / "test_config.yaml"
