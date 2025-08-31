@@ -307,9 +307,12 @@ class ScreenshotGenerator:
 
             return result
 
-        except Exception as _e:
-            logger.error(f"Failed to apply asset frame: {_e}")
-            return positioned_image  # Return original positioned image if frame fails
+        except Exception as e:
+            logger.error(f"Failed to apply asset frame: {e}")
+            raise ConfigurationError(
+                f"Frame application failed for '{config.device_frame}': {e}. "
+                f"Verify the device frame exists and is properly configured."
+            ) from e
 
     def _get_output_path(self, config: ScreenshotConfig) -> Path:
         """Determine output path for generated screenshot."""
@@ -461,15 +464,10 @@ class ScreenshotGenerator:
                     "📐 Canvas: {canvas_width}×{canvas_height} (frame-based sizing)"
                 )
             else:
-                logger.warning(
-                    f"Could not get frame size for {device_frame}, using content-based sizing"
-                )
-                canvas_width = max(
-                    scaled_width + 400, 800
-                )  # Minimum width for text, extra space for text
-                canvas_height = scaled_height + 800  # Extra space for text above/below
-                logger.info(
-                    "📐 Canvas: {canvas_width}×{canvas_height} (content-based fallback)"
+                raise ConfigurationError(
+                    f"Device frame '{device_frame}' not found. "
+                    f"Frame is required when 'frame: true' is specified. "
+                    f"Check available frames or remove 'frame: true' from your configuration."
                 )
         else:
             # No frame: canvas = scaled image + padding for text

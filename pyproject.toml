@@ -64,7 +64,7 @@ kou = "koubou.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-koubou = ["data/*", "frames/*"]
+koubou = ["frames/*.png", "frames/*.json", "data/*"]
 
 [tool.black]
 line-length = 88
