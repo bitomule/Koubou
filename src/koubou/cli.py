@@ -281,9 +281,7 @@ def generate(
                 if i < len(result_paths):
                     results.append((screenshot_id, result_paths[i], True, None))
                 else:
-                    results.append(
-                        (screenshot_id, None, False, "Generation failed")
-                    )
+                    results.append((screenshot_id, None, False, "Generation failed"))
         except Exception as _e:
             console.print(f"❌ Project generation failed: {_e}", style="red")
             raise typer.Exit(1)
