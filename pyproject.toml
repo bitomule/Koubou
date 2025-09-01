@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=64", "setuptools_scm", "wheel"]
+requires = ["setuptools>=61.0", "setuptools-scm>=6.2", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -69,16 +69,9 @@ zip-safe = false
 
 [tool.setuptools.package-data]
 koubou = [
-    "frames/*.png", 
-    "frames/*.json", 
-    "data/*",
-    # Explicit patterns for better coverage
-    "frames/**/*.png",
-    "frames/**/*.json",
+    "frames/*.png",
+    "frames/*.json"
 ]
-
-# Alternative package-data specification for compatibility
-"*" = ["*.png", "*.json"]
 
 [tool.black]
 line-length = 88
