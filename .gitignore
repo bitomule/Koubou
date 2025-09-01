@@ -63,6 +63,9 @@ Thumbs.db
 output/
 generated/
 temp/
+
+# Claude AI files
+.claude/
 *.png
 *.jpg
 *.jpeg
