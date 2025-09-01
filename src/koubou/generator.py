@@ -457,11 +457,13 @@ class ScreenshotGenerator:
 
         # Calculate canvas size - respect screenshot-level frame setting
         # Check frame setting: None=use default, True=force frame, False=no frame
-        frame_setting = getattr(screenshot_def, 'frame', None)
+        frame_setting = getattr(screenshot_def, "frame", None)
         if frame_setting is False:
             should_use_frame = False  # Explicitly disabled
         else:
-            should_use_frame = bool(device_frame)  # Use default logic if frame is None or True
+            should_use_frame = bool(
+                device_frame
+            )  # Use default logic if frame is None or True
         if should_use_frame:
             frame_size = self.device_frame_renderer.get_frame_size(device_frame)
             if frame_size:

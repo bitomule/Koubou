@@ -309,7 +309,7 @@ class ScreenshotDefinition(BaseModel):
     content: List[ContentItem] = Field(..., description="List of content items")
     frame: Optional[bool] = Field(
         default=None,
-        description="Whether to use device frame (None=use default, True=force frame, False=no frame)"
+        description="Whether to use device frame (None=use default, True=force frame, False=no frame)",
     )
 
 
