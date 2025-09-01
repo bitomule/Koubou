@@ -1,2 +1,19 @@
+# Include package source files
+include src/koubou/*.py
+recursive-include src/koubou *.py
+
+# Include frame assets - multiple patterns for maximum compatibility
 recursive-include src/koubou/frames *.png
 recursive-include src/koubou/frames *.json
+include src/koubou/frames/*.png
+include src/koubou/frames/*.json
+
+# Global patterns as fallback
+global-include *.png
+global-include *.json
+
+# Include package metadata
+include pyproject.toml
+include LICENSE*
+include README*
+include MANIFEST.in

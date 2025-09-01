@@ -63,8 +63,22 @@ kou = "koubou.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+
 [tool.setuptools.package-data]
-koubou = ["frames/*.png", "frames/*.json", "data/*"]
+koubou = [
+    "frames/*.png", 
+    "frames/*.json", 
+    "data/*",
+    # Explicit patterns for better coverage
+    "frames/**/*.png",
+    "frames/**/*.json",
+]
+
+# Alternative package-data specification for compatibility
+"*" = ["*.png", "*.json"]
 
 [tool.black]
 line-length = 88
