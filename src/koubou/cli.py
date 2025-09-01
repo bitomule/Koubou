@@ -314,6 +314,74 @@ def generate(
 
 
 @app.command()
+def list_frames(
+    search: Optional[str] = typer.Argument(None, help="Filter frames by search term"),
+    verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
+):
+    """📱 List all available device frame names with optional fuzzy search"""
+    setup_logging(verbose)
+
+    try:
+        # Initialize generator to access device frame renderer
+        generator = ScreenshotGenerator()
+
+        # Get all available frames
+        all_frames = generator.device_frame_renderer.get_available_frames()
+
+        if not all_frames:
+            console.print("❌ No device frames found", style="red")
+            raise typer.Exit(1)
+
+        # Apply search filter if provided
+        if search:
+            filtered_frames = [
+                frame for frame in all_frames if search.lower() in frame.lower()
+            ]
+            frames_to_display = filtered_frames
+
+            if not filtered_frames:
+                console.print(f"❌ No frames found matching '{search}'", style="red")
+                return  # Exit normally without showing table
+
+            console.print(
+                f"📱 Found {len(filtered_frames)} frames matching '{search}'",
+                style="green",
+            )
+        else:
+            frames_to_display = all_frames
+            console.print(
+                f"📱 Found {len(all_frames)} available device frames", style="green"
+            )
+
+        # Create and display results table
+        table = Table(
+            title="🎯 Available Device Frames",
+            show_header=True,
+            header_style="bold magenta",
+        )
+        table.add_column("Frame Name", style="cyan", no_wrap=False)
+
+        # Add frames to table
+        for frame_name in frames_to_display:
+            table.add_row(frame_name)
+
+        console.print(table)
+
+        # Show usage tip
+        if not search:
+            console.print(
+                "\n💡 Tip: Use 'kou list-frames iPhone' to filter by device type",
+                style="blue",
+            )
+
+    except Exception as e:
+        console.print(f"❌ Error listing frames: {e}", style="red")
+        if verbose:
+            console.print_exception()
+        raise typer.Exit(1)
+
+
+@app.command()
 def live(
     config_file: Path = typer.Argument(..., help="YAML configuration file to watch"),
     verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),

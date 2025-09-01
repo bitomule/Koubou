@@ -175,3 +175,42 @@ class TestCLI:
         # Should have generated a screenshot in YAML-specified directory
         output_files = list(yaml_output.glob("*.png"))
         assert len(output_files) >= 1
+
+    def test_list_frames_command(self):
+        """Test list-frames command."""
+        result = self.runner.invoke(app, ["list-frames"])
+
+        assert result.exit_code == 0
+        assert "Available Device Frames" in result.stdout
+        assert "Found" in result.stdout
+        assert "frames" in result.stdout
+
+    def test_list_frames_with_search(self):
+        """Test list-frames command with search filter."""
+        result = self.runner.invoke(app, ["list-frames", "iPhone"])
+
+        assert result.exit_code == 0
+        assert "iPhone" in result.stdout
+        assert "Available Device Frames" in result.stdout
+
+    def test_list_frames_specific_search(self):
+        """Test list-frames command with specific search."""
+        result = self.runner.invoke(app, ["list-frames", "15 Pro"])
+
+        assert result.exit_code == 0
+        assert "15 Pro" in result.stdout or "Found 0 frames" in result.stdout
+        assert "Available Device Frames" in result.stdout
+
+    def test_list_frames_no_results(self):
+        """Test list-frames command with search that returns no results."""
+        result = self.runner.invoke(app, ["list-frames", "NonexistentDevice123"])
+
+        assert result.exit_code == 0
+        assert "No frames found matching" in result.stdout
+
+    def test_list_frames_verbose(self):
+        """Test list-frames command with verbose flag."""
+        result = self.runner.invoke(app, ["list-frames", "--verbose"])
+
+        assert result.exit_code == 0
+        assert "Available Device Frames" in result.stdout
