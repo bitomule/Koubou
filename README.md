@@ -439,6 +439,17 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 6. Push to the branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request
 
+## 📋 Changelog
+
+### v0.5.6 (Latest)
+- ✅ **Fixed**: All device frame PNG files now properly included in production installations
+- ✅ **Fixed**: Strict error handling - no more silent fallbacks when frames are missing
+- ✅ **Added**: Screenshot-level frame control (`frame: false` to disable per screenshot)
+- ✅ **Improved**: Better error messages when configuration issues occur
+
+### v0.5.5
+- ⚠️ Known issue: Missing PNG frame files in production (fixed in v0.5.6)
+
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
