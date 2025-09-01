@@ -8,7 +8,7 @@ from typing import List, Optional
 from PIL import Image
 
 from .config import GradientConfig, ProjectConfig, ScreenshotConfig, TextOverlay
-from .exceptions import RenderError
+from .exceptions import ConfigurationError, RenderError
 from .renderers.background import BackgroundRenderer
 from .renderers.device_frame import DeviceFrameRenderer
 from .renderers.text import TextRenderer
