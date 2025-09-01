@@ -414,11 +414,16 @@ class ScreenshotGenerator:
             if item.type == "image":
                 # Get source image path, scale, and position
                 asset_path = item.asset or ""
-                if Path(asset_path).is_absolute():
+                if not asset_path:
+                    source_image_path = ""
+                elif Path(asset_path).is_absolute():
                     source_image_path = asset_path
                 elif config_dir and asset_path:
                     # Resolve relative paths against config directory
-                    source_image_path = str((config_dir / asset_path).resolve())
+                    try:
+                        source_image_path = str((config_dir / asset_path).resolve())
+                    except (OSError, ValueError):
+                        source_image_path = asset_path
                 else:
                     source_image_path = asset_path
                 image_scale = item.scale or 1.0
