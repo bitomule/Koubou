@@ -202,6 +202,7 @@ class TestScreenshotGenerator:
                             position=("50%", "50%"),
                         )
                     ],
+                    frame=False,  # Explicitly disable frames for this test
                 ),
                 "screenshot2": ScreenshotDefinition(
                     content=[
@@ -214,6 +215,7 @@ class TestScreenshotGenerator:
                             type="text", content="Test Text", position=("50%", "20%")
                         ),
                     ],
+                    frame=False,  # Explicitly disable frames for this test
                 ),
             },
         )

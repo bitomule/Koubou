@@ -455,8 +455,14 @@ class ScreenshotGenerator:
             "📐 Original: {original_width}×{original_height} → Scaled: {scaled_width}×{scaled_height}"
         )
 
-        # Calculate canvas size - use frame size if available, otherwise content-based
-        if device_frame:
+        # Calculate canvas size - respect screenshot-level frame setting
+        # Check frame setting: None=use default, True=force frame, False=no frame
+        frame_setting = getattr(screenshot_def, 'frame', None)
+        if frame_setting is False:
+            should_use_frame = False  # Explicitly disabled
+        else:
+            should_use_frame = bool(device_frame)  # Use default logic if frame is None or True
+        if should_use_frame:
             frame_size = self.device_frame_renderer.get_frame_size(device_frame)
             if frame_size:
                 canvas_width, canvas_height = frame_size
@@ -533,7 +539,7 @@ class ScreenshotGenerator:
         config = ScreenshotConfig(
             name=screenshot_id,
             source_image=source_image_path,
-            device_frame=device_frame,
+            device_frame=device_frame if should_use_frame else None,
             output_size=(canvas_width, canvas_height),  # Dynamic size based on content
             background=background_config,
             text_overlays=text_overlays,
