@@ -82,10 +82,6 @@ class ScreenshotGenerator:
         try:
             logger.info(f"🎬 Starting generation: {config.name}")
 
-            # Load source image
-            source_image = self._load_source_image(config.source_image)
-            logger.info(f"📷 Loaded source: {source_image.size}")
-
             # Create canvas at target size
             canvas = Image.new("RGBA", config.output_size, (255, 255, 255, 0))
             logger.info(f"🎨 Created canvas: {config.output_size}")
@@ -95,18 +91,59 @@ class ScreenshotGenerator:
                 logger.info(f"🌈 Rendering background: {config.background.type}")
                 self.background_renderer.render(config.background, canvas)
 
-            # Position and composite source image with optional frame
-            logger.info("📐 Positioning source image")
-            positioned_image = self._position_source_image(source_image, canvas, config)
+            # Process multiple images if available, otherwise use single image (backward compatibility)
+            if hasattr(config, "_image_configs") and config._image_configs:
+                logger.info(
+                    f"📷 Processing {len(config._image_configs)} images in layer order"
+                )
+                # Process images in YAML order (first = bottom layer, last = top layer)
+                for i, img_config in enumerate(config._image_configs):
+                    logger.info(
+                        f"📐 Layer {i+1}/{len(config._image_configs)}: {Path(img_config['path']).name}"
+                    )
 
-            # Apply device frame to individual image if frame: true
-            if config.image_frame and config.device_frame:
-                logger.info(f"📱 Applying device frame to asset: {config.device_frame}")
-                positioned_image = self._apply_asset_frame(
-                    positioned_image, canvas, config
+                    # Load and position each image
+                    source_image = self._load_source_image(img_config["path"])
+                    logger.info(f"📷 Loaded source: {source_image.size}")
+
+                    # Create temporary config for this image
+                    temp_config = self._create_temp_config_for_image(config, img_config)
+                    positioned_image = self._position_source_image(
+                        source_image, canvas, temp_config
+                    )
+
+                    # Apply device frame if specified for this image
+                    if img_config["frame"] and config.device_frame:
+                        logger.info(
+                            f"📱 Applying device frame to asset: {config.device_frame}"
+                        )
+                        positioned_image = self._apply_asset_frame(
+                            positioned_image, canvas, temp_config
+                        )
+
+                    # Composite this layer onto canvas
+                    canvas = Image.alpha_composite(canvas, positioned_image)
+            else:
+                # Backward compatibility: single image processing
+                logger.info("📷 Processing single image (legacy mode)")
+                source_image = self._load_source_image(config.source_image)
+                logger.info(f"📷 Loaded source: {source_image.size}")
+
+                logger.info("📐 Positioning source image")
+                positioned_image = self._position_source_image(
+                    source_image, canvas, config
                 )
 
-            canvas = Image.alpha_composite(canvas, positioned_image)
+                # Apply device frame to individual image if frame: true
+                if config.image_frame and config.device_frame:
+                    logger.info(
+                        f"📱 Applying device frame to asset: {config.device_frame}"
+                    )
+                    positioned_image = self._apply_asset_frame(
+                        positioned_image, canvas, config
+                    )
+
+                canvas = Image.alpha_composite(canvas, positioned_image)
 
             # Render text overlays
             if config.text_overlays:
@@ -196,6 +233,23 @@ class ScreenshotGenerator:
         positioned.paste(source_image, (x, y), source_image)
 
         return positioned
+
+    def _create_temp_config_for_image(
+        self, base_config: ScreenshotConfig, img_config: dict
+    ):
+        """Create a temporary config for individual image processing."""
+
+        # Create a copy of the base config with image-specific settings
+        class TempConfig:
+            def __init__(self, base, img):
+                self.name = base.name
+                self.device_frame = base.device_frame
+                self.output_size = base.output_size
+                self.image_position = img["position"]
+                self.image_scale = img["scale"]
+                self.image_frame = img["frame"]
+
+        return TempConfig(base_config, img_config)
 
     def _convert_percentage_to_pixels(self, percentage_str: str, dimension: int) -> int:
         """Convert percentage string to pixel position."""
@@ -402,14 +456,11 @@ class ScreenshotGenerator:
     ):
         """Convert ScreenshotDefinition to ScreenshotConfig for generation."""
 
-        # Process content items and calculate dimensions
-        source_image_path = None
-        image_scale = 1.0
+        # Process content items and collect ALL images
+        image_configs = []
         text_overlays = []
 
-        # Store image configurations for proper positioning
-        image_config = None
-
+        # Process all content items to collect images and text
         for item in screenshot_def.content:
             if item.type == "image":
                 # Get source image path, scale, and position
@@ -426,33 +477,48 @@ class ScreenshotGenerator:
                         source_image_path = asset_path
                 else:
                     source_image_path = asset_path
+
                 image_scale = item.scale or 1.0
                 image_position = item.position or ["50%", "50%"]  # Default to center
 
                 # Store image configuration including frame setting
                 image_config = {
+                    "path": source_image_path,
                     "scale": image_scale,
                     "position": image_position,
                     "frame": getattr(item, "frame", False),  # Capture frame setting
                 }
+                image_configs.append(image_config)
                 logger.info(
                     f"📏 Image: scale={image_scale * 100:.0f}%, "
                     f"position={image_position}, frame={getattr(item, 'frame', False)}"
                 )
-                break  # Use first image found
+                # Continue processing more images instead of breaking
 
-        # Skip if no source image found
-        if not source_image_path or not Path(source_image_path).exists():
-            logger.warning(
-                f"Source image not found for {screenshot_id}: {source_image_path}"
-            )
+        # Skip if no images found
+        if not image_configs:
+            logger.warning(f"No images found for {screenshot_id}")
             return None
 
-        # Load source image to get actual dimensions
+        # Validate that all image paths exist
+        for img_config in image_configs:
+            if not img_config["path"] or not Path(img_config["path"]).exists():
+                logger.error(f"Source image not found: {img_config['path']}")
+                if not img_config["path"]:
+                    raise ConfigurationError("Image asset path is empty or missing")
+                else:
+                    raise ConfigurationError(
+                        f"Image asset not found: {img_config['path']}"
+                    )
+
+        # Use first image for canvas sizing (backward compatibility)
+        # TODO: Could be enhanced to calculate optimal canvas size from all images
+        primary_image_config = image_configs[0]
         from PIL import Image
 
-        source_image = Image.open(source_image_path)
+        source_image = Image.open(primary_image_config["path"])
         original_width, original_height = source_image.size
+        image_scale = primary_image_config["scale"]
 
         # Calculate scaled image dimensions
         scaled_width = int(original_width * image_scale)
@@ -543,24 +609,24 @@ class ScreenshotGenerator:
             background_config = GradientConfig(type="solid", colors=["#ffffff"])
 
         # Create screenshot config with calculated dimensions
-        # Store scale factor for use during generation
+        # For backward compatibility, use primary image in main config
         config = ScreenshotConfig(
             name=screenshot_id,
-            source_image=source_image_path,
+            source_image=primary_image_config["path"],
             device_frame=device_frame if should_use_frame else None,
             output_size=(canvas_width, canvas_height),  # Dynamic size based on content
             background=background_config,
             text_overlays=text_overlays,
-            image_position=image_config["position"] if image_config else ["50%", "50%"],
-            image_scale=image_config["scale"] if image_config else 1.0,
-            image_frame=image_config["frame"] if image_config else False,
+            image_position=primary_image_config["position"],
+            image_scale=primary_image_config["scale"],
+            image_frame=primary_image_config["frame"],
             output_path=str(
                 self._resolve_output_path(output_dir, screenshot_id, config_dir)
             ),
         )
 
-        # Store scale factor as a custom attribute for positioning
-        config._image_scale = image_scale
+        # Store ALL image configurations as custom attribute for multi-image support
+        config._image_configs = image_configs
         config._scaled_dimensions = (scaled_width, scaled_height)
 
         return config
