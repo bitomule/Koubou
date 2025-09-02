@@ -12,6 +12,7 @@
 ## ✨ Features
 
 - **🔄 Live Editing** - Real-time screenshot regeneration when config or assets change
+- **🌍 Multi-Language Localization** - Generate localized screenshots using familiar xcstrings format from Xcode
 - **🎨 100+ Device Frames** - iPhone 16 Pro, iPad Air M2, MacBook Pro, Apple Watch Ultra, and more
 - **🌈 Professional Backgrounds** - Linear, radial, conic gradients with precise color control
 - **✨ Rich Typography** - Advanced text overlays with stroke, alignment, wrapping, and custom fonts
@@ -122,6 +123,78 @@ screenshots:
 ### Platform Support
 - **Live Editing**: macOS and Linux only
 - **Standard Generation**: macOS, Linux, and Windows
+
+---
+
+## 🌍 Multi-Language Localization
+
+Generate beautiful localized screenshots for international App Store submissions using the familiar xcstrings format from Xcode.
+
+### Quick Setup
+
+Add a localization block to your YAML configuration:
+
+```yaml
+project:
+  name: "My App Screenshots"
+  output_dir: "Screenshots/Generated"
+
+# Enable multi-language support
+localization:
+  base_language: "en"
+  languages: ["en", "es", "ja", "fr", "de"]
+  xcstrings_path: "Localizable.xcstrings"  # optional
+
+screenshots:
+  welcome_screen:
+    content:
+      - type: "text"
+        content: "Welcome to Amazing App"  # This becomes a localization key
+        position: ["50%", "20%"]
+        size: 48
+        color: "#8E4EC6"
+      - type: "image"
+        asset: "screenshots/home.png"
+        position: ["50%", "60%"]
+```
+
+### How It Works
+
+1. **Extract Text**: Koubou automatically finds all text content in your screenshots
+2. **Generate xcstrings**: Creates or updates your xcstrings file with text as localization keys
+3. **iOS-Familiar Format**: Edit translations in Xcode using the xcstrings editor you already know
+4. **Auto-Generate Screenshots**: Run `kou generate config.yaml` to create screenshots for all languages
+
+### Output Structure
+
+```
+Screenshots/Generated/
+├── en/iPhone_15_Pro_Portrait/welcome_screen.png
+├── es/iPhone_15_Pro_Portrait/welcome_screen.png  
+├── ja/iPhone_15_Pro_Portrait/welcome_screen.png
+├── fr/iPhone_15_Pro_Portrait/welcome_screen.png
+└── de/iPhone_15_Pro_Portrait/welcome_screen.png
+```
+
+### Live Editing with Localization
+
+Live mode works seamlessly with localization:
+
+```bash
+kou live config.yaml  # Watches YAML config AND xcstrings file
+```
+
+- **Edit xcstrings in Xcode** → All language screenshots regenerate automatically
+- **Update YAML config** → xcstrings file updates with new text keys
+- **Change assets** → All localized versions update
+
+### Key Benefits
+
+- **🍎 iOS Developer Friendly**: Uses xcstrings format you already know from Xcode
+- **🔑 Natural Keys**: Your actual text becomes the localization key (no artificial IDs)
+- **🌍 Complete Localization**: Supports all xcstrings features including plurals and device variants
+- **🚀 Zero Extra Work**: Add localization block and run the same commands
+- **🔄 Live Updates**: Edit translations and see all screenshots update instantly
 
 ---
 

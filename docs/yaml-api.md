@@ -1,10 +1,11 @@
-# 🎯 Koubou v0.5.0 YAML API Reference
+# 🎯 Koubou v0.6.0 YAML API Reference
 
-Complete reference for Koubou's YAML configuration format with all options, defaults, and examples. This documentation covers the v0.5.0 API with live editing support and dictionary-based screenshot configuration.
+Complete reference for Koubou's YAML configuration format with all options, defaults, and examples. This documentation covers the v0.6.0 API with multi-language localization, live editing support and dictionary-based screenshot configuration.
 
 ## Table of Contents
 
 - [Project Configuration](#project-configuration)
+- [Localization Configuration](#localization-configuration)
 - [Device Configuration](#device-configuration)
 - [Default Settings](#default-settings)
 - [Screenshot Configuration](#screenshot-configuration)
@@ -33,6 +34,78 @@ project:
   name: "My Beautiful App Screenshots"
   output_dir: "Screenshots/Generated"
 ```
+
+---
+
+## Localization Configuration
+
+**New in v0.6.0**: Multi-language localization support using xcstrings format familiar to iOS developers.
+
+```yaml
+localization:
+  base_language: string          # Base/source language code (required)
+  languages: [string, ...]       # List of target language codes including base_language (required)
+  xcstrings_path: string?        # Path to xcstrings localization file (default: "Localizable.xcstrings")
+```
+
+### Defaults
+- `xcstrings_path`: `"Localizable.xcstrings"`
+
+### Example
+```yaml
+localization:
+  base_language: "en"
+  languages: ["en", "es", "ja", "fr", "de"]
+  xcstrings_path: "AppScreenshots.xcstrings"
+```
+
+### How Localization Works
+
+1. **Extract Text**: Koubou automatically finds all text content in your screenshots
+2. **Generate xcstrings**: Creates or updates your xcstrings file with text as localization keys
+3. **iOS-Familiar Format**: Edit translations in Xcode using the xcstrings editor you already know
+4. **Auto-Generate Screenshots**: Run `kou generate config.yaml` to create screenshots for all languages
+
+### Output Structure
+
+With localization enabled, screenshots are generated in language-specific directories:
+
+```
+Screenshots/Generated/
+├── en/iPhone_15_Pro_Portrait/welcome_screen.png
+├── es/iPhone_15_Pro_Portrait/welcome_screen.png  
+├── ja/iPhone_15_Pro_Portrait/welcome_screen.png
+├── fr/iPhone_15_Pro_Portrait/welcome_screen.png
+└── de/iPhone_15_Pro_Portrait/welcome_screen.png
+```
+
+### Live Editing with Localization
+
+Live mode watches both your YAML config AND the xcstrings file:
+
+```bash
+kou live config.yaml  # Watches YAML config AND xcstrings file
+```
+
+- **Edit xcstrings in Xcode** → All language screenshots regenerate automatically
+- **Update YAML config** → xcstrings file updates with new text keys
+- **Change assets** → All localized versions update
+
+### Validation Rules
+
+- Base language cannot be empty
+- Languages list cannot be empty  
+- Base language must be included in languages list
+- Duplicate languages are automatically removed
+- Language codes are automatically trimmed of whitespace
+
+### Key Benefits
+
+- **🍎 iOS Developer Friendly**: Uses xcstrings format from Xcode
+- **🔑 Natural Keys**: Your actual text becomes the localization key
+- **🌍 Complete Localization**: Supports all xcstrings features
+- **🚀 Zero Extra Work**: Add localization block and run the same commands
+- **🔄 Live Updates**: Edit translations and see all screenshots update instantly
 
 ---
 
@@ -295,6 +368,7 @@ screenshots:
 **Live editing monitors:**
 - Changes to the YAML configuration file
 - Changes to referenced asset files (images)
+- Changes to xcstrings localization files (v0.6.0+)
 - Supports both absolute and relative asset paths
 
 ### Platform Support
@@ -462,6 +536,85 @@ screenshots:
         frame: true
 ```
 
+### Multi-Language App Store Campaign
+
+**New in v0.6.0**: Generate localized screenshots for international App Store submissions.
+
+```yaml
+project:
+  name: "Multi-Language App Screenshots"
+  output_dir: "Screenshots/Generated"
+
+devices:
+  - "iPhone 15 Pro Portrait"
+  - "iPad Air 13\" - M2 - Space Gray - Portrait"
+
+defaults:
+  background:
+    type: linear
+    colors: ["#E8F0FE", "#F8FBFF"]
+    direction: 180
+
+localization:
+  base_language: "en"
+  languages: ["en", "es", "ja", "fr", "de"]
+  xcstrings_path: "AppScreenshots.xcstrings"
+
+screenshots:
+  welcome_screen:
+    content:
+      - type: "text"
+        content: "Welcome to Amazing App"
+        position: ["50%", "15%"]
+        size: 48
+        color: "#8E4EC6"
+        weight: "bold"
+      - type: "text"
+        content: "Transform your workflow today"
+        position: ["50%", "25%"]
+        size: 24
+        color: "#1A73E8"
+      - type: "image"
+        asset: "screenshots/home.png"
+        position: ["50%", "60%"]
+        scale: 0.6
+        frame: true
+
+  features_screen:
+    content:
+      - type: "text"
+        content: "✨ Amazing Features"
+        position: ["50%", "10%"]
+        size: 42
+        color: "#8E4EC6"
+        weight: "bold"
+      - type: "text"
+        content: "Discover what makes us different"
+        position: ["50%", "20%"]
+        size: 20
+      - type: "image"
+        asset: "screenshots/features.png"
+        position: ["50%", "65%"]
+        scale: 0.5
+        frame: true
+```
+
+**Output generates 20 screenshots** (2 screenshots × 5 languages × 2 devices):
+```
+Screenshots/Generated/
+├── en/
+│   ├── iPhone_15_Pro_Portrait/
+│   │   ├── welcome_screen.png
+│   │   └── features_screen.png
+│   └── iPad_Air_13_M2_Space_Gray_Portrait/
+│       ├── welcome_screen.png
+│       └── features_screen.png
+├── es/ [same structure with Spanish text]
+├── ja/ [same structure with Japanese text]  
+├── fr/ [same structure with French text]
+└── de/ [same structure with German text]
+```
+
 ---
 
 ## Breaking Changes in v0.5.0
@@ -541,4 +694,4 @@ screenshots:
 
 ---
 
-*This documentation covers all available options in Koubou's v0.5.0 YAML API with live editing support. For more examples and tutorials, visit the project repository.*
+*This documentation covers all available options in Koubou's v0.6.0 YAML API with multi-language localization and live editing support. For more examples and tutorials, visit the project repository.*

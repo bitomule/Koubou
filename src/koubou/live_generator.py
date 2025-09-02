@@ -12,6 +12,7 @@ from .config_tree import ConfigDiffer
 from .dependency_analyzer import DependencyAnalyzer
 from .exceptions import ConfigurationError, KoubouError
 from .generator import ScreenshotGenerator
+from .localization import XCStringsManager
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +27,12 @@ class LiveGenerationResult:
         self.failed_screenshots: Dict[str, str] = {}  # screenshot_id -> error
         self.config_errors: List[str] = []
         self.total_time: float = 0.0
+        self.generated_file_count: int = 0  # Track actual number of generated files
 
     @property
     def success_count(self) -> int:
         """Number of successfully regenerated screenshots."""
-        return len(self.regenerated_screenshots)
+        return self.generated_file_count
 
     @property
     def error_count(self) -> int:
@@ -121,9 +123,12 @@ class LiveScreenshotGenerator:
 
         for screenshot_id in config.screenshots.keys():
             try:
-                self._generate_single_screenshot(config, screenshot_id)
+                generated_count = self._generate_single_screenshot(
+                    config, screenshot_id
+                )
                 result.regenerated_screenshots.append(screenshot_id)
-                logger.info(f"✅ Generated: {screenshot_id}")
+                result.generated_file_count += generated_count
+                logger.info(f"✅ Generated: {screenshot_id} ({generated_count} files)")
             except Exception as e:
                 result.failed_screenshots[screenshot_id] = str(e)
                 logger.error(f"❌ Failed to generate {screenshot_id}: {e}")
@@ -146,9 +151,24 @@ class LiveScreenshotGenerator:
         """
         result = LiveGenerationResult()
 
-        # Separate config changes from asset changes
+        # Separate different types of changes
         config_changed = self.config_file in changed_files
-        asset_changes = changed_files - {self.config_file}
+
+        # Check for xcstrings changes
+        xcstrings_changed = False
+        xcstrings_file = None
+        if self.current_config and self.current_config.localization:
+            xcstrings_manager = XCStringsManager(
+                self.current_config.localization, self.config_dir
+            )
+            xcstrings_file = xcstrings_manager.xcstrings_path
+            xcstrings_changed = xcstrings_file in changed_files
+
+        # Remaining files are regular asset changes
+        excluded_files = {self.config_file}
+        if xcstrings_file:
+            excluded_files.add(xcstrings_file)
+        asset_changes = changed_files - excluded_files
 
         affected_screenshots = set()
 
@@ -158,7 +178,18 @@ class LiveScreenshotGenerator:
             config_affected = self._handle_config_changes(result)
             affected_screenshots.update(config_affected)
 
-        # Handle asset changes
+        # Handle xcstrings changes (affects all screenshots in localization mode)
+        if xcstrings_changed:
+            logger.info(
+                "🌍 XCStrings file changed, regenerating all localized screenshots..."
+            )
+            if self.current_config and self.current_config.localization:
+                # XCStrings changes affect all screenshots when localization is enabled
+                affected_screenshots.add("*ALL*")
+            else:
+                logger.warning("XCStrings changed but localization not configured")
+
+        # Handle regular asset changes
         if asset_changes:
             logger.info(
                 f"🖼️  {len(asset_changes)} asset(s) changed, analyzing impact..."
@@ -194,9 +225,14 @@ class LiveScreenshotGenerator:
 
             for screenshot_id in screenshot_ids:
                 try:
-                    self._generate_single_screenshot(self.current_config, screenshot_id)
+                    generated_count = self._generate_single_screenshot(
+                        self.current_config, screenshot_id
+                    )
                     result.regenerated_screenshots.append(screenshot_id)
-                    logger.info(f"✅ Regenerated: {screenshot_id}")
+                    result.generated_file_count += generated_count
+                    logger.info(
+                        f"✅ Regenerated: {screenshot_id} ({generated_count} files)"
+                    )
                 except Exception as e:
                     result.failed_screenshots[screenshot_id] = str(e)
                     logger.error(f"❌ Failed to regenerate {screenshot_id}: {e}")
@@ -269,12 +305,15 @@ class LiveScreenshotGenerator:
 
     def _generate_single_screenshot(
         self, config: ProjectConfig, screenshot_id: str
-    ) -> None:
+    ) -> int:
         """Generate a single screenshot by ID.
 
         Args:
             config: Project configuration
             screenshot_id: ID of screenshot to generate
+
+        Returns:
+            Number of actual files generated
 
         Raises:
             KoubouError: If screenshot generation fails
@@ -289,6 +328,7 @@ class LiveScreenshotGenerator:
             project=config.project,
             devices=config.devices,
             defaults=config.defaults,
+            localization=config.localization,  # Include localization settings
             screenshots={screenshot_id: config.screenshots[screenshot_id]},
         )
 
@@ -304,6 +344,9 @@ class LiveScreenshotGenerator:
         import time
 
         self._last_successful_generation[screenshot_id] = time.time()
+
+        # Return the number of files actually generated
+        return len(result_paths)
 
     def _get_screenshots_using_defaults(self) -> List[str]:
         """Get screenshot IDs that use default settings.
@@ -349,7 +392,19 @@ class LiveScreenshotGenerator:
         Returns:
             Set of asset file paths to monitor
         """
-        return self.dependency_analyzer.get_all_asset_paths()
+        asset_paths = self.dependency_analyzer.get_all_asset_paths()
+
+        # Add xcstrings file if localization is configured
+        if self.current_config and self.current_config.localization:
+            xcstrings_manager = XCStringsManager(
+                self.current_config.localization, self.config_dir
+            )
+            xcstrings_path = xcstrings_manager.xcstrings_path
+            if xcstrings_path.exists():
+                asset_paths.add(xcstrings_path)
+                logger.debug(f"Added XCStrings file to watch list: {xcstrings_path}")
+
+        return asset_paths
 
     def validate_assets(self) -> Dict[str, List[str]]:
         """Validate that all assets exist.

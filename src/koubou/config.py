@@ -313,6 +313,55 @@ class ScreenshotDefinition(BaseModel):
     )
 
 
+class LocalizationConfig(BaseModel):
+    """Localization configuration for multi-language screenshot generation."""
+
+    base_language: str = Field(
+        ..., description="Base/source language code (e.g., 'en')"
+    )
+    languages: List[str] = Field(..., description="List of target language codes")
+    xcstrings_path: str = Field(
+        default="Localizable.xcstrings",
+        description="Path to xcstrings localization file",
+    )
+
+    @validator("base_language")
+    def validate_base_language(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Base language cannot be empty")
+        return v.strip()
+
+    @validator("languages")
+    def validate_languages(cls, v: List[str]) -> List[str]:
+        if not v:
+            raise ValueError("Languages list cannot be empty")
+
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_languages = []
+        for lang in v:
+            if lang and lang.strip() and lang.strip() not in seen:
+                clean_lang = lang.strip()
+                seen.add(clean_lang)
+                unique_languages.append(clean_lang)
+
+        if not unique_languages:
+            raise ValueError("No valid languages provided")
+
+        return unique_languages
+
+    @validator("languages")
+    def validate_base_language_in_languages(
+        cls, v: List[str], values: Dict
+    ) -> List[str]:
+        base_language = values.get("base_language")
+        if base_language and base_language not in v:
+            raise ValueError(
+                f"Base language '{base_language}' must be included in languages list"
+            )
+        return v
+
+
 class ProjectInfo(BaseModel):
     """Project information."""
 
@@ -328,6 +377,10 @@ class ProjectConfig(BaseModel):
         default=["iPhone 15 Pro Portrait"], description="Target devices"
     )
     defaults: Optional[Dict] = Field(default=None, description="Default settings")
+    localization: Optional[LocalizationConfig] = Field(
+        default=None,
+        description="Localization configuration for multi-language screenshots",
+    )
     screenshots: Dict[str, ScreenshotDefinition] = Field(
         ..., description="Screenshot definitions mapped by ID"
     )

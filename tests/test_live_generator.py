@@ -29,6 +29,7 @@ class TestLiveGenerationResult:
         """Test result with successful regenerations."""
         result = LiveGenerationResult()
         result.regenerated_screenshots = ["screen1", "screen2"]
+        result.generated_file_count = 2  # Set the actual file count
 
         assert result.success_count == 2
         assert result.error_count == 0
@@ -48,6 +49,7 @@ class TestLiveGenerationResult:
         """Test result with mixed success and errors."""
         result = LiveGenerationResult()
         result.regenerated_screenshots = ["screen1"]
+        result.generated_file_count = 1  # Set the actual file count
         result.failed_screenshots = {"screen2": "Error"}
         result.skipped_screenshots = ["screen3"]
 
@@ -185,7 +187,7 @@ class TestLiveScreenshotGenerator:
         generator = LiveScreenshotGenerator(config_file)
 
         # Mock successful generation
-        mock_generate.return_value = None
+        mock_generate.return_value = 1  # Each screenshot generates 1 file
 
         result = generator.initial_generation()
 
@@ -208,7 +210,7 @@ class TestLiveScreenshotGenerator:
         def side_effect(*args, **kwargs):
             screenshot_id = args[1]  # Second argument is screenshot_id
             if screenshot_id == "welcome_screen":
-                return None  # Success
+                return 1  # Success - 1 file generated
             else:
                 raise Exception("Generation failed")
 
@@ -271,6 +273,7 @@ class TestLiveScreenshotGenerator:
         changed_files = {config_file}
 
         with patch.object(generator, "_generate_single_screenshot") as mock_gen:
+            mock_gen.return_value = 1  # Each screenshot generates 1 file
             result = generator.handle_file_changes(changed_files)
 
             # Should regenerate all screenshots due to global change
@@ -290,6 +293,7 @@ class TestLiveScreenshotGenerator:
         changed_files = {asset_file}
 
         with patch.object(generator, "_generate_single_screenshot") as mock_gen:
+            mock_gen.return_value = 1  # Each screenshot generates 1 file
             result = generator.handle_file_changes(changed_files)
 
             # Should regenerate only the screenshot that uses this asset
