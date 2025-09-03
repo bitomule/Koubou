@@ -193,7 +193,8 @@ class TextRenderer:
         raise ConfigurationError(
             "No fonts found on this system.\n"
             "Please install system fonts:\n"
-            "- macOS: Arial, Helvetica, or San Francisco (install Xcode or use Font Book)\n"
+            "- macOS: Arial, Helvetica, or San Francisco (install Xcode or use "
+            "Font Book)\n"
             "- Linux: fonts-liberation, fonts-dejavu, or fonts-noto packages\n"
             "- Windows: Arial should be pre-installed"
         )
@@ -423,7 +424,8 @@ class TextRenderer:
         anchor_y: int,
         text_block_width: int,
     ) -> None:
-        """Render text with solid colors using multi-resolution downsampling for quality."""
+        """Render text with solid colors using multi-resolution downsampling
+        for quality."""
         # Parse colors
         text_color = self._parse_color(text_config.color or "#000000")
         stroke_color = None
@@ -478,7 +480,8 @@ class TextRenderer:
         canvas_gradient = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
         canvas_gradient.paste(gradient_image, (anchor_x, anchor_y))
 
-        # Apply mask to show gradient only where text is - use alpha blending for better anti-aliasing
+        # Apply mask to show gradient only where text is - use alpha blending
+        # for better anti-aliasing
         # Convert mask to alpha channel and apply to gradient for smooth edges
         canvas_gradient.putalpha(text_mask)
         gradient_text = canvas_gradient
@@ -515,7 +518,8 @@ class TextRenderer:
                         anchor_x, line, font, text_config.alignment, text_block_width
                     )
 
-                    # Create stroke-only mask by drawing stroked text and subtracting filled text
+                    # Create stroke-only mask by drawing stroked text and
+                    # subtracting filled text
                     stroke_draw.text(
                         (line_x, current_y),
                         line,
@@ -559,7 +563,8 @@ class TextRenderer:
         text_color: Tuple[int, int, int, int],
         stroke_color: Optional[Tuple[int, int, int, int]],
     ) -> None:
-        """Render text at 3x resolution and downsample for optimal anti-aliasing quality."""
+        """Render text at 3x resolution and downsample for optimal
+        anti-aliasing quality."""
         scale_factor = 3  # Research shows 3x often better than 4x for text quality
 
         # Calculate text bounds for high-resolution rendering
@@ -612,7 +617,8 @@ class TextRenderer:
             (text_block_width, total_height), Image.Resampling.LANCZOS
         )
 
-        # Apply very subtle blur for smoother edges (optional - can be disabled if too soft)
+        # Apply very subtle blur for smoother edges (optional - can be
+        # disabled if too soft)
         # Only apply to text edges, not the whole text
         alpha = downsampled_text.split()[-1]  # Get alpha channel
         blurred_alpha = alpha.filter(ImageFilter.GaussianBlur(radius=0.3))
@@ -638,7 +644,8 @@ class TextRenderer:
         text_block_width: int,
         text_config: TextOverlay,
     ) -> Image.Image:
-        """Create high-resolution text mask for gradient rendering with optimal anti-aliasing."""
+        """Create high-resolution text mask for gradient rendering with optimal
+        anti-aliasing."""
         scale_factor = 3  # Research shows 3x often better than 4x for text quality
 
         # Calculate text bounds for high-resolution rendering

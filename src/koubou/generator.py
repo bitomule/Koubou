@@ -92,7 +92,8 @@ class ScreenshotGenerator:
                 logger.info(f"🌈 Rendering background: {config.background.type}")
                 self.background_renderer.render(config.background, canvas)
 
-            # Process multiple images if available, otherwise use single image (backward compatibility)
+            # Process multiple images if available, otherwise use single image
+            # (backward compatibility)
             if hasattr(config, "_image_configs") and config._image_configs:
                 logger.info(
                     f"📷 Processing {len(config._image_configs)} images in layer order"
@@ -100,7 +101,8 @@ class ScreenshotGenerator:
                 # Process images in YAML order (first = bottom layer, last = top layer)
                 for i, img_config in enumerate(config._image_configs):
                     logger.info(
-                        f"📐 Layer {i+1}/{len(config._image_configs)}: {Path(img_config['path']).name}"
+                        f"📐 Layer {i+1}/{len(config._image_configs)}: "
+                        f"{Path(img_config['path']).name}"
                     )
 
                     # Load and position each image
@@ -280,7 +282,8 @@ class ScreenshotGenerator:
             else:
                 # Size mismatch - need to handle this case
                 logger.warning(
-                    "Canvas size {canvas.size} doesn't match frame size {frame_image.size}"
+                    f"Canvas size {canvas.size} doesn't match frame size "
+                    f"{frame_image.size}"
                 )
                 # For now, resize canvas to match frame
                 resized_canvas = canvas.resize(
@@ -316,10 +319,12 @@ class ScreenshotGenerator:
             )
 
             logger.info(
-                "📱 Scaled frame: {original_frame_size} → {scaled_frame.size} (scale: {asset_scale})"
+                f"📱 Scaled frame: {original_frame_size} → {scaled_frame.size} "
+                f"(scale: {asset_scale})"
             )
 
-            # Generate screen mask from the already-scaled frame (preserves precise boundaries)
+            # Generate screen mask from the already-scaled frame
+            # (preserves precise boundaries)
             screen_mask = self.device_frame_renderer.generate_screen_mask_from_image(
                 scaled_frame
             )
@@ -335,7 +340,8 @@ class ScreenshotGenerator:
             frame_y = center_y - scaled_frame_height // 2
 
             logger.info(
-                "📱 Positioning frame: center at ({center_x}, {center_y}), top-left at ({frame_x}, {frame_y})"
+                f"📱 Positioning frame: center at ({center_x}, {center_y}), "
+                f"top-left at ({frame_x}, {frame_y})"
             )
 
             # Step 1: Start with the positioned asset (no masking yet)
@@ -388,7 +394,8 @@ class ScreenshotGenerator:
 
         Args:
             project_config: Complete project configuration
-            config_dir: Directory containing the config file (for relative path resolution)
+            config_dir: Directory containing the config file (for relative path
+                resolution)
 
         Returns:
             List of paths to generated screenshots
@@ -441,7 +448,8 @@ class ScreenshotGenerator:
                 continue
 
         logger.info(
-            f"🎉 Project complete! Generated {len(results)}/{len(project_config.screenshots)} screenshots"
+            f"🎉 Project complete! Generated {len(results)}/"
+            f"{len(project_config.screenshots)} screenshots"
         )
         return results
 
@@ -497,7 +505,8 @@ class ScreenshotGenerator:
                 project_config.screenshots.items(), 1
             ):
                 logger.info(
-                    f"[{language}] [{i}/{len(project_config.screenshots)}] {screenshot_id}"
+                    f"[{language}] [{i}/{len(project_config.screenshots)}] "
+                    f"{screenshot_id}"
                 )
                 try:
                     # Create localized content
@@ -536,7 +545,8 @@ class ScreenshotGenerator:
                         all_results.append(output_path)
                     else:
                         logger.warning(
-                            f"Skipping {screenshot_id} for {language}: no source image found"
+                            f"Skipping {screenshot_id} for {language}: "
+                            f"no source image found"
                         )
                 except Exception as _e:
                     logger.error(
@@ -643,7 +653,8 @@ class ScreenshotGenerator:
         scaled_width = int(original_width * image_scale)
         scaled_height = int(original_height * image_scale)
         logger.info(
-            "📐 Original: {original_width}×{original_height} → Scaled: {scaled_width}×{scaled_height}"
+            f"📐 Original: {original_width}×{original_height} → "
+            f"Scaled: {scaled_width}×{scaled_height}"
         )
 
         # Calculate canvas size - respect screenshot-level frame setting
@@ -666,7 +677,8 @@ class ScreenshotGenerator:
                 raise ConfigurationError(
                     f"Device frame '{device_frame}' not found. "
                     f"Frame is required when 'frame: true' is specified. "
-                    f"Check available frames or remove 'frame: true' from your configuration."
+                    f"Check available frames or remove 'frame: true' from your "
+                    f"configuration."
                 )
         else:
             # No frame: canvas = scaled image + padding for text
@@ -691,10 +703,12 @@ class ScreenshotGenerator:
                         position=position,
                         font_size=item.size or 24,
                         font_weight=getattr(item, "weight", "normal") or "normal",
-                        color=item.color,  # Don't default to black if gradient is provided
+                        color=item.color,  # Don't default to black if gradient
+                        # is provided
                         gradient=item.gradient,  # Pass gradient configuration
                         alignment=getattr(item, "alignment", "center") or "center",
-                        anchor="center",  # Use center anchor for percentage-based positioning
+                        anchor="center",  # Use center anchor for
+                        # percentage-based positioning
                         max_width=getattr(
                             item, "maxWidth", None
                         ),  # User controls maxWidth, default None means no limit
@@ -707,7 +721,8 @@ class ScreenshotGenerator:
                     )
                     text_overlays.append(text_overlay)
 
-        # Create background config with priority: screenshot background > default background > white
+        # Create background config with priority: screenshot background >
+        # default background > white
         background_config = None
         if screenshot_def.background:
             # Use per-screenshot background if specified
@@ -772,8 +787,12 @@ class ScreenshotGenerator:
         """Map device names to device frame names."""
         mapping = {
             "iPhone 15 Pro Portrait": "iPhone 15 Pro - Natural Titanium - Portrait",
-            "iPhone 15 Pro Max Portrait": "iPhone 15 Pro Max - Natural Titanium - Portrait",
+            "iPhone 15 Pro Max Portrait": (
+                "iPhone 15 Pro Max - Natural Titanium - Portrait"
+            ),
             "iPhone 16 Pro Portrait": "iPhone 16 Pro - Natural Titanium - Portrait",
-            "iPhone 16 Pro Max Portrait": "iPhone 16 Pro Max - Natural Titanium - Portrait",
+            "iPhone 16 Pro Max Portrait": (
+                "iPhone 16 Pro Max - Natural Titanium - Portrait"
+            ),
         }
         return mapping.get(device, "iPhone 15 Pro - Natural Titanium - Portrait")

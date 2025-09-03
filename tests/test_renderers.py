@@ -112,7 +112,8 @@ class TestTextRenderer:
         self.renderer.render(overlay, self.canvas)
 
         # Canvas should be modified (basic check)
-        # Note: Detailed pixel-level checks are difficult without knowing exact font rendering
+        # Note: Detailed pixel-level checks are difficult without knowing exact
+        # font rendering
         assert self.canvas.size == (400, 300)
 
     def test_text_with_wrapping(self):

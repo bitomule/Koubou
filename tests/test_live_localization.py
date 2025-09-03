@@ -147,9 +147,13 @@ class TestLiveLocalization:
         assert not result.has_errors
         assert result.success_count == 2  # 2 languages
 
-        # Should create language-specific directories
-        assert (self.output_dir / "en" / "welcome.png").exists()
-        assert (self.output_dir / "es" / "welcome.png").exists()
+        # Should create language-specific directories with device subdirectories
+        assert (
+            self.output_dir / "en" / "iPhone_15_Pro_Portrait" / "welcome.png"
+        ).exists()
+        assert (
+            self.output_dir / "es" / "iPhone_15_Pro_Portrait" / "welcome.png"
+        ).exists()
 
     def test_xcstrings_change_triggers_regeneration(self):
         """Test that changes to xcstrings file trigger regeneration."""
@@ -161,8 +165,8 @@ class TestLiveLocalization:
         assert initial_result.success_count == 2
 
         # Get initial modification times
-        en_file = self.output_dir / "en" / "welcome.png"
-        es_file = self.output_dir / "es" / "welcome.png"
+        en_file = self.output_dir / "en" / "iPhone_15_Pro_Portrait" / "welcome.png"
+        es_file = self.output_dir / "es" / "iPhone_15_Pro_Portrait" / "welcome.png"
 
         initial_en_mtime = en_file.stat().st_mtime
         initial_es_mtime = es_file.stat().st_mtime
@@ -286,8 +290,12 @@ class TestLiveLocalization:
         assert not result.has_errors
 
         # Both language versions should be updated
-        assert (self.output_dir / "en" / "welcome.png").exists()
-        assert (self.output_dir / "es" / "welcome.png").exists()
+        assert (
+            self.output_dir / "en" / "iPhone_15_Pro_Portrait" / "welcome.png"
+        ).exists()
+        assert (
+            self.output_dir / "es" / "iPhone_15_Pro_Portrait" / "welcome.png"
+        ).exists()
 
     def test_nonexistent_xcstrings_file_gets_created(self):
         """Test that missing xcstrings file gets created during live generation."""
@@ -390,6 +398,11 @@ class TestLiveLocalization:
         """Test that dependency summary includes localization information."""
         generator = LiveScreenshotGenerator(self.config_file)
         generator.current_config = generator.load_config()
+
+        # Initialize dependency analyzer (normally done during initial_generation)
+        generator.dependency_analyzer.analyze_project(
+            generator.current_config, generator.config_dir
+        )
 
         summary = generator.get_dependency_summary()
 

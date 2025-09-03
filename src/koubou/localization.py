@@ -23,7 +23,6 @@ class XCStringsManager:
         self.config = localization_config
         self.config_dir = config_dir
 
-        # Resolve xcstrings path relative to config directory
         if Path(localization_config.xcstrings_path).is_absolute():
             self.xcstrings_path = Path(localization_config.xcstrings_path)
         else:
@@ -66,7 +65,6 @@ class XCStringsManager:
             f"Creating XCStrings file with {len(text_keys)} keys: {self.xcstrings_path}"
         )
 
-        # Create the xcstrings structure
         xcstrings_data = {
             "sourceLanguage": self.config.base_language,
             "strings": {},
@@ -91,10 +89,8 @@ class XCStringsManager:
 
             xcstrings_data["strings"][text_key] = {"localizations": localizations}
 
-        # Ensure directory exists
         self.xcstrings_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Write the xcstrings file
         with open(self.xcstrings_path, "w", encoding="utf-8") as f:
             json.dump(xcstrings_data, f, indent=2, ensure_ascii=False)
 
@@ -128,7 +124,6 @@ class XCStringsManager:
 
         logger.info(f"Adding {len(new_keys)} new keys to XCStrings file")
 
-        # Add new keys
         for text_key in sorted(new_keys):
             localizations = {}
 
@@ -187,7 +182,8 @@ class XCStringsManager:
         # If translation is empty or marked as needing translation, return original
         if not translated_value or string_unit.get("state") == "needs_translation":
             logger.debug(
-                f"No translation available for '{text_key}' in '{language}', using original"
+                f"No translation available for '{text_key}' in '{language}', "
+                f"using original"
             )
             return text_key
 

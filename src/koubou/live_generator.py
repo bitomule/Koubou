@@ -151,8 +151,9 @@ class LiveScreenshotGenerator:
         """
         result = LiveGenerationResult()
 
-        # Separate different types of changes
-        config_changed = self.config_file in changed_files
+        # Separate different types of changes - resolve paths for consistent comparison
+        resolved_changed_files = {f.resolve() for f in changed_files}
+        config_changed = self.config_file in resolved_changed_files
 
         # Check for xcstrings changes
         xcstrings_changed = False
@@ -161,14 +162,14 @@ class LiveScreenshotGenerator:
             xcstrings_manager = XCStringsManager(
                 self.current_config.localization, self.config_dir
             )
-            xcstrings_file = xcstrings_manager.xcstrings_path
-            xcstrings_changed = xcstrings_file in changed_files
+            xcstrings_file = xcstrings_manager.xcstrings_path.resolve()
+            xcstrings_changed = xcstrings_file in resolved_changed_files
 
-        # Remaining files are regular asset changes
-        excluded_files = {self.config_file}
+        # Remaining files are regular asset changes - exclude resolved paths
+        resolved_excluded_files = {self.config_file}
         if xcstrings_file:
-            excluded_files.add(xcstrings_file)
-        asset_changes = changed_files - excluded_files
+            resolved_excluded_files.add(xcstrings_file)
+        asset_changes = resolved_changed_files - resolved_excluded_files
 
         affected_screenshots = set()
 

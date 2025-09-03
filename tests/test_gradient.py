@@ -141,7 +141,8 @@ class TestTextOverlayGradientValidation:
         assert overlay.color is None  # Should be None when gradient is specified
 
     def test_default_color_when_neither_specified(self):
-        """Test that default color is set when neither color nor gradient is specified."""
+        """Test that default color is set when neither color nor gradient is
+        specified."""
         overlay = TextOverlay(content="Test Text", position=(100, 100))
         assert overlay.color is None  # No default color set
         assert overlay.gradient is None

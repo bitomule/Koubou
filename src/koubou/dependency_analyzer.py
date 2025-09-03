@@ -119,8 +119,8 @@ class DependencyAnalyzer:
                         self.dependencies.append(dependency)
                         screenshot_assets.append(dependency)
 
-                        # Update mappings
-                        asset_key = str(dependency.resolved_path)
+                        # Update mappings - use consistent path resolution
+                        asset_key = str(dependency.resolved_path.resolve())
                         if asset_key not in self._asset_to_screenshots:
                             self._asset_to_screenshots[asset_key] = []
                         self._asset_to_screenshots[asset_key].append(screenshot_id)

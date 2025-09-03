@@ -121,7 +121,8 @@ class DeviceFrameRenderer:
             color = parts[1]  # "Natural Titanium"
             orientation = parts[2]  # "Portrait"
 
-            # Navigate nested structure: iPhone -> 15 Pro -> Pro -> Natural Titanium -> Portrait
+            # Navigate nested structure: iPhone -> 15 Pro -> Pro ->
+            # Natural Titanium -> Portrait
             current = self.frame_metadata.get(device_type)
             if not current:
                 logger.warning(f"Device type '{device_type}' not found in metadata")
@@ -207,7 +208,8 @@ class DeviceFrameRenderer:
         final_height = int(source_height * scale)
 
         logger.info(
-            "📐 Scaling source {source_width}×{source_height} to {final_width}×{final_height} (scale: {scale:.2f})"
+            f"📐 Scaling source {source_width}×{source_height} to "
+            f"{final_width}×{final_height} (scale: {scale:.2f})"
         )
 
         # Resize source image to fit screen area
@@ -368,10 +370,12 @@ class DeviceFrameRenderer:
             mask_pixels = mask.load()
 
             logger.info(
-                "📱 Creating precise mask using flood fill from scaled frame ({frame_width}x{frame_height})"
+                f"📱 Creating precise mask using flood fill from scaled frame "
+                f"({frame_width}x{frame_height})"
             )
 
-            # FLOOD FILL ALGORITHM: Start from edges, propagate inward until hitting frame boundaries
+            # FLOOD FILL ALGORITHM: Start from edges, propagate inward until
+            # hitting frame boundaries
             from collections import deque
 
             # Track visited pixels (outside device area)
