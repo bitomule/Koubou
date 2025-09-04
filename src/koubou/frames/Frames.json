@@ -61,28 +61,32 @@
           "Portrait": {
             "y": "80",
             "x": "80",
-            "name": "iPhone 15 Pro - Natural Titanium - Portrait"
+            "name": "iPhone 15 Pro - Natural Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
           }
         },
         "Black Titanium": {
           "Portrait": {
             "y": "80", 
             "x": "80",
-            "name": "iPhone 15 Pro - Black Titanium - Portrait"
+            "name": "iPhone 15 Pro - Black Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
           }
         },
         "Blue Titanium": {
           "Portrait": {
             "y": "80",
             "x": "80", 
-            "name": "iPhone 15 Pro - Blue Titanium - Portrait"
+            "name": "iPhone 15 Pro - Blue Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
           }
         },
         "White Titanium": {
           "Portrait": {
             "y": "80",
             "x": "80",
-            "name": "iPhone 15 Pro - White Titanium - Portrait"
+            "name": "iPhone 15 Pro - White Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
           }
         }
       },
@@ -91,28 +95,144 @@
           "Portrait": {
             "y": "80",
             "x": "80",
-            "name": "iPhone 15 Pro Max - Natural Titanium - Portrait"
+            "name": "iPhone 15 Pro Max - Natural Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
           }
         },
         "Black Titanium": {
           "Portrait": {
             "y": "80",
             "x": "80", 
-            "name": "iPhone 15 Pro Max - Black Titanium - Portrait"
+            "name": "iPhone 15 Pro Max - Black Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
           }
         },
         "Blue Titanium": {
           "Portrait": {
             "y": "80",
             "x": "80",
-            "name": "iPhone 15 Pro Max - Blue Titanium - Portrait"
+            "name": "iPhone 15 Pro Max - Blue Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
           }
         },
         "White Titanium": {
           "Portrait": {
             "y": "80",
             "x": "80",
-            "name": "iPhone 15 Pro Max - White Titanium - Portrait"
+            "name": "iPhone 15 Pro Max - White Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        }
+      }
+    },
+    "16": {
+      "White": {
+        "Portrait": {
+          "y": "80",
+          "x": "80",
+          "name": "iPhone 16 - White - Portrait",
+          "appstore_device_type": "IPHONE_69"
+        }
+      },
+      "Black": {
+        "Portrait": {
+          "y": "80",
+          "x": "80",
+          "name": "iPhone 16 - Black - Portrait",
+          "appstore_device_type": "IPHONE_69"
+        }
+      },
+      "Pink": {
+        "Portrait": {
+          "y": "80",
+          "x": "80",
+          "name": "iPhone 16 - Pink - Portrait",
+          "appstore_device_type": "IPHONE_69"
+        }
+      },
+      "Teal": {
+        "Portrait": {
+          "y": "80",
+          "x": "80",
+          "name": "iPhone 16 - Teal - Portrait",
+          "appstore_device_type": "IPHONE_69"
+        }
+      },
+      "Ultramarine": {
+        "Portrait": {
+          "y": "80",
+          "x": "80",
+          "name": "iPhone 16 - Ultramarine - Portrait",
+          "appstore_device_type": "IPHONE_69"
+        }
+      }
+    },
+    "16 Pro": {
+      "Pro": {
+        "Natural Titanium": {
+          "Portrait": {
+            "y": "80",
+            "x": "80",
+            "name": "iPhone 16 Pro - Natural Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        },
+        "Black Titanium": {
+          "Portrait": {
+            "y": "80",
+            "x": "80",
+            "name": "iPhone 16 Pro - Black Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        },
+        "White Titanium": {
+          "Portrait": {
+            "y": "80",
+            "x": "80",
+            "name": "iPhone 16 Pro - White Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        },
+        "Desert Titanium": {
+          "Portrait": {
+            "y": "80",
+            "x": "80",
+            "name": "iPhone 16 Pro - Desert Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        }
+      },
+      "Pro Max": {
+        "Natural Titanium": {
+          "Portrait": {
+            "y": "80",
+            "x": "80",
+            "name": "iPhone 16 Pro Max - Natural Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        },
+        "Black Titanium": {
+          "Portrait": {
+            "y": "80",
+            "x": "80",
+            "name": "iPhone 16 Pro Max - Black Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        },
+        "White Titanium": {
+          "Portrait": {
+            "y": "80",
+            "x": "80",
+            "name": "iPhone 16 Pro Max - White Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        },
+        "Desert Titanium": {
+          "Portrait": {
+            "y": "80",
+            "x": "80",
+            "name": "iPhone 16 Pro Max - Desert Titanium - Portrait",
+            "appstore_device_type": "IPHONE_69"
           }
         }
       }
@@ -255,6 +375,26 @@
         "x": "120",
         "y": "120",
         "name": "iPad Pro 2018-2021 Portrait"
+      }
+    },
+    "iPad Pro 13": {
+      "M4": {
+        "Silver": {
+          "Portrait": {
+            "x": "120",
+            "y": "120",
+            "name": "iPad Pro 13 - M4 - Silver - Portrait",
+            "appstore_device_type": "IPAD_PRO_129"
+          }
+        },
+        "Space Gray": {
+          "Portrait": {
+            "x": "120",
+            "y": "120",
+            "name": "iPad Pro 13 - M4 - Space Gray - Portrait",
+            "appstore_device_type": "IPAD_PRO_129"
+          }
+        }
       }
     }
   },

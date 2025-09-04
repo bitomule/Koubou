@@ -35,6 +35,9 @@ dependencies = [
     "rich>=13.0.0",  # For beautiful CLI output
     "typer>=0.9.0",  # Modern CLI framework
     "watchdog>=3.0.0",  # File system monitoring for live editing
+    "pyjwt>=2.8.0",  # JWT token generation for App Store Connect API
+    "cryptography>=41.0.0",  # ES256 signing for JWT tokens
+    "httpx>=0.25.0",  # HTTP client for App Store Connect API
 ]
 
 [project.optional-dependencies]
@@ -46,6 +49,8 @@ dev = [
     "flake8>=6.0.0",
     "mypy>=1.0.0",
     "pre-commit>=3.0.0",
+    "responses>=0.24.0",  # HTTP mocking for App Store Connect API tests
+    "pytest-httpx>=0.26.0",  # HTTPX testing utilities
 ]
 
 [project.urls]
