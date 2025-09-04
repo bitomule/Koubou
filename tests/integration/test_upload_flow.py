@@ -9,8 +9,8 @@ from PIL import Image
 from koubou.appstore.auth import AppStoreCredentials
 from koubou.appstore.client import AppStoreClient
 from koubou.appstore.uploader import (
-    ScreenshotUploader,
     DeviceMapper,
+    ScreenshotUploader,
     ScreenshotUploadError,
 )
 
@@ -19,7 +19,7 @@ from koubou.appstore.uploader import (
 def test_credentials(tmp_path):
     """Create test credentials with mock private key."""
     key_file = tmp_path / "AuthKey_TEST123.p8"
-    # Create a minimal EC private key for testing
+    # Create a minimal EC private key for testing (DUMMY KEY - NOT A REAL SECRET)
     key_content = """-----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg7S8j1SWx8KGjTZsW
 Tkj3mD7VUE6ZXj+KbhX4d/UgG2ihRANCAASH9j8YHdJ+Y7z8YlYrHK9TsL7fF1S4
@@ -352,7 +352,7 @@ class TestConfigFileIntegration:
         # Create private key file
         key_file = tmp_path / "AuthKey_ROUND123.p8"
         key_file.write_text(
-            "-----BEGIN PRIVATE KEY-----\ntest_content\n-----END PRIVATE KEY-----"
+            "-----BEGIN PRIVATE KEY-----\ntest_content\n-----END PRIVATE KEY-----"  # DUMMY KEY
         )
 
         # Create config file
@@ -385,7 +385,7 @@ class TestConfigFileIntegration:
         # Create private key file in same directory as config
         key_file = tmp_path / "AuthKey_REL123.p8"
         key_file.write_text(
-            "-----BEGIN PRIVATE KEY-----\ntest_content\n-----END PRIVATE KEY-----"
+            "-----BEGIN PRIVATE KEY-----\ntest_content\n-----END PRIVATE KEY-----"  # DUMMY KEY
         )
 
         # Create config with relative path

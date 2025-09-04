@@ -3,11 +3,11 @@
 import json
 from unittest.mock import Mock, patch
 
-import pytest
 import httpx
+import pytest
 
-from koubou.appstore.client import AppStoreClient, AppStoreAPIError
 from koubou.appstore.auth import AppStoreAuth
+from koubou.appstore.client import AppStoreAPIError, AppStoreClient
 
 
 @pytest.fixture

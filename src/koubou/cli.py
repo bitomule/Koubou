@@ -14,18 +14,18 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from .appstore.auth import (
+    AppStoreAuth,
+    AppStoreAuthError,
+    AppStoreCredentials,
+    create_config_file,
+)
+from .appstore.uploader import ScreenshotUploader, ScreenshotUploadError
 from .config import ProjectConfig
 from .exceptions import KoubouError
 from .generator import ScreenshotGenerator
 from .live_generator import LiveScreenshotGenerator
 from .watcher import LiveWatcher
-from .appstore.auth import (
-    AppStoreCredentials,
-    AppStoreAuth,
-    create_config_file,
-    AppStoreAuthError,
-)
-from .appstore.uploader import ScreenshotUploader, ScreenshotUploadError
 
 app = typer.Typer(
     name="kou",

@@ -6,6 +6,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from koubou.appstore.auth import AppStoreCredentials
 from koubou.appstore.uploader import (
     DeviceMapper,
     ScreenshotInfo,
@@ -13,7 +14,6 @@ from koubou.appstore.uploader import (
     ScreenshotUploadError,
     UploadResult,
 )
-from koubou.appstore.auth import AppStoreCredentials
 
 
 class TestDeviceMapper:
@@ -294,7 +294,7 @@ class TestScreenshotUploader:
         # Create dummy private key file
         key_file = tmp_path / "test_key.p8"
         key_file.write_text(
-            "-----BEGIN PRIVATE KEY-----\ntest_content\n-----END PRIVATE KEY-----"
+            "-----BEGIN PRIVATE KEY-----\ntest_content\n-----END PRIVATE KEY-----"  # DUMMY KEY
         )
 
         return AppStoreCredentials(

@@ -2,14 +2,14 @@
 
 import json
 from datetime import datetime, timedelta
-from unittest.mock import patch, mock_open
+from unittest.mock import mock_open, patch
 
 import pytest
 
 from koubou.appstore.auth import (
-    AppStoreCredentials,
     AppStoreAuth,
     AppStoreAuthError,
+    AppStoreCredentials,
     create_config_file,
 )
 
@@ -22,7 +22,7 @@ class TestAppStoreCredentials:
         # Create a temporary private key file
         key_file = tmp_path / "test_key.p8"
         key_file.write_text(
-            "-----BEGIN PRIVATE KEY-----\ntest_key_content\n-----END PRIVATE KEY-----"
+            "-----BEGIN PRIVATE KEY-----\ntest_key_content\n-----END PRIVATE KEY-----"  # DUMMY KEY
         )
 
         credentials = AppStoreCredentials(
@@ -52,7 +52,7 @@ class TestAppStoreCredentials:
         # Create temporary private key file
         key_file = tmp_path / "AuthKey_ABC123.p8"
         key_file.write_text(
-            "-----BEGIN PRIVATE KEY-----\ntest_content\n-----END PRIVATE KEY-----"
+            "-----BEGIN PRIVATE KEY-----\ntest_content\n-----END PRIVATE KEY-----"  # DUMMY KEY
         )
 
         # Create config file
@@ -113,8 +113,8 @@ class TestAppStoreAuth:
     def mock_credentials(self, tmp_path):
         """Create mock credentials for testing."""
         key_file = tmp_path / "test_key.p8"
-        # Create a simple test private key (this won't be used for
-        # actual signing in tests)
+        # Create a simple test private key (DUMMY KEY - NOT A REAL SECRET)
+        # This won't be used for actual signing in tests
         key_content = """-----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg7S8j1SWx8KGjTZsW
 Tkj3mD7VUE6ZXj+KbhX4d/UgG2ihRANCAASH9j8YHdJ+Y7z8YlYrHK9TsL7fF1S4

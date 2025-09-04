@@ -9,15 +9,15 @@ from typing import Dict, List, Optional, Tuple
 from PIL import Image
 from rich.console import Console
 from rich.progress import (
+    BarColumn,
     Progress,
     SpinnerColumn,
     TextColumn,
-    BarColumn,
     TimeElapsedColumn,
 )
 
 from ..exceptions import KoubouError
-from .auth import AppStoreCredentials, AppStoreAuth
+from .auth import AppStoreAuth, AppStoreCredentials
 from .client import AppStoreAPIError, AppStoreClient
 
 logger = logging.getLogger(__name__)
