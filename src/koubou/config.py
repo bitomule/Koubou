@@ -122,6 +122,9 @@ class TextOverlay(BaseModel):
     stroke_gradient: Optional[GradientConfig] = Field(
         default=None, description="Stroke gradient configuration"
     )
+    rotation: Optional[float] = Field(
+        default=0, description="Rotation angle in degrees (clockwise)"
+    )
 
     @validator("color")
     def validate_color(cls, v: Optional[str]) -> Optional[str]:
@@ -194,6 +197,9 @@ class ScreenshotConfig(BaseModel):
         default=False,
         description="Apply device frame to image at image position and scale",
     )
+    image_rotation: Optional[float] = Field(
+        default=0, description="Image rotation angle in degrees (clockwise)"
+    )
 
     @validator("source_image")
     def validate_source_image(cls, v: str) -> str:
@@ -244,6 +250,9 @@ class ContentItem(BaseModel):
     scale: Optional[float] = Field(default=1.0, description="Image scale factor")
     frame: Optional[bool] = Field(
         default=False, description="Apply device frame to image"
+    )
+    rotation: Optional[float] = Field(
+        default=0, description="Rotation angle in degrees (clockwise)"
     )
 
     @validator("color")

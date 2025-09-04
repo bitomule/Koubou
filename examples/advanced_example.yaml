@@ -26,6 +26,7 @@ screenshots:
         stroke_width: 2
         stroke_color: "#000000"
         line_height: 1.3
+        rotation: 8  # NEW: Rotate text with stroke 8 degrees
       
       - content: "✨ AI-Powered Analysis"
         position: [150, 220]
@@ -100,3 +101,36 @@ screenshots:
         color: "#495057"
         alignment: "center"
         max_width: 600
+
+  - name: "Rotation Showcase"
+    devices: ["iPhone 15 Pro Portrait"]
+    background:
+      type: "radial"
+      colors: ["#e3f2fd", "#bbdefb"]
+      center: ["50%", "30%"]
+    
+    content:
+      - type: "image"
+        asset: "screenshots/app_logo.png"
+        position: ["30%", "40%"]
+        scale: 0.6
+        rotation: 25  # NEW: Rotate image 25 degrees
+      
+      - type: "text"
+        content: "Dynamic Rotation"
+        position: ["70%", "30%"]
+        size: 36
+        gradient:
+          type: "linear"
+          colors: ["#ff6b6b", "#4ecdc4"]
+          direction: 45
+        stroke_width: 1
+        stroke_color: "#ffffff"
+        rotation: -12  # NEW: Rotate gradient text -12 degrees
+      
+      - type: "text"
+        content: "Perfect Balance"
+        position: ["50%", "70%"]
+        size: 24
+        color: "#2c3e50"
+        rotation: 3  # NEW: Subtle rotation

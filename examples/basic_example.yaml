@@ -9,6 +9,7 @@ screenshots:
     source_image: "screenshots/home.png"
     output_size: [1320, 2868]  # iPhone 16 Pro size
     device_frame: "iPhone 16 Pro - Black Titanium - Portrait"
+    image_rotation: -5  # NEW: Rotate image 5 degrees counter-clockwise
     
     background:
       type: "linear"
@@ -29,3 +30,10 @@ screenshots:
         color: "#ffffff"
         alignment: "center"
         max_width: 600
+      
+      - content: "Rotated Badge"
+        position: [1100, 400]
+        font_size: 18
+        color: "#ffff00"
+        alignment: "center"
+        rotation: 15  # NEW: Rotate text 15 degrees clockwise

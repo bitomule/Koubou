@@ -100,6 +100,14 @@ class TextRenderer:
                     text_block_width,
                 )
 
+            # Apply text rotation if specified (post-processing approach)
+            rotation_angle = getattr(text_config, "rotation", 0) or 0
+            if rotation_angle != 0:
+                logger.info(f"🔄 Rotating text by {rotation_angle}°")
+                self._apply_text_rotation(
+                    canvas, text_config, text_bounds, rotation_angle
+                )
+
         except Exception as _e:
             raise TextRenderError(
                 f"Failed to render text '{text_config.content[:50]}...': {_e}"
@@ -715,3 +723,95 @@ class TextRenderer:
         full_mask.paste(smoothed_mask, (anchor_x, anchor_y))
 
         return full_mask
+
+    def _apply_text_rotation(
+        self,
+        canvas: Image.Image,
+        text_config: TextOverlay,
+        text_bounds: Tuple[int, int, int, int],
+        rotation_angle: float,
+    ) -> None:
+        """Apply rotation to rendered text using post-processing approach.
+
+        This preserves all existing text quality features (gradients, strokes, anti-aliasing)
+        by rotating the final rendered text image.
+
+        Args:
+            canvas: Canvas with rendered text (modified in place)
+            text_config: Text configuration
+            text_bounds: (x, y, width, height) of the text region
+            rotation_angle: Rotation angle in degrees (clockwise)
+        """
+        try:
+            anchor_x, anchor_y, text_width, text_height = text_bounds
+
+            # Add padding to prevent edge artifacts during rotation
+            padding = max(text_width, text_height) // 4
+            padded_width = text_width + 2 * padding
+            padded_height = text_height + 2 * padding
+
+            # Extract text region with padding
+            text_region_bounds = (
+                max(0, anchor_x - padding),
+                max(0, anchor_y - padding),
+                min(canvas.width, anchor_x + text_width + padding),
+                min(canvas.height, anchor_y + text_height + padding),
+            )
+
+            # Create a larger extraction area to capture the full text
+            extract_x1, extract_y1, extract_x2, extract_y2 = text_region_bounds
+            extracted_region = canvas.crop(text_region_bounds)
+
+            # Clear the original text area on canvas
+            clear_region = Image.new(
+                "RGBA", (extract_x2 - extract_x1, extract_y2 - extract_y1), (0, 0, 0, 0)
+            )
+            canvas.paste(clear_region, (extract_x1, extract_y1))
+
+            # Rotate the extracted text region
+            rotated_text = extracted_region.rotate(
+                -rotation_angle,  # Negative for clockwise rotation (PIL uses counter-clockwise)
+                resample=Image.Resampling.BICUBIC,  # Use BICUBIC for compatibility
+                expand=True,  # Expand bounds to prevent cropping
+            )
+
+            # Calculate new center position after rotation
+            original_center_x = anchor_x + text_width // 2
+            original_center_y = anchor_y + text_height // 2
+
+            # Calculate paste position to center the rotated text at original center
+            rotated_width, rotated_height = rotated_text.size
+            paste_x = original_center_x - rotated_width // 2
+            paste_y = original_center_y - rotated_height // 2
+
+            # Ensure paste position is within canvas bounds
+            paste_x = max(0, min(paste_x, canvas.width - rotated_width))
+            paste_y = max(0, min(paste_y, canvas.height - rotated_height))
+
+            # Composite rotated text back onto canvas
+            # Use alpha compositing to preserve anti-aliasing and transparency
+            temp_canvas = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+            if (
+                paste_x >= 0
+                and paste_y >= 0
+                and paste_x + rotated_width <= canvas.width
+                and paste_y + rotated_height <= canvas.height
+            ):
+                temp_canvas.paste(rotated_text, (paste_x, paste_y), rotated_text)
+                canvas = Image.alpha_composite(canvas, temp_canvas)
+
+                # Copy the result back to the original canvas (since canvas is modified in place)
+                canvas_array = list(canvas.getdata())
+                canvas.putdata(canvas_array)
+            else:
+                logger.warning(
+                    f"Rotated text extends beyond canvas bounds, clipping may occur"
+                )
+                temp_canvas.paste(rotated_text, (paste_x, paste_y), rotated_text)
+                canvas = Image.alpha_composite(canvas, temp_canvas)
+                canvas_array = list(canvas.getdata())
+                canvas.putdata(canvas_array)
+
+        except Exception as e:
+            logger.error(f"Text rotation failed: {e}, falling back to non-rotated text")
+            # If rotation fails, the original text remains on canvas (fallback behavior)

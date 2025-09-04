@@ -214,6 +214,18 @@ class ScreenshotGenerator:
                 (scaled_width, scaled_height), Image.Resampling.LANCZOS
             )
 
+        # Apply rotation if specified
+        rotation_angle = getattr(config, "image_rotation", 0) or 0
+        if rotation_angle != 0:
+            logger.info(f"🔄 Rotating image by {rotation_angle}°")
+            source_image = source_image.rotate(
+                -rotation_angle,  # Negative for clockwise rotation (PIL uses counter-clockwise)
+                resample=Image.Resampling.BICUBIC,  # Use BICUBIC instead of LANCZOS for compatibility
+                expand=True,  # Expand bounds to prevent cropping
+            )
+            # Update dimensions after rotation
+            scaled_width, scaled_height = source_image.size
+
         # Position image at % coordinates relative to canvas
         position = config.image_position or ["50%", "50%"]
         x_percent, y_percent = position
@@ -251,6 +263,7 @@ class ScreenshotGenerator:
                 self.image_position = img["position"]
                 self.image_scale = img["scale"]
                 self.image_frame = img["frame"]
+                self.image_rotation = img.get("rotation", 0)
 
         return TempConfig(base_config, img_config)
 
@@ -610,17 +623,20 @@ class ScreenshotGenerator:
                 image_scale = item.scale or 1.0
                 image_position = item.position or ["50%", "50%"]  # Default to center
 
-                # Store image configuration including frame setting
+                # Store image configuration including frame and rotation settings
+                image_rotation = getattr(item, "rotation", 0) or 0
                 image_config = {
                     "path": source_image_path,
                     "scale": image_scale,
                     "position": image_position,
                     "frame": getattr(item, "frame", False),  # Capture frame setting
+                    "rotation": image_rotation,  # Capture rotation setting
                 }
                 image_configs.append(image_config)
                 logger.info(
                     f"📏 Image: scale={image_scale * 100:.0f}%, "
-                    f"position={image_position}, frame={getattr(item, 'frame', False)}"
+                    f"position={image_position}, frame={getattr(item, 'frame', False)}, "
+                    f"rotation={image_rotation}°"
                 )
                 # Continue processing more images instead of breaking
 
