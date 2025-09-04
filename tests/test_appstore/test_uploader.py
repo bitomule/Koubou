@@ -323,8 +323,7 @@ class TestScreenshotUploader:
         # {device}/screenshot.png
         screenshots_dir = tmp_path / "Screenshots" / "Generated"
         device_dir = (
-            screenshots_dir / "en" /
-            "iPhone_15_Pro_-_Natural_Titanium_-_Portrait"
+            screenshots_dir / "en" / "iPhone_15_Pro_-_Natural_Titanium_-_Portrait"
         )
         device_dir.mkdir(parents=True)
 

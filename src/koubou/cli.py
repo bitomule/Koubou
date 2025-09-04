@@ -19,7 +19,12 @@ from .exceptions import KoubouError
 from .generator import ScreenshotGenerator
 from .live_generator import LiveScreenshotGenerator
 from .watcher import LiveWatcher
-from .appstore.auth import AppStoreCredentials, AppStoreAuth, create_config_file, AppStoreAuthError
+from .appstore.auth import (
+    AppStoreCredentials,
+    AppStoreAuth,
+    create_config_file,
+    AppStoreAuthError,
+)
 from .appstore.uploader import ScreenshotUploader, ScreenshotUploadError
 
 app = typer.Typer(
@@ -544,53 +549,65 @@ def _update_live_status(
 @app.command()
 def upload(
     config_file: Path = typer.Argument(..., help="YAML configuration file"),
-    setup: bool = typer.Option(False, "--setup", help="Setup App Store Connect credentials only"),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Preview upload without actually uploading"),
+    setup: bool = typer.Option(
+        False, "--setup", help="Setup App Store Connect credentials only"
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Preview upload without actually uploading"
+    ),
     verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
 ):
     """📱 Upload generated screenshots to App Store Connect"""
-    
+
     setup_logging(verbose)
-    
+
     try:
         # Validate config file exists
         if not config_file.exists():
-            console.print(f"❌ Configuration file not found: {config_file}", style="red")
+            console.print(
+                f"❌ Configuration file not found: {config_file}", style="red"
+            )
             raise typer.Exit(1)
-        
+
         # Determine App Store config path (next to YAML config)
         appstore_config_path = config_file.parent / "appstore-config.json"
-        
+
         # Handle setup-only mode
         if setup:
             _setup_appstore_credentials(appstore_config_path)
             raise typer.Exit(0)
-        
+
         # Check for existing App Store config
         if not appstore_config_path.exists():
-            console.print(f"❌ App Store Connect config not found: {appstore_config_path.name}", style="red")
-            
+            console.print(
+                f"❌ App Store Connect config not found: {appstore_config_path.name}",
+                style="red",
+            )
+
             # Ask user if they want to create it
             create_config = typer.confirm("? Would you like to create it now?")
             if create_config:
                 _setup_appstore_credentials(appstore_config_path)
-                console.print("\nℹ️ Setup complete! Run the upload command again to upload screenshots.", style="blue")
+                console.print(
+                    "\nℹ️ Setup complete! Run the upload command again to upload screenshots.",
+                    style="blue",
+                )
                 raise typer.Exit(0)
             else:
                 console.print("💡 You can create the config later with:", style="blue")
                 console.print(f"   kou upload --setup {config_file}", style="cyan")
                 raise typer.Exit(1)
-        
+
         # Load App Store credentials
         try:
             credentials = AppStoreCredentials.from_config_file(appstore_config_path)
             console.print(f"✅ Loaded App Store Connect credentials", style="green")
         except AppStoreAuthError as e:
             console.print(f"❌ Invalid App Store Connect config: {e}", style="red")
-            console.print(f"💡 Fix the config or recreate it with:", style="blue") 
+            console.print(f"💡 Fix the config or recreate it with:", style="blue")
             console.print(f"   kou upload --setup {config_file}", style="cyan")
             raise typer.Exit(1)
-        
+
         # Validate credentials by generating a test token
         try:
             auth = AppStoreAuth(credentials)
@@ -599,60 +616,71 @@ def upload(
         except AppStoreAuthError as e:
             console.print(f"❌ Credential validation failed: {e}", style="red")
             raise typer.Exit(1)
-        
+
         # Find generated screenshots directory
         with open(config_file) as f:
             config_data = yaml.safe_load(f)
-        
+
         project_config = ProjectConfig(**config_data)
         screenshots_dir = Path(config_file.parent) / project_config.project.output_dir
-        
+
         if not screenshots_dir.exists():
-            console.print(f"❌ Screenshots directory not found: {screenshots_dir}", style="red")
+            console.print(
+                f"❌ Screenshots directory not found: {screenshots_dir}", style="red"
+            )
             console.print("💡 Generate screenshots first with:", style="blue")
             console.print(f"   kou {config_file}", style="cyan")
             raise typer.Exit(1)
-        
+
         # Initialize uploader and analyze screenshots
         uploader = ScreenshotUploader(credentials)
-        
+
         try:
             console.print("🔍 Analyzing generated screenshots...", style="blue")
             screenshot_infos = uploader.analyze_screenshots(screenshots_dir)
-            
-            console.print(f"✅ Found {len(screenshot_infos)} valid screenshots", style="green")
-            
+
+            console.print(
+                f"✅ Found {len(screenshot_infos)} valid screenshots", style="green"
+            )
+
             # Show preview of what will be uploaded
             _show_upload_preview(screenshot_infos)
-            
+
             if dry_run:
-                console.print("\n🧪 Dry run complete - no screenshots were uploaded", style="yellow")
+                console.print(
+                    "\n🧪 Dry run complete - no screenshots were uploaded",
+                    style="yellow",
+                )
                 raise typer.Exit(0)
-            
+
             # Confirm upload
             if not typer.confirm("\n? Proceed with upload?"):
                 console.print("Upload cancelled", style="yellow")
                 raise typer.Exit(0)
-            
+
             # Perform upload
             console.print("\n🚀 Starting upload to App Store Connect...", style="blue")
             results = uploader.upload_screenshots(screenshot_infos)
-            
+
             # Show results
             _show_upload_results(results)
-            
+
             # Exit with appropriate code
             failed_count = sum(1 for r in results if not r.success)
             if failed_count > 0:
-                console.print(f"\n⚠️ {failed_count} screenshot(s) failed to upload", style="yellow")
+                console.print(
+                    f"\n⚠️ {failed_count} screenshot(s) failed to upload", style="yellow"
+                )
                 raise typer.Exit(1)
-            
-            console.print(f"\n✅ Successfully uploaded {len(results)} screenshots!", style="green")
-            
+
+            console.print(
+                f"\n✅ Successfully uploaded {len(results)} screenshots!", style="green"
+            )
+
         except ScreenshotUploadError as e:
             console.print(f"❌ Upload failed: {e}", style="red")
             raise typer.Exit(1)
-    
+
     except KoubouError as e:
         console.print(f"❌ {e}", style="red")
         raise typer.Exit(1)
@@ -666,40 +694,42 @@ def upload(
 def _setup_appstore_credentials(config_path: Path) -> None:
     """Interactive setup of App Store Connect credentials."""
     console.print("📝 Setting up App Store Connect integration...", style="blue")
-    
+
     # Collect credentials interactively
     key_id = typer.prompt("? Key ID (from App Store Connect)")
     issuer_id = typer.prompt("? Issuer ID (from App Store Connect)")
-    private_key_path = typer.prompt("? Private key file path", default="./AuthKey_" + key_id + ".p8")
+    private_key_path = typer.prompt(
+        "? Private key file path", default="./AuthKey_" + key_id + ".p8"
+    )
     app_id = typer.prompt("? App ID (from App Store Connect)")
-    
+
     # Validate private key file exists
     key_path = Path(private_key_path).expanduser()
     if not key_path.is_absolute():
         key_path = config_path.parent / key_path
-    
+
     if not key_path.exists():
         console.print(f"❌ Private key file not found: {key_path}", style="red")
         raise typer.Exit(1)
-    
+
     # Create config
     credentials_data = {
         "key_id": key_id,
         "issuer_id": issuer_id,
         "private_key_path": private_key_path,
-        "app_id": app_id
+        "app_id": app_id,
     }
-    
+
     try:
         create_config_file(config_path, credentials_data)
         console.print(f"✅ Created {config_path.name}", style="green")
-        
+
         # Test credentials
         credentials = AppStoreCredentials.from_config_file(config_path)
         auth = AppStoreAuth(credentials)
         auth.validate_credentials()
         console.print("✅ Credentials validated successfully", style="green")
-        
+
     except (AppStoreAuthError, Exception) as e:
         console.print(f"❌ Setup failed: {e}", style="red")
         # Clean up failed config file
@@ -710,30 +740,34 @@ def _setup_appstore_credentials(config_path: Path) -> None:
 
 def _show_upload_preview(screenshot_infos) -> None:
     """Show preview of screenshots to be uploaded."""
-    table = Table(title="📤 Upload Preview", show_header=True, header_style="bold magenta")
+    table = Table(
+        title="📤 Upload Preview", show_header=True, header_style="bold magenta"
+    )
     table.add_column("Screenshot", style="cyan")
     table.add_column("Device Type", style="green")
     table.add_column("App Store Type", style="blue")
     table.add_column("Size", style="yellow")
-    
+
     for info in screenshot_infos:
         table.add_row(
             info.path.name,
             info.device_type,
             info.display_type,
-            f"{info.size[0]}×{info.size[1]}"
+            f"{info.size[0]}×{info.size[1]}",
         )
-    
+
     console.print(table)
 
 
 def _show_upload_results(results) -> None:
     """Show upload results in a table."""
-    table = Table(title="📱 Upload Results", show_header=True, header_style="bold magenta")
+    table = Table(
+        title="📱 Upload Results", show_header=True, header_style="bold magenta"
+    )
     table.add_column("Screenshot", style="cyan")
     table.add_column("Status", style="green")
     table.add_column("Details", style="blue")
-    
+
     for result in results:
         if result.success:
             status = "✅ Success"
@@ -741,9 +775,9 @@ def _show_upload_results(results) -> None:
         else:
             status = "❌ Failed"
             details = result.error_message or "Unknown error"
-        
+
         table.add_row(result.screenshot_path.name, status, details)
-    
+
     console.print(table)
 
 

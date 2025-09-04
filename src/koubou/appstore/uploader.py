@@ -100,10 +100,7 @@ class DeviceMapper:
                         if isinstance(value, dict):
                             # Check if this level has a 'name' and
                             # 'appstore_device_type'
-                            if (
-                                "name" in value and
-                                "appstore_device_type" in value
-                            ):
+                            if "name" in value and "appstore_device_type" in value:
                                 device_name = value["name"]
                                 appstore_type = value["appstore_device_type"]
                                 mappings[device_name] = appstore_type
@@ -242,17 +239,14 @@ class ScreenshotUploader:
                     device_name = path_parts[-2].replace("_", " ")
                 else:
                     logger.warning(
-                        f"Cannot determine device from path: "
-                        f"{screenshot_path}"
+                        f"Cannot determine device from path: " f"{screenshot_path}"
                     )
                     continue
 
                 # Get display type mapping
                 display_type = self.device_mapper.get_display_type(device_name)
                 if not display_type:
-                    logger.warning(
-                        f"No display type mapping for device: {device_name}"
-                    )
+                    logger.warning(f"No display type mapping for device: {device_name}")
                     continue
 
                 # Get image dimensions and file size
