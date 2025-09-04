@@ -601,10 +601,10 @@ def upload(
         # Load App Store credentials
         try:
             credentials = AppStoreCredentials.from_config_file(appstore_config_path)
-            console.print(f"✅ Loaded App Store Connect credentials", style="green")
+            console.print("✅ Loaded App Store Connect credentials", style="green")
         except AppStoreAuthError as e:
             console.print(f"❌ Invalid App Store Connect config: {e}", style="red")
-            console.print(f"💡 Fix the config or recreate it with:", style="blue")
+            console.print("💡 Fix the config or recreate it with:", style="blue")
             console.print(f"   kou upload --setup {config_file}", style="cyan")
             raise typer.Exit(1)
 
