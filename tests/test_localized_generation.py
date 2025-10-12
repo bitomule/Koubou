@@ -106,10 +106,13 @@ class TestLocalizedGeneration:
         generator = ScreenshotGenerator()
         result_paths = generator.generate_project(project_config, self.temp_dir)
 
-        # Should generate single screenshot
+        # Should generate single screenshot in device subdirectory
         assert len(result_paths) == 1
         assert result_paths[0].exists()
-        assert result_paths[0].parent == self.output_dir
+        # Path structure is now: output_dir/device/screenshot.png
+        assert result_paths[0].parent.parent == self.output_dir
+        # Verify device subdirectory was created
+        assert "iPhone_15" in result_paths[0].parent.name
 
     def test_localized_generation_creates_language_directories(self):
         """Test that localized generation creates language-specific directories."""

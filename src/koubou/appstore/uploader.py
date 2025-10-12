@@ -72,6 +72,7 @@ class DeviceMapper:
         """
         self.frames_json_path = frames_json_path or self._get_bundled_frames_path()
         self._device_mappings = None
+        self._required_dimensions = None
 
     def _get_bundled_frames_path(self) -> Path:
         """Get path to bundled Frames.json."""
@@ -131,11 +132,81 @@ class DeviceMapper:
             }
             return self._device_mappings
 
-    # Required dimensions for each display type (width x height)
-    REQUIRED_DIMENSIONS = {
-        "IPHONE_69": (1179, 2556),  # 6.9" iPhone (iPhone 15 Pro and later)
-        "IPAD_PRO_129": (2064, 2752),  # 12.9" iPad Pro (13-inch)
-    }
+    def _load_required_dimensions(self) -> Dict[str, Tuple[int, int]]:
+        """Load required screenshot dimensions from bundled metadata.
+
+        Returns:
+            Dict mapping appstore_device_type to (width, height) tuples
+        """
+        if self._required_dimensions is not None:
+            return self._required_dimensions
+
+        try:
+            import json
+
+            # Load Sizes.json to get frame dimensions
+            sizes_json_path = self.frames_json_path.parent / "Sizes.json"
+            if not sizes_json_path.exists():
+                logger.warning(f"Sizes.json not found at {sizes_json_path}")
+                return self._get_fallback_dimensions()
+
+            with open(sizes_json_path) as f:
+                sizes_data = json.load(f)
+
+            # Load device mappings to connect device names to appstore types
+            device_mappings = self._load_device_mappings()
+
+            # Build appstore_device_type -> dimensions mapping
+            dimensions = {}
+
+            # Flatten Sizes.json structure
+            def extract_sizes(data, prefix=""):
+                """Recursively extract device sizes."""
+                if isinstance(data, dict):
+                    if "width" in data and "height" in data:
+                        # Found a device with dimensions
+                        device_name = prefix.strip()
+                        if device_name in device_mappings:
+                            appstore_type = device_mappings[device_name]
+                            dimensions[appstore_type] = (
+                                int(data["width"]),
+                                int(data["height"]),
+                            )
+                            logger.debug(
+                                f"Mapped dimensions: {appstore_type} -> "
+                                f"({data['width']}, {data['height']})"
+                            )
+                    else:
+                        # Recurse
+                        for key, value in data.items():
+                            if isinstance(value, dict):
+                                new_prefix = (
+                                    f"{prefix} {key}".strip() if prefix else key
+                                )
+                                extract_sizes(value, new_prefix)
+
+            extract_sizes(sizes_data)
+
+            if not dimensions:
+                logger.warning("No dimensions found, using fallback")
+                return self._get_fallback_dimensions()
+
+            logger.info(f"Loaded {len(dimensions)} required dimensions")
+            self._required_dimensions = dimensions
+            return dimensions
+
+        except Exception as e:
+            logger.error(f"Failed to load required dimensions: {e}")
+            return self._get_fallback_dimensions()
+
+    def _get_fallback_dimensions(self) -> Dict[str, Tuple[int, int]]:
+        """Get fallback dimensions if loading fails."""
+        fallback = {
+            "IPHONE_69": (1179, 2556),  # 6.9" iPhone (iPhone 15 Pro and later)
+            "IPAD_PRO_129": (2064, 2752),  # 12.9" iPad Pro (13-inch)
+        }
+        self._required_dimensions = fallback
+        return fallback
 
     def get_display_type(self, device_name: str) -> Optional[str]:
         """Get App Store Connect display type for device name.
@@ -149,8 +220,7 @@ class DeviceMapper:
         mappings = self._load_device_mappings()
         return mappings.get(device_name)
 
-    @classmethod
-    def get_required_dimensions(cls, display_type: str) -> Optional[Tuple[int, int]]:
+    def get_required_dimensions(self, display_type: str) -> Optional[Tuple[int, int]]:
         """Get required dimensions for display type.
 
         Args:
@@ -159,11 +229,11 @@ class DeviceMapper:
         Returns:
             (width, height) tuple or None if not found
         """
-        return cls.REQUIRED_DIMENSIONS.get(display_type)
+        required_dims = self._load_required_dimensions()
+        return required_dims.get(display_type)
 
-    @classmethod
     def validate_screenshot_dimensions(
-        cls, image_path: Path, display_type: str
+        self, image_path: Path, display_type: str
     ) -> bool:
         """Validate that screenshot has correct dimensions for display type.
 
@@ -183,7 +253,7 @@ class DeviceMapper:
         except Exception as e:
             raise ScreenshotUploadError(f"Cannot read image {image_path}: {e}") from e
 
-        required_size = cls.get_required_dimensions(display_type)
+        required_size = self.get_required_dimensions(display_type)
         if not required_size:
             raise ScreenshotUploadError(f"Unknown display type: {display_type}")
 

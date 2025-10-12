@@ -43,14 +43,26 @@ jobs:
         cd dist
         sha256sum * > checksums.txt
         
-    - name: Generate changelog
+    - name: Extract changelog for version
       id: changelog
       run: |
-        if git describe --tags --abbrev=0 HEAD^ >/dev/null 2>&1; then
-          echo "changelog=New features and improvements since last release" >> $GITHUB_OUTPUT
+        VERSION="${GITHUB_REF#refs/tags/}"
+        # Extract changelog section for this version from CHANGELOG.md
+        if [ -f "CHANGELOG.md" ]; then
+          # Get content between version header and next version header or end
+          # Note: Escape square brackets in awk regex pattern
+          CHANGELOG=$(awk "/^## \\[${VERSION#v}\\]/,/^## \\[/" CHANGELOG.md | sed '1d;$d' | sed '/^$/d')
+          if [ -z "$CHANGELOG" ]; then
+            # Fallback if version not found in CHANGELOG
+            CHANGELOG="See [CHANGELOG.md](https://github.com/bitomule/koubou/blob/main/CHANGELOG.md) for details."
+          fi
         else
-          echo "changelog=Initial release" >> $GITHUB_OUTPUT
+          CHANGELOG="See release notes for changes."
         fi
+        # Use delimiter to handle multiline content
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
         
     - name: Create Release
       uses: softprops/action-gh-release@v2

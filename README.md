@@ -355,6 +355,29 @@ kou live config.yaml --verbose
 kou --create-config config.yaml --name "My App Screenshots"
 ```
 
+#### Upload to App Store Connect
+```bash
+# Setup App Store Connect credentials (interactive)
+kou upload config.yaml --setup
+
+# Upload screenshots (replace existing - default)
+kou upload config.yaml
+
+# Upload screenshots (append to existing)
+kou upload config.yaml --mode append
+
+# Preview upload without uploading (dry run)
+kou upload config.yaml --dry-run
+```
+
+**Upload Modes:**
+- **replace** (default): Deletes all existing screenshots and uploads fresh set
+- **append**: Keeps existing screenshots and adds new ones
+
+**Requirements:**
+- App Store Connect API credentials (Key ID, Issuer ID, Private Key)
+- `appstore-config.json` file (created via `--setup`)
+
 ## 🎨 Device Frames
 
 Koubou includes 100+ professionally crafted device frames:
@@ -514,14 +537,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📋 Changelog
 
-### v0.5.6 (Latest)
-- ✅ **Fixed**: All device frame PNG files now properly included in production installations
-- ✅ **Fixed**: Strict error handling - no more silent fallbacks when frames are missing
-- ✅ **Added**: Screenshot-level frame control (`frame: false` to disable per screenshot)
-- ✅ **Improved**: Better error messages when configuration issues occur
-
-### v0.5.5
-- ⚠️ Known issue: Missing PNG frame files in production (fixed in v0.5.6)
+See [CHANGELOG.md](CHANGELOG.md) for complete version history.
 
 ## 📄 License
 

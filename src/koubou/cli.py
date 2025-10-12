@@ -555,6 +555,12 @@ def upload(
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Preview upload without actually uploading"
     ),
+    mode: str = typer.Option(
+        "replace",
+        "--mode",
+        "-m",
+        help="Upload mode: 'replace' (delete existing, default) or 'append' (keep existing)",
+    ),
     verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
 ):
     """📱 Upload generated screenshots to App Store Connect"""
@@ -630,7 +636,7 @@ def upload(
                 f"❌ Screenshots directory not found: {screenshots_dir}", style="red"
             )
             console.print("💡 Generate screenshots first with:", style="blue")
-            console.print(f"   kou {config_file}", style="cyan")
+            console.print(f"   kou generate {config_file}", style="cyan")
             raise typer.Exit(1)
 
         # Initialize uploader and analyze screenshots
@@ -654,14 +660,31 @@ def upload(
                 )
                 raise typer.Exit(0)
 
+            # Validate and convert upload mode
+            mode_lower = mode.lower()
+            if mode_lower not in ["replace", "append"]:
+                console.print(
+                    f"❌ Invalid mode: '{mode}'. Use 'replace' or 'append'",
+                    style="red",
+                )
+                raise typer.Exit(1)
+
+            replace_existing = mode_lower == "replace"
+            mode_action = "replace all" if replace_existing else "append to"
+            console.print(
+                f"📋 Upload mode: {mode_action} existing screenshots", style="blue"
+            )
+
             # Confirm upload
-            if not typer.confirm("\n? Proceed with upload?"):
+            if not typer.confirm(f"\n? Proceed to {mode_action} existing screenshots?"):
                 console.print("Upload cancelled", style="yellow")
                 raise typer.Exit(0)
 
             # Perform upload
             console.print("\n🚀 Starting upload to App Store Connect...", style="blue")
-            results = uploader.upload_screenshots(screenshot_infos)
+            results = uploader.upload_screenshots(
+                screenshot_infos, replace_existing=replace_existing
+            )
 
             # Show results
             _show_upload_results(results)

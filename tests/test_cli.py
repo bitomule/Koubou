@@ -105,8 +105,8 @@ class TestCLI:
         output_dir = self.temp_dir / "output"
         assert output_dir.exists()
 
-        # Should have generated a screenshot
-        output_files = list(output_dir.glob("*.png"))
+        # Should have generated a screenshot in device subdirectory
+        output_files = list(output_dir.glob("**/*.png"))
         assert len(output_files) >= 1
 
     def test_nonexistent_config(self):
@@ -172,8 +172,8 @@ class TestCLI:
         yaml_output = self.temp_dir / "yaml_output"
         assert yaml_output.exists()
 
-        # Should have generated a screenshot in YAML-specified directory
-        output_files = list(yaml_output.glob("*.png"))
+        # Should have generated a screenshot in YAML-specified directory with device subdirectory
+        output_files = list(yaml_output.glob("**/*.png"))
         assert len(output_files) >= 1
 
     def test_list_frames_command(self):

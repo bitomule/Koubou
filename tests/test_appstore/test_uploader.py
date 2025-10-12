@@ -144,59 +144,65 @@ class TestDeviceMapper:
 
     def test_get_required_dimensions(self):
         """Test getting required dimensions for display types."""
-        result = DeviceMapper.get_required_dimensions("IPHONE_69")
+        mapper = DeviceMapper()
+
+        result = mapper.get_required_dimensions("IPHONE_69")
         assert result == (1179, 2556)
 
-        result = DeviceMapper.get_required_dimensions("IPAD_PRO_129")
+        result = mapper.get_required_dimensions("IPAD_PRO_129")
         assert result == (2064, 2752)
 
-        result = DeviceMapper.get_required_dimensions("UNKNOWN_TYPE")
+        result = mapper.get_required_dimensions("UNKNOWN_TYPE")
         assert result is None
 
     @patch("PIL.Image.open")
     def test_validate_screenshot_dimensions_success(self, mock_image_open):
         """Test successful dimension validation."""
+        mapper = DeviceMapper()
+
         # Mock image with correct dimensions
         mock_image = Mock()
         mock_image.size = (1179, 2556)
         mock_image_open.return_value.__enter__.return_value = mock_image
 
-        result = DeviceMapper.validate_screenshot_dimensions(
-            Path("test.png"), "IPHONE_69"
-        )
+        result = mapper.validate_screenshot_dimensions(Path("test.png"), "IPHONE_69")
 
         assert result is True
 
     @patch("PIL.Image.open")
     def test_validate_screenshot_dimensions_wrong_size(self, mock_image_open):
         """Test dimension validation with wrong size."""
+        mapper = DeviceMapper()
+
         # Mock image with incorrect dimensions
         mock_image = Mock()
         mock_image.size = (1000, 2000)  # Wrong size
         mock_image_open.return_value.__enter__.return_value = mock_image
 
         with pytest.raises(ScreenshotUploadError, match="Incorrect dimensions"):
-            DeviceMapper.validate_screenshot_dimensions(Path("test.png"), "IPHONE_69")
+            mapper.validate_screenshot_dimensions(Path("test.png"), "IPHONE_69")
 
     @patch("PIL.Image.open")
     def test_validate_screenshot_dimensions_unknown_display_type(self, mock_image_open):
         """Test dimension validation with unknown display type."""
+        mapper = DeviceMapper()
+
         mock_image = Mock()
         mock_image.size = (1000, 2000)
         mock_image_open.return_value.__enter__.return_value = mock_image
 
         with pytest.raises(ScreenshotUploadError, match="Unknown display type"):
-            DeviceMapper.validate_screenshot_dimensions(
-                Path("test.png"), "UNKNOWN_TYPE"
-            )
+            mapper.validate_screenshot_dimensions(Path("test.png"), "UNKNOWN_TYPE")
 
     @patch("PIL.Image.open")
     def test_validate_screenshot_dimensions_image_error(self, mock_image_open):
         """Test dimension validation with image reading error."""
+        mapper = DeviceMapper()
+
         mock_image_open.side_effect = Exception("Cannot read image")
 
         with pytest.raises(ScreenshotUploadError, match="Cannot read image"):
-            DeviceMapper.validate_screenshot_dimensions(Path("test.png"), "IPHONE_69")
+            mapper.validate_screenshot_dimensions(Path("test.png"), "IPHONE_69")
 
 
 class TestScreenshotInfo:

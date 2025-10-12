@@ -511,8 +511,11 @@ class ScreenshotGenerator:
                                 / device.replace(" ", "_")
                             )
                         else:
-                            # Single language: output_dir/
-                            device_output_dir = project_config.project.output_dir
+                            # Single language: output_dir/device/ (ALWAYS include device folder)
+                            device_output_dir = str(
+                                Path(project_config.project.output_dir)
+                                / device.replace(" ", "_")
+                            )
 
                         # Convert to ScreenshotConfig and generate
                         temp_config = self._convert_to_screenshot_config(
