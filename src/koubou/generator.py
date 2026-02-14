@@ -1018,6 +1018,7 @@ class ScreenshotGenerator:
                         position=position,
                         font_size=item.size or 24,
                         font_weight=getattr(item, "weight", "normal") or "normal",
+                        font_family=getattr(item, "font_family", "Arial") or "Arial",
                         color=item.color,  # Don't default to black if gradient
                         # is provided
                         gradient=item.gradient,  # Pass gradient configuration

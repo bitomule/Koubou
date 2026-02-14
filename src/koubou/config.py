@@ -329,6 +329,7 @@ class ContentItem(BaseModel):
     )
 
     weight: Optional[str] = Field(default="normal", description="Font weight")
+    font_family: Optional[str] = Field(default="Arial", description="Font family name")
     alignment: Optional[str] = Field(
         default="center", description="Text alignment (left, center, right)"
     )

@@ -218,6 +218,7 @@ Content items define the visual elements within each screenshot.
   gradient: object?          # Text gradient (see Gradient Configuration below)
   
   weight: string?            # "normal" or "bold" (default: "normal")
+  font_family: string?       # Font family name (default: "Arial")
   alignment: string?         # "left", "center", "right" (default: "center")
   
   # Stroke Options (optional):

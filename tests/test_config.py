@@ -136,6 +136,32 @@ class TestScreenshotConfig:
             )
 
 
+class TestContentItemFontFamily:
+    """Tests for ContentItem font_family field."""
+
+    def test_font_family_default(self):
+        item = ContentItem(type="text", content="Hello", position=("50%", "50%"))
+        assert item.font_family == "Arial"
+
+    def test_font_family_custom(self):
+        item = ContentItem(
+            type="text",
+            content="Hello",
+            position=("50%", "50%"),
+            font_family="Helvetica",
+        )
+        assert item.font_family == "Helvetica"
+
+    def test_font_family_none_uses_default(self):
+        item = ContentItem(
+            type="text",
+            content="Hello",
+            position=("50%", "50%"),
+            font_family=None,
+        )
+        assert item.font_family is None
+
+
 class TestContentItemHighlight:
     """Tests for ContentItem with type='highlight'."""
 

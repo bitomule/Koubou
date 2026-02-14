@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Text content items**: `font_family` field to specify custom fonts (default: "Arial")
+
 ## [0.12.0] - 2026-02-14
 
 ### Added
