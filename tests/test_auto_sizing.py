@@ -116,7 +116,7 @@ class TestAutoSizingConfig:
         assert item.min_size is None
 
     def test_max_height_without_min_size_is_valid(self):
-        """Test that max_height alone (without min_size) is accepted — no auto-sizing."""
+        """max_height alone (without min_size) is accepted."""
         item = ContentItem(
             type="text",
             content="Hello",
@@ -215,20 +215,31 @@ class TestAutoSizingRenderer:
         )
         assert size == 72
 
-    def test_auto_size_returns_even_step(self):
-        """Auto-sized result should be on even step boundary from max_size."""
+    def test_auto_size_finds_exact_largest(self):
+        """Binary search should find the exact largest size that fits."""
+        max_height = 400
+        text = "This text needs some shrinking to fit properly"
         size = self.renderer._auto_size_font(
-            text="This text needs some shrinking to fit properly",
+            text=text,
             font_family="Arial",
             font_weight="normal",
             max_size=120,
-            min_size=72,
-            max_width=300,
-            max_height=200,
+            min_size=40,
+            max_width=400,
+            max_height=max_height,
             line_height_multiplier=1.2,
         )
-        # Size should be even (120, 118, 116, ...) since step is -2
-        assert size % 2 == 0
+        # Resolved size should fit
+        font = self.renderer._get_font("Arial", size, "normal")
+        lines = self.renderer._prepare_text(text, font, 400, None, None)
+        assert len(lines) * int(size * 1.2) <= max_height
+        # size + 1 should NOT fit (binary search finds the exact boundary)
+        if size < 120:
+            font_larger = self.renderer._get_font("Arial", size + 1, "normal")
+            lines_larger = self.renderer._prepare_text(
+                text, font_larger, 400, None, None
+            )
+            assert len(lines_larger) * int((size + 1) * 1.2) > max_height
 
     def test_auto_size_height_constraint_verified(self):
         """Verify the resolved size actually fits within max_height."""
@@ -251,7 +262,7 @@ class TestAutoSizingRenderer:
         assert total_height <= max_height
 
     def test_auto_size_next_larger_would_overflow(self):
-        """Verify the next size up (size + 2) would exceed max_height."""
+        """Verify the next size up (size + 1) would exceed max_height."""
         max_height = 200
         text = "Several words forming a sentence that wraps across lines"
         size = self.renderer._auto_size_font(
@@ -266,7 +277,7 @@ class TestAutoSizingRenderer:
         )
         if size < 120:
             # The next size up should NOT fit
-            larger = size + 2
+            larger = size + 1
             font = self.renderer._get_font("Arial", larger, "normal")
             lines = self.renderer._prepare_text(text, font, 300, None, None)
             total_height = len(lines) * int(larger * 1.2)
@@ -473,9 +484,7 @@ class TestAutoSizingRenderIntegration:
             content="Gradient headline that may need to shrink",
             position=(400, 100),
             font_size=100,
-            gradient=GradientConfig(
-                type="linear", colors=["#ff0000", "#0000ff"]
-            ),
+            gradient=GradientConfig(type="linear", colors=["#ff0000", "#0000ff"]),
             max_width=300,
             max_height=200,
             min_font_size=40,

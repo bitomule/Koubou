@@ -722,9 +722,9 @@ class ScreenshotGenerator:
         # Get device and output_size from project config
         device = project_config.project.device
         # output_size is validated and always a tuple at runtime
-        output_size: Tuple[int, int] = (
-            project_config.project.output_size  # type: ignore[assignment]
-        )
+        output_size: Tuple[
+            int, int
+        ] = project_config.project.output_size  # type: ignore[assignment]
         logger.info(f"📱 Processing device: {device}")
         logger.info(f"📐 Output size: {output_size}")
 

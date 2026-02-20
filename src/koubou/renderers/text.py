@@ -177,9 +177,11 @@ class TextRenderer:
     ) -> int:
         """Find the largest font size where text fits within max_width and max_height.
 
-        Iterates from max_size down to min_size (step -2), wrapping text at each
-        candidate size using _prepare_text. Returns the first size where the total
-        text block height (lines * font_size * line_height) fits within max_height.
+        Uses binary search over the font size range. At each candidate size, wraps
+        text using _prepare_text and checks whether the total block height
+        (lines * font_size * line_height) fits within max_height. Total height is
+        monotonically non-increasing as font size decreases (smaller glyphs produce
+        fewer or equal wrapped lines), so binary search is valid.
 
         Args:
             text: The text content to measure
@@ -194,22 +196,37 @@ class TextRenderer:
         Returns:
             The resolved font size (always >= min_size)
         """
-        for size in range(max_size, min_size - 1, -2):
-            font = self._get_font(font_family, size, font_weight)
-            lines = self._prepare_text(text, font, max_width, None, None)
-            line_height_px = int(size * line_height_multiplier)
-            total_height = len(lines) * line_height_px
-            if total_height <= max_height:
-                logger.info(
-                    f"Auto-sized font: {size}px "
-                    f"({len(lines)} lines, {total_height}px / {max_height}px max)"
-                )
-                return size
+        low = min_size
+        high = max_size
+        best = min_size
 
-        logger.warning(
-            f"Text doesn't fit at min size {min_size}px, using it anyway"
-        )
-        return min_size
+        while low <= high:
+            mid = (low + high) // 2
+            font = self._get_font(font_family, mid, font_weight)
+            lines = self._prepare_text(text, font, max_width, None, None)
+            line_height_px = int(mid * line_height_multiplier)
+            total_height = len(lines) * line_height_px
+
+            if total_height <= max_height:
+                best = mid
+                low = mid + 1  # Try larger
+            else:
+                high = mid - 1  # Too tall, try smaller
+
+        if best < max_size:
+            # Log only when auto-sizing actually reduced the font
+            font = self._get_font(font_family, best, font_weight)
+            lines = self._prepare_text(text, font, max_width, None, None)
+            line_height_px = int(best * line_height_multiplier)
+            total_height = len(lines) * line_height_px
+            logger.info(
+                f"Auto-sized font: {best}px "
+                f"({len(lines)} lines, {total_height}px / {max_height}px max)"
+            )
+        else:
+            logger.info(f"Auto-sized font: {best}px (fits at max size)")
+
+        return best
 
     def _load_safe_default_font(
         self, font_size: int, font_weight: str = "normal"

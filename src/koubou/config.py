@@ -189,7 +189,7 @@ class TextOverlay(BaseModel):
     )
     max_height: Optional[int] = Field(
         default=None,
-        description="Maximum height in pixels for the text block (triggers auto-sizing)",
+        description="Max height in pixels for the text block",
     )
     line_height: float = Field(default=1.2, description="Line height multiplier")
     stroke_width: Optional[int] = Field(default=None, description="Text stroke width")
@@ -336,7 +336,7 @@ class ContentItem(BaseModel):
     )
     max_height: Optional[int] = Field(
         default=None,
-        description="Maximum height in pixels for the text block (triggers auto-sizing)",
+        description="Max height in pixels for the text block",
     )
     min_size: Optional[int] = Field(
         default=None, description="Minimum font size for auto-sizing"
