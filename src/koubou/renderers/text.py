@@ -31,6 +31,24 @@ class TextRenderer:
             TextRenderError: If rendering fails
         """
         try:
+            # Auto-size font if min_font_size and max_height are set
+            if (
+                text_config.min_font_size
+                and text_config.max_width
+                and text_config.max_height
+            ):
+                resolved_size = self._auto_size_font(
+                    text_config.content,
+                    text_config.font_family,
+                    text_config.font_weight,
+                    text_config.font_size,
+                    text_config.min_font_size,
+                    text_config.max_width,
+                    text_config.max_height,
+                    text_config.line_height,
+                )
+                text_config.font_size = resolved_size
+
             # Load font
             font = self._get_font(
                 text_config.font_family, text_config.font_size, text_config.font_weight
@@ -145,6 +163,53 @@ class TextRenderer:
             self.font_cache[cache_key] = font  # type: ignore[index]
 
         return self.font_cache[cache_key]  # type: ignore[index]
+
+    def _auto_size_font(
+        self,
+        text: str,
+        font_family: str,
+        font_weight: str,
+        max_size: int,
+        min_size: int,
+        max_width: int,
+        max_height: int,
+        line_height_multiplier: float,
+    ) -> int:
+        """Find the largest font size where text fits within max_width and max_height.
+
+        Iterates from max_size down to min_size (step -2), wrapping text at each
+        candidate size using _prepare_text. Returns the first size where the total
+        text block height (lines * font_size * line_height) fits within max_height.
+
+        Args:
+            text: The text content to measure
+            font_family: Font family name
+            font_weight: Font weight (normal, bold)
+            max_size: Starting/maximum font size
+            min_size: Minimum font size floor
+            max_width: Maximum width for text wrapping
+            max_height: Maximum height in pixels for the text block
+            line_height_multiplier: Line height multiplier (e.g. 1.2)
+
+        Returns:
+            The resolved font size (always >= min_size)
+        """
+        for size in range(max_size, min_size - 1, -2):
+            font = self._get_font(font_family, size, font_weight)
+            lines = self._prepare_text(text, font, max_width, None, None)
+            line_height_px = int(size * line_height_multiplier)
+            total_height = len(lines) * line_height_px
+            if total_height <= max_height:
+                logger.info(
+                    f"Auto-sized font: {size}px "
+                    f"({len(lines)} lines, {total_height}px / {max_height}px max)"
+                )
+                return size
+
+        logger.warning(
+            f"Text doesn't fit at min size {min_size}px, using it anyway"
+        )
+        return min_size
 
     def _load_safe_default_font(
         self, font_size: int, font_weight: str = "normal"

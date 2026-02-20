@@ -1025,12 +1025,10 @@ class ScreenshotGenerator:
                         alignment=getattr(item, "alignment", "center") or "center",
                         anchor="center",  # Use center anchor for
                         # percentage-based positioning
-                        max_width=getattr(
-                            item, "maxWidth", None
-                        ),  # User controls maxWidth, default None means no limit
-                        max_lines=getattr(
-                            item, "maxLines", None
-                        ),  # None means unlimited lines with wrapping
+                        max_width=item.max_width,
+                        max_lines=item.max_lines,
+                        min_font_size=item.min_size,
+                        max_height=item.max_height,
                         stroke_width=getattr(item, "stroke_width", None),
                         stroke_color=getattr(item, "stroke_color", None),
                         stroke_gradient=getattr(item, "stroke_gradient", None),

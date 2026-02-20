@@ -211,16 +211,22 @@ Content items define the visual elements within each screenshot.
   content: string            # Text to display (required)
   position: [string, string] # Position as ["50%", "20%"] or ["100px", "50px"] (required)
   size: int?                 # Font size in pixels (default: 24)
-  
+
+  # Auto-sizing (optional — all three required to enable):
+  min_size: int?             # Minimum font size floor for auto-sizing
+  max_width: int?            # Maximum width for text wrapping (pixels)
+  max_height: int?           # Maximum height budget for the text block (pixels)
+  max_lines: int?            # Maximum number of lines (truncates with "..." if exceeded)
+
   # Fill Options (choose exactly one):
   color: string?             # Solid color (hex format, e.g., "#000000")
   # OR
   gradient: object?          # Text gradient (see Gradient Configuration below)
-  
+
   weight: string?            # "normal" or "bold" (default: "normal")
   font_family: string?       # Font family name (default: "Arial")
   alignment: string?         # "left", "center", "right" (default: "center")
-  
+
   # Stroke Options (optional):
   stroke_width: int?         # Stroke width in pixels
   stroke_color: string?      # Solid stroke color (hex format)
@@ -247,6 +253,32 @@ gradient:
   center: [string, string]?  # Center point (default: ["50%", "50%"])
   start_angle: float?        # Starting angle in degrees (default: 0)
 ```
+
+#### Text Auto-Sizing
+
+When `min_size`, `max_width`, and `max_height` are all set, Koubou automatically finds the largest font size (between `size` and `min_size`) where the wrapped text block fits within the pixel height budget. This is useful for multi-language screenshots where translation lengths vary — each language independently gets the largest font that fits.
+
+```yaml
+- type: "text"
+  content: "Stay close to God all day"
+  position: ["50%", "14%"]
+  size: 120              # Maximum / starting font size
+  min_size: 72           # Floor — never shrink below this
+  max_width: 1161        # Text wrapping width in pixels
+  max_height: 400        # Height budget — text block must fit in this many pixels
+  color: "#4A2E2E"
+  weight: "bold"
+  font_family: "assets/MyFont.ttf"
+```
+
+**How it works:**
+1. Start at `size` (e.g., 120px)
+2. Wrap text at `max_width` and compute total height: `lines * font_size * line_height`
+3. If total height <= `max_height`, use this size
+4. Otherwise, try `size - 2` and repeat
+5. If nothing fits by `min_size`, use `min_size` anyway
+
+**When `min_size` is absent**, behavior is unchanged — text renders at exactly `size` with no auto-sizing. `max_width` and `max_lines` still work independently for wrapping and truncation.
 
 ### Image Content Item
 

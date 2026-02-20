@@ -184,6 +184,13 @@ class TextOverlay(BaseModel):
     max_lines: Optional[int] = Field(
         default=None, description="Maximum number of lines for text wrapping"
     )
+    min_font_size: Optional[int] = Field(
+        default=None, description="Minimum font size for auto-sizing"
+    )
+    max_height: Optional[int] = Field(
+        default=None,
+        description="Maximum height in pixels for the text block (triggers auto-sizing)",
+    )
     line_height: float = Field(default=1.2, description="Line height multiplier")
     stroke_width: Optional[int] = Field(default=None, description="Text stroke width")
 
@@ -321,6 +328,19 @@ class ContentItem(BaseModel):
         default=("50%", "50%"), description="Position as percentage or pixels"
     )
     size: Optional[int] = Field(default=24, description="Font size for text")
+    max_width: Optional[int] = Field(
+        default=None, description="Maximum width for text wrapping"
+    )
+    max_lines: Optional[int] = Field(
+        default=None, description="Maximum number of lines"
+    )
+    max_height: Optional[int] = Field(
+        default=None,
+        description="Maximum height in pixels for the text block (triggers auto-sizing)",
+    )
+    min_size: Optional[int] = Field(
+        default=None, description="Minimum font size for auto-sizing"
+    )
 
     # Text fill options (mutually exclusive)
     color: Optional[str] = Field(default=None, description="Solid text color")
@@ -555,6 +575,16 @@ class ContentItem(BaseModel):
             # display_size is optional if zoom_level is set
             if self.display_size is None and self.zoom_level is None:
                 raise ValueError("Zoom items require 'display_size' or 'zoom_level'")
+        # Validate auto-sizing fields
+        if self.min_size is not None:
+            if self.max_width is None:
+                raise ValueError("min_size requires max_width to be set")
+            if self.max_height is None:
+                raise ValueError("min_size requires max_height to be set")
+            if self.size is not None and self.min_size > self.size:
+                raise ValueError(
+                    f"min_size ({self.min_size}) must be <= size ({self.size})"
+                )
         return self
 
     @field_validator("asset")
