@@ -47,9 +47,7 @@ class TextRenderer:
                     text_config.max_height,
                     text_config.line_height,
                 )
-                text_config = text_config.model_copy(
-                    update={"font_size": font_size}
-                )
+                text_config = text_config.model_copy(update={"font_size": font_size})
 
             # Load font
             font = self._get_font(
