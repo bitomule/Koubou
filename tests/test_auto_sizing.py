@@ -411,8 +411,8 @@ class TestAutoSizingRenderIntegration:
         self.renderer.render(overlay, self.canvas)
         assert overlay.font_size == 80
 
-    def test_auto_sizing_mutates_font_size(self):
-        """When auto-sizing triggers, font_size on the config should be updated."""
+    def test_auto_sizing_does_not_mutate_config(self):
+        """Render should not mutate the original config object."""
         overlay = TextOverlay(
             content="This is quite a long headline that needs multiple lines "
             "to display properly and will overflow the height",
@@ -424,8 +424,7 @@ class TestAutoSizingRenderIntegration:
             min_font_size=40,
         )
         self.renderer.render(overlay, self.canvas)
-        assert overlay.font_size < 120
-        assert overlay.font_size >= 40
+        assert overlay.font_size == 120
 
     def test_auto_sizing_short_text_stays_at_max(self):
         """Short text should keep original font_size after render."""

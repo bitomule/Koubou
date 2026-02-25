@@ -33,11 +33,11 @@ class TextRenderer:
         try:
             # Auto-size font if min_font_size and max_height are set
             if (
-                text_config.min_font_size
-                and text_config.max_width
-                and text_config.max_height
+                text_config.min_font_size is not None
+                and text_config.max_width is not None
+                and text_config.max_height is not None
             ):
-                resolved_size = self._auto_size_font(
+                font_size = self._auto_size_font(
                     text_config.content,
                     text_config.font_family,
                     text_config.font_weight,
@@ -47,7 +47,9 @@ class TextRenderer:
                     text_config.max_height,
                     text_config.line_height,
                 )
-                text_config.font_size = resolved_size
+                text_config = text_config.model_copy(
+                    update={"font_size": font_size}
+                )
 
             # Load font
             font = self._get_font(
@@ -200,6 +202,9 @@ class TextRenderer:
         high = max_size
         best = min_size
 
+        best_lines = 0
+        best_height = 0
+
         while low <= high:
             mid = (low + high) // 2
             font = self._get_font(font_family, mid, font_weight)
@@ -209,19 +214,16 @@ class TextRenderer:
 
             if total_height <= max_height:
                 best = mid
+                best_lines = len(lines)
+                best_height = total_height
                 low = mid + 1  # Try larger
             else:
                 high = mid - 1  # Too tall, try smaller
 
         if best < max_size:
-            # Log only when auto-sizing actually reduced the font
-            font = self._get_font(font_family, best, font_weight)
-            lines = self._prepare_text(text, font, max_width, None, None)
-            line_height_px = int(best * line_height_multiplier)
-            total_height = len(lines) * line_height_px
             logger.info(
                 f"Auto-sized font: {best}px "
-                f"({len(lines)} lines, {total_height}px / {max_height}px max)"
+                f"({best_lines} lines, {best_height}px / {max_height}px max)"
             )
         else:
             logger.info(f"Auto-sized font: {best}px (fits at max size)")
