@@ -128,6 +128,15 @@ class TestScreenshotConfig:
         # iPhone6_9 should resolve to (1320, 2868)
         assert config.output_size == (1320, 2868)
 
+    def test_named_appstore_desktop_size(self, sample_image):
+        """Test named desktop App Store size is resolved correctly."""
+        config = ScreenshotConfig(
+            name="Desktop Test",
+            source_image=sample_image,
+            output_size="AppDesktop_2880",
+        )
+        assert config.output_size == (2880, 1800)
+
     def test_invalid_named_size(self, sample_image):
         """Test invalid named size fails validation."""
         with pytest.raises(ValidationError, match="Unknown App Store size"):

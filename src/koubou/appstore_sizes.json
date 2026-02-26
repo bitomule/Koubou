@@ -38,5 +38,25 @@
     "width": 2064,
     "height": 2752,
     "description": "iPad Pro 13\" M4, iPad Air 13\" M2"
+  },
+  "AppDesktop_1280": {
+    "width": 1280,
+    "height": 800,
+    "description": "Mac App Store desktop (16:10, 1280×800)"
+  },
+  "AppDesktop_1440": {
+    "width": 1440,
+    "height": 900,
+    "description": "Mac App Store desktop (16:10, 1440×900)"
+  },
+  "AppDesktop_2560": {
+    "width": 2560,
+    "height": 1600,
+    "description": "Mac App Store desktop (16:10, 2560×1600)"
+  },
+  "AppDesktop_2880": {
+    "width": 2880,
+    "height": 1800,
+    "description": "Mac App Store desktop (16:10, 2880×1800)"
   }
 }

@@ -285,6 +285,10 @@ kou list-sizes
 - `iPhone6_1` - iPhone 16/15/14/13 Pro (1179×2556)
 - `iPadPro12_9` - iPad Pro 12.9" (2048×2732)
 - `iPadPro11` - iPad Pro 11", iPad Air 11" M2 (1668×2388)
+- `AppDesktop_2880` - Mac App Store desktop (2880×1800)
+- `AppDesktop_2560` - Mac App Store desktop (2560×1600)
+- `AppDesktop_1440` - Mac App Store desktop (1440×900)
+- `AppDesktop_1280` - Mac App Store desktop (1280×800)
 
 ### Custom Sizes
 
