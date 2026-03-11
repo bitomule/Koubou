@@ -210,9 +210,7 @@ class ScreenshotGenerator:
         for y in range(fh):
             for x in range(fw):
                 pixel_val = alpha_pixels[x, y]
-                alpha_val = (
-                    pixel_val[0] if isinstance(pixel_val, tuple) else pixel_val
-                )
+                alpha_val = pixel_val[0] if isinstance(pixel_val, tuple) else pixel_val
                 if alpha_val == 0 and (x, y) not in visited:
                     min_x = min(min_x, x)
                     min_y = min(min_y, y)
