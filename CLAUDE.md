@@ -4,10 +4,20 @@
 
 See `AGENTS.md` for full project structure, CLI principles, and command reference.
 
+## Virtual Environment
+
+This project uses a `.venv` virtualenv at the project root. Always use `.venv/bin/` prefixed commands:
+
+```bash
+.venv/bin/pytest tests/ -v          # Run tests
+.venv/bin/python -m black src/      # Format
+.venv/bin/pip install ".[dev]"      # Install dev deps
+```
+
 ## Quick Reference
 
 ```bash
-make install-dev   # Setup
+make install-dev   # Setup (uses .venv)
 make check         # Format + lint + test
 make install-hooks # Pre-commit hooks
 ```

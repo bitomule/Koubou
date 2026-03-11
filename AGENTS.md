@@ -37,6 +37,17 @@ kou --create-config sample.yaml --force # Overwrite existing
 kou --version                          # Show version
 ```
 
+## Virtual Environment
+
+This project uses a `.venv` virtualenv at the project root. All commands must run through it:
+
+```bash
+.venv/bin/pip install ".[dev]"      # Install dev deps (includes playwright)
+.venv/bin/playwright install chromium  # Install browser for HTML rendering tests
+.venv/bin/pytest tests/ -v          # Run tests
+.venv/bin/python -m black src/      # Format
+```
+
 ## Build & Test
 
 ```bash

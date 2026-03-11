@@ -1,5 +1,6 @@
 """Core screenshot generation functionality."""
 
+import io
 import json
 import logging
 from pathlib import Path
@@ -123,6 +124,7 @@ class ScreenshotGenerator:
         self.device_frame_renderer = DeviceFrameRenderer(self.frame_directory)
         self.highlight_renderer = HighlightRenderer()
         self.zoom_renderer = ZoomRenderer()
+        self._html_renderer: Optional[Any] = None
 
         # Load device frame metadata
         self._load_frame_metadata()
@@ -155,6 +157,121 @@ class ScreenshotGenerator:
             logger.error(f"Failed to load frame metadata: {_e}")
             self.frame_metadata = {}
             self.size_metadata = {}
+
+    @property
+    def html_renderer(self):
+        if self._html_renderer is None:
+            from .renderers.html_renderer import HtmlRenderer
+
+            self._html_renderer = HtmlRenderer()
+        return self._html_renderer
+
+    def _resolve_template_variables(
+        self,
+        variables: Dict[str, str],
+        language: str,
+        xcstrings_manager: Optional[Any] = None,
+    ) -> Dict[str, str]:
+        """Resolve localizable text variables through xcstrings."""
+        if not xcstrings_manager:
+            return dict(variables)
+
+        resolved = {}
+        for key, value in variables.items():
+            resolved[key] = xcstrings_manager.get_translation(value, language)
+        return resolved
+
+    def _build_assets_map(
+        self,
+        asset_variables: Dict[str, str],
+        config_dir: Optional[Path],
+        device_frame_name: Optional[str] = None,
+    ) -> Dict[str, str]:
+        """Build {relative_name: absolute_path} map for HTML sandbox.
+
+        Args:
+            asset_variables: The explicit assets dict from ScreenshotDefinition
+            config_dir: Base directory for resolving relative paths
+            device_frame_name: Device frame to include as frame.png
+        """
+        assets: Dict[str, str] = {}
+
+        # Add device frame if available
+        if device_frame_name:
+            frame_dir = self.device_frame_renderer.frame_directory
+            for ext in [".png", ".PNG"]:
+                frame_path = frame_dir / f"{device_frame_name}{ext}"
+                if frame_path.exists():
+                    assets["frame.png"] = str(frame_path)
+                    break
+
+        # Resolve each asset path and add to sandbox map
+        for key, value in asset_variables.items():
+            if config_dir:
+                candidate = config_dir / value
+            else:
+                candidate = Path(value)
+            if candidate.exists():
+                assets[value] = str(candidate.resolve())
+
+        return assets
+
+    def _generate_html_screenshot(
+        self,
+        screenshot_def: Any,
+        screenshot_id: str,
+        output_dir: str,
+        output_size: Tuple[int, int],
+        config_dir: Optional[Path],
+        device_frame_name: Optional[str] = None,
+        language: str = "en",
+        xcstrings_manager: Optional[Any] = None,
+    ) -> Path:
+        """Generate a screenshot from an HTML template."""
+        template_path_str = screenshot_def.template
+        if config_dir and not Path(template_path_str).is_absolute():
+            template_path = config_dir / template_path_str
+        else:
+            template_path = Path(template_path_str)
+
+        if not template_path.exists():
+            raise ConfigurationError(f"HTML template not found: {template_path}")
+
+        # Resolve localizable text variables
+        resolved_text = self._resolve_template_variables(
+            screenshot_def.variables, language, xcstrings_manager
+        )
+
+        # Build assets map from the explicit assets dict
+        assets = self._build_assets_map(
+            screenshot_def.assets, config_dir, device_frame_name
+        )
+
+        # Merge text + assets for template substitution
+        all_variables = {**resolved_text, **screenshot_def.assets}
+
+        png_bytes = self.html_renderer.render(
+            template_path=template_path,
+            variables=all_variables,
+            size=output_size,
+            assets=assets,
+        )
+
+        output_path = self._resolve_output_path(output_dir, screenshot_id, config_dir)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Save PNG (convert to RGB for App Store compatibility)
+        img = Image.open(io.BytesIO(png_bytes))
+        rgb_img = Image.new("RGB", img.size, (255, 255, 255))
+        rgb_img.paste(img, mask=img if img.mode == "RGBA" else None)
+
+        if output_path.suffix.lower() == ".jpg":
+            rgb_img.save(output_path, "JPEG", quality=95)
+        else:
+            rgb_img.save(output_path, "PNG")
+
+        logger.info(f"Generated HTML screenshot: {output_path}")
+        return output_path
 
     def generate_screenshot(self, config: ScreenshotConfig) -> Path:
         """Generate a single screenshot based on configuration.
@@ -700,10 +817,13 @@ class ScreenshotGenerator:
             # Extract all text keys from all screenshots
             all_text_keys = set()
             for screenshot_def in project_config.screenshots.values():
-                text_keys = content_resolver.extract_text_keys_from_content(
-                    screenshot_def.content
-                )
-                all_text_keys.update(text_keys)
+                if screenshot_def.content:
+                    text_keys = content_resolver.extract_text_keys_from_content(
+                        screenshot_def.content
+                    )
+                    all_text_keys.update(text_keys)
+                if screenshot_def.variables:
+                    all_text_keys.update(screenshot_def.variables.values())
 
             logger.info(f"🔤 Found {len(all_text_keys)} unique text keys")
 
@@ -745,12 +865,40 @@ class ScreenshotGenerator:
                     f"[{i}/{len(project_config.screenshots)}] {screenshot_id}"
                 )
                 try:
-                    # Create localized content (or use original for non-localized)
+                    # Generate device and language-specific output directory
                     if localization_config:
+                        device_output_dir = str(
+                            Path(project_config.project.output_dir)
+                            / language
+                            / device.replace(" ", "_")
+                        )
+                    else:
+                        device_output_dir = str(
+                            Path(project_config.project.output_dir)
+                            / device.replace(" ", "_")
+                        )
+
+                    # HTML template mode: bypass PIL pipeline entirely
+                    if screenshot_def.template:
+                        xcm = xcstrings_manager if localization_config else None
+                        output_path = self._generate_html_screenshot(
+                            screenshot_def=screenshot_def,
+                            screenshot_id=screenshot_id,
+                            output_dir=device_output_dir,
+                            output_size=output_size,
+                            config_dir=config_dir,
+                            device_frame_name=device,
+                            language=language,
+                            xcstrings_manager=xcm,
+                        )
+                        all_results.append(output_path)
+                        continue
+
+                    # Content mode: standard PIL pipeline
+                    if localization_config and screenshot_def.content:
                         localized_content = content_resolver.localize_content_items(
                             screenshot_def.content, language
                         )
-                        # Create copy with localized content
                         from copy import deepcopy
 
                         processed_screenshot_def = deepcopy(screenshot_def)
@@ -758,24 +906,6 @@ class ScreenshotGenerator:
                     else:
                         processed_screenshot_def = screenshot_def
 
-                    # Generate device and language-specific output directory
-                    if localization_config:
-                        # Multi-language: output_dir/language/device/
-                        device_output_dir = str(
-                            Path(project_config.project.output_dir)
-                            / language
-                            / device.replace(" ", "_")
-                        )
-                    else:
-                        # Single language: output_dir/device/
-                        # (ALWAYS include device folder)
-                        device_output_dir = str(
-                            Path(project_config.project.output_dir)
-                            / device.replace(" ", "_")
-                        )
-
-                    # Convert to ScreenshotConfig and generate
-                    # Get base_language for asset resolution
                     base_lang = (
                         localization_config.base_language
                         if localization_config
@@ -783,12 +913,12 @@ class ScreenshotGenerator:
                     )
                     temp_config = self._convert_to_screenshot_config(
                         processed_screenshot_def,
-                        device,  # Use device name directly
+                        device,
                         default_background,
                         device_output_dir,
                         config_dir,
                         screenshot_id,
-                        output_size=output_size,  # Pass project-level output size
+                        output_size=output_size,
                         language=language,
                         base_language=base_lang,
                     )
@@ -807,6 +937,11 @@ class ScreenshotGenerator:
                     )
                     # Continue with next screenshot instead of failing project
                     continue
+
+        # Clean up HTML renderer if used
+        if self._html_renderer:
+            self._html_renderer.close()
+            self._html_renderer = None
 
         logger.info(
             f"🎉 Project complete! Generated {len(all_results)} screenshots "

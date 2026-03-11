@@ -104,8 +104,54 @@ class DependencyAnalyzer:
         for screenshot_id, screenshot_def in config.screenshots.items():
             screenshot_assets = []
 
+            # Track HTML template and its sibling files
+            if screenshot_def.template:
+                template_path_str = screenshot_def.template
+                if Path(template_path_str).is_absolute():
+                    template_resolved = Path(template_path_str)
+                else:
+                    template_resolved = config_dir / template_path_str
+
+                if template_resolved.exists():
+                    # Track the template file itself
+                    dep = AssetDependency(
+                        screenshot_id=screenshot_id,
+                        asset_path=str(template_resolved),
+                        asset_type="template",
+                    )
+                    dep.resolved_path = template_resolved.resolve()
+                    dep.last_modified = template_resolved.stat().st_mtime
+                    self.dependencies.append(dep)
+                    screenshot_assets.append(dep)
+
+                    asset_key = str(dep.resolved_path)
+                    if asset_key not in self._asset_to_screenshots:
+                        self._asset_to_screenshots[asset_key] = []
+                    self._asset_to_screenshots[asset_key].append(screenshot_id)
+
+                    # Track sibling files (CSS, JS, images, etc.)
+                    template_dir = template_resolved.parent.resolve()
+                    for sibling in template_dir.iterdir():
+                        if sibling == template_resolved.resolve():
+                            continue
+                        if sibling.is_file():
+                            sib_dep = AssetDependency(
+                                screenshot_id=screenshot_id,
+                                asset_path=str(sibling),
+                                asset_type="template_asset",
+                            )
+                            sib_dep.resolved_path = sibling
+                            sib_dep.last_modified = sibling.stat().st_mtime
+                            self.dependencies.append(sib_dep)
+                            screenshot_assets.append(sib_dep)
+
+                            sib_key = str(sibling)
+                            if sib_key not in self._asset_to_screenshots:
+                                self._asset_to_screenshots[sib_key] = []
+                            self._asset_to_screenshots[sib_key].append(screenshot_id)
+
             # Scan content items for asset references
-            for content_item in screenshot_def.content:
+            for content_item in screenshot_def.content or []:
                 if content_item.type == "image" and content_item.asset:
                     # Handle both string and dict asset formats
                     asset_paths: List[str] = []

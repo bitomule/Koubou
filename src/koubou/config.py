@@ -619,7 +619,7 @@ class ContentItem(BaseModel):
 
 
 class ScreenshotDefinition(BaseModel):
-    """Screenshot definition with content items."""
+    """Screenshot definition with content items or HTML template."""
 
     background: Optional[GradientConfig] = Field(
         default=None,
@@ -627,7 +627,21 @@ class ScreenshotDefinition(BaseModel):
             "Background configuration (optional - uses default if not specified)"
         ),
     )
-    content: List[ContentItem] = Field(..., description="List of content items")
+    content: Optional[List[ContentItem]] = Field(
+        default=None,
+        description="List of content items (mutually exclusive with template)",
+    )
+    template: Optional[str] = Field(
+        default=None, description="Path to HTML template file"
+    )
+    variables: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Localizable text variables for {{key}} substitution",
+    )
+    assets: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Asset path variables for {{key}} substitution (not localized)",
+    )
     frame: Optional[bool] = Field(
         default=None,
         description=(
@@ -635,6 +649,18 @@ class ScreenshotDefinition(BaseModel):
             "False=no frame)"
         ),
     )
+
+    @model_validator(mode="after")
+    def validate_content_or_template(self):
+        has_content = self.content is not None
+        has_template = self.template is not None
+        if has_template and has_content:
+            raise ValueError(
+                "Cannot specify both 'template' and 'content'. Choose one."
+            )
+        if not has_template and not has_content:
+            raise ValueError("Must specify either 'template' or 'content'.")
+        return self
 
 
 class LocalizationConfig(BaseModel):
