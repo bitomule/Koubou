@@ -1,0 +1,30 @@
+project:
+  name: "Undolly - HTML Template Example"
+  output_dir: "output"
+  device: "iPhone 16 Pro - Black Titanium - Portrait"
+  output_size: "iPhone6_9"
+
+screenshots:
+  01_hero:
+    template: "templates/hero.html"
+    variables:
+      headline: "Clean Your iPhone"
+      subtitle: "Free up space instantly"
+    assets:
+      app_screenshot: "screenshots/home_dashboard.png"
+
+  02_find_duplicates:
+    template: "templates/feature.html"
+    variables:
+      headline: "Find Duplicates"
+      subtitle: "AI groups similar photos"
+    assets:
+      app_screenshot: "screenshots/group_clean.png"
+
+  03_smart_analysis:
+    template: "templates/hero.html"
+    variables:
+      headline: "Smart Analysis"
+      subtitle: "Keep the best shots"
+    assets:
+      app_screenshot: "screenshots/group_detailed.png"

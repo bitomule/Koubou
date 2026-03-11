@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at 30% 20%, #ff6b35, #f7931e, #d64000);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+    overflow: hidden;
+  }
+  .device {
+    margin-top: 5%;
+    width: 75%;
+  }
+  .device img {
+    width: 100%;
+    height: auto;
+  }
+  .text-block {
+    margin-top: auto;
+    margin-bottom: 6%;
+    text-align: center;
+  }
+  .headline {
+    color: #ffffff;
+    font-size: 130px;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+  .subtitle {
+    color: #f0f0f0;
+    font-size: 58px;
+    margin-top: 2%;
+  }
+</style>
+</head>
+<body>
+  <div class="device">
+    <img src="{{app_screenshot}}">
+  </div>
+  <div class="text-block">
+    <h1 class="headline">{{headline}}</h1>
+    <p class="subtitle">{{subtitle}}</p>
+  </div>
+</body>
+</html>

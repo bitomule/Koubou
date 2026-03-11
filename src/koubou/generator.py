@@ -3,6 +3,8 @@
 import io
 import json
 import logging
+import tempfile
+from collections import deque
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -166,6 +168,84 @@ class ScreenshotGenerator:
             self._html_renderer = HtmlRenderer()
         return self._html_renderer
 
+    def _prerender_framed_asset(
+        self, asset_path: str, device_frame_name: str
+    ) -> Image.Image:
+        """Composite a screenshot into a device frame as a single RGBA image."""
+        source = Image.open(asset_path).convert("RGBA")
+        frame_image = self.device_frame_renderer._load_frame_image(device_frame_name)
+
+        if frame_image.mode != "RGBA":
+            frame_image = frame_image.convert("RGBA")
+
+        alpha_channel = frame_image.split()[-1]
+        alpha_pixels = alpha_channel.load()
+        fw, fh = frame_image.size
+
+        # Flood fill from edges to identify outer transparent area
+        visited: set[tuple[int, int]] = set()
+        queue: deque[tuple[int, int]] = deque()
+        for x in range(fw):
+            queue.append((x, 0))
+            queue.append((x, fh - 1))
+        for y in range(fh):
+            queue.append((0, y))
+            queue.append((fw - 1, y))
+
+        while queue:
+            x, y = queue.popleft()
+            if (x, y) in visited or x < 0 or x >= fw or y < 0 or y >= fh:
+                continue
+            pixel_val = alpha_pixels[x, y]
+            alpha_val = pixel_val[0] if isinstance(pixel_val, tuple) else pixel_val
+            if alpha_val > 0:
+                continue
+            visited.add((x, y))
+            for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+                queue.append((x + dx, y + dy))
+
+        # Find screen area bounding box (transparent pixels NOT in outer area)
+        min_x, min_y = fw, fh
+        max_x, max_y = 0, 0
+        for y in range(fh):
+            for x in range(fw):
+                pixel_val = alpha_pixels[x, y]
+                alpha_val = (
+                    pixel_val[0] if isinstance(pixel_val, tuple) else pixel_val
+                )
+                if alpha_val == 0 and (x, y) not in visited:
+                    min_x = min(min_x, x)
+                    min_y = min(min_y, y)
+                    max_x = max(max_x, x)
+                    max_y = max(max_y, y)
+
+        screen_w = max_x - min_x + 1
+        screen_h = max_y - min_y + 1
+
+        # Fit source image to screen area (maintain aspect ratio)
+        src_w, src_h = source.size
+        fit_scale = min(screen_w / src_w, screen_h / src_h)
+        fitted_w = int(src_w * fit_scale)
+        fitted_h = int(src_h * fit_scale)
+        fitted = source.resize((fitted_w, fitted_h), Image.Resampling.LANCZOS)
+
+        # Center within screen area
+        offset_x = min_x + (screen_w - fitted_w) // 2
+        offset_y = min_y + (screen_h - fitted_h) // 2
+
+        # Build composited image: screenshot behind frame, clipped to screen
+        result = Image.new("RGBA", frame_image.size, (255, 255, 255, 0))
+        result.paste(fitted, (offset_x, offset_y), fitted)
+
+        screen_mask = self.device_frame_renderer.generate_screen_mask_from_image(
+            frame_image
+        )
+        transparent = Image.new("RGBA", frame_image.size, (255, 255, 255, 0))
+        result = Image.composite(result, transparent, screen_mask)
+        result = Image.alpha_composite(result, frame_image)
+
+        return result
+
     def _resolve_template_variables(
         self,
         variables: Dict[str, str],
@@ -185,27 +265,9 @@ class ScreenshotGenerator:
         self,
         asset_variables: Dict[str, str],
         config_dir: Optional[Path],
-        device_frame_name: Optional[str] = None,
     ) -> Dict[str, str]:
-        """Build {relative_name: absolute_path} map for HTML sandbox.
-
-        Args:
-            asset_variables: The explicit assets dict from ScreenshotDefinition
-            config_dir: Base directory for resolving relative paths
-            device_frame_name: Device frame to include as frame.png
-        """
+        """Build {relative_name: absolute_path} map for HTML sandbox."""
         assets: Dict[str, str] = {}
-
-        # Add device frame if available
-        if device_frame_name:
-            frame_dir = self.device_frame_renderer.frame_directory
-            for ext in [".png", ".PNG"]:
-                frame_path = frame_dir / f"{device_frame_name}{ext}"
-                if frame_path.exists():
-                    assets["frame.png"] = str(frame_path)
-                    break
-
-        # Resolve each asset path and add to sandbox map
         for key, value in asset_variables.items():
             if config_dir:
                 candidate = config_dir / value
@@ -213,7 +275,6 @@ class ScreenshotGenerator:
                 candidate = Path(value)
             if candidate.exists():
                 assets[value] = str(candidate.resolve())
-
         return assets
 
     def _generate_html_screenshot(
@@ -242,25 +303,37 @@ class ScreenshotGenerator:
             screenshot_def.variables, language, xcstrings_manager
         )
 
-        # Build assets map from the explicit assets dict
-        assets = self._build_assets_map(
-            screenshot_def.assets, config_dir, device_frame_name
-        )
+        # Build assets map and pre-render with device frame
+        assets = self._build_assets_map(screenshot_def.assets, config_dir)
+        should_frame = screenshot_def.frame is not False and device_frame_name
+        temp_files: List[str] = []
 
-        # Merge text + assets for template substitution
-        all_variables = {**resolved_text, **screenshot_def.assets}
+        if should_frame:
+            for rel_path, abs_path in assets.items():
+                if Path(abs_path).suffix.lower() in (".png", ".jpg", ".jpeg"):
+                    framed = self._prerender_framed_asset(abs_path, device_frame_name)
+                    tmp = tempfile.NamedTemporaryFile(
+                        suffix=".png", delete=False, prefix="koubou_framed_"
+                    )
+                    framed.save(tmp.name, "PNG")
+                    assets[rel_path] = tmp.name
+                    temp_files.append(tmp.name)
 
-        png_bytes = self.html_renderer.render(
-            template_path=template_path,
-            variables=all_variables,
-            size=output_size,
-            assets=assets,
-        )
+        try:
+            all_variables = {**resolved_text, **screenshot_def.assets}
+            png_bytes = self.html_renderer.render(
+                template_path=template_path,
+                variables=all_variables,
+                size=output_size,
+                assets=assets,
+            )
+        finally:
+            for f in temp_files:
+                Path(f).unlink(missing_ok=True)
 
         output_path = self._resolve_output_path(output_dir, screenshot_id, config_dir)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Save PNG (convert to RGB for App Store compatibility)
         img = Image.open(io.BytesIO(png_bytes))
         rgb_img = Image.new("RGB", img.size, (255, 255, 255))
         rgb_img.paste(img, mask=img if img.mode == "RGBA" else None)
