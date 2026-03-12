@@ -1,68 +1,116 @@
 # Setup Guide
 
-## Installation
+## Golden rule
 
-### Quick install (recommended)
+If `kou --version` works, koubou is already installed. Stop there.
 
-```bash
-pip3 install koubou
-kou setup-html
-```
+Do not run `pip`, `pip3`, or `playwright install` on a working installation just because this skill is being used.
 
-If Google Chrome is already installed, `kou setup-html` will usually confirm that HTML rendering is already ready without downloading Chromium.
+## Preferred setup flow
 
-### Verify installation
+### 1. Check whether koubou already works
 
 ```bash
 kou --version
 kou list-frames "iPhone 16"
-kou setup-html --help
 ```
 
-### Alternative: install from source
+If both commands work:
+- treat the installation as healthy
+- do not reinstall koubou
+- do not run low-level Playwright commands
+
+### 2. Always prepare the HTML runtime for this skill
+
+This skill is specifically for HTML template rendering, so run:
+
+```bash
+kou setup-html
+```
+
+Run it after `kou --version` succeeds. Treat it as safe and idempotent.
+
+Do not replace this with low-level Playwright commands.
+
+### 3. Install koubou only if `kou` is missing
+
+Use installation commands only when `kou --version` fails.
+
+#### macOS with Homebrew
+
+```bash
+brew install bitomule/tap/koubou
+```
+
+#### PyPI install
+
+```bash
+pip3 install koubou
+```
+
+#### Install from source
 
 ```bash
 git clone https://github.com/bitomule/Koubou.git /tmp/koubou
 cd /tmp/koubou
 pip3 install .
-kou setup-html
 ```
 
 ## Troubleshooting
 
-### `kou setup-html` fails
+### `kou` works, but HTML rendering is not ready
 
-Try installing system Chrome instead — koubou tries system Chrome first before falling back to Playwright's bundled Chromium.
+Use the product command first:
 
 ```bash
-# macOS
-brew install --cask google-chrome
+kou setup-html
 ```
 
-### `ModuleNotFoundError: No module named 'playwright'`
+Koubou handles browser/runtime setup through this command. Do not bypass it.
 
-Your koubou installation predates the built-in HTML runtime dependency. Update koubou, then run setup again:
+### `kou` is missing
+
+Install koubou first:
 
 ```bash
-pip3 install --upgrade koubou
-kou setup-html
+brew install bitomule/tap/koubou
+```
+
+Or:
+
+```bash
+pip3 install koubou
+```
+
+Then verify with:
+
+```bash
+kou --version
 ```
 
 ### `No browser available for HTML rendering`
 
-Neither system Chrome nor Playwright Chromium is available:
+Preferred path:
 
 ```bash
 kou setup-html
-# or install Chrome manually
 ```
+
+If this fails, surface the exact error to the user and stop. Do not jump to manual Playwright commands on your own.
+
+### PEP 668 or externally-managed Python errors
+
+Do not try to force `pip` into a system-managed Python if `kou` already works.
+
+If `kou --version` succeeds:
+- treat the installation as valid
+- use `kou setup-html` for HTML runtime setup
+
+If `kou` is not installed, prefer a project virtual environment instead of mutating system Python.
 
 ### Permission errors on macOS
 
-```bash
-pip3 install --user koubou
-kou setup-html
-```
+Prefer using the existing `kou` installation. If installation is truly required, use a project virtual environment.
 
 ### Virtual environment
 

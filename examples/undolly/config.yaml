@@ -8,23 +8,35 @@ screenshots:
   01_hero:
     template: "templates/hero.html"
     variables:
-      headline: "Clean Your iPhone"
-      subtitle: "Free up space instantly"
+      headline: "Free Up Space Fast"
+      subtitle: "Clear similar photos in minutes"
     assets:
       app_screenshot: "screenshots/home_dashboard.png"
 
   02_find_duplicates:
     template: "templates/feature.html"
     variables:
-      headline: "Find Duplicates"
-      subtitle: "AI groups similar photos"
+      headline: "Compare Similar Shots"
+      subtitle: "Keep one and delete the rest"
     assets:
       app_screenshot: "screenshots/group_clean.png"
 
   03_smart_analysis:
-    template: "templates/hero.html"
+    template: "templates/analysis.html"
     variables:
-      headline: "Smart Analysis"
-      subtitle: "Keep the best shots"
+      headline: "Keep Only The Best"
+      subtitle: "Sharpness, framing, and eyes open"
     assets:
       app_screenshot: "screenshots/group_detailed.png"
+
+  04_more_features:
+    template: "templates/features_list.html"
+    frame: false
+    variables:
+      headline: "Clean The Whole Library"
+      feature_1: "Similar Photos"
+      feature_2: "Big Videos"
+      feature_3: "Screenshots"
+      feature_4: "WhatsApp Media"
+      feature_5: "Best Shot"
+      feature_6: "Framing"

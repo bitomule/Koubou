@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+    background:
+      radial-gradient(circle at 20% 18%, rgba(255, 186, 84, 0.22), transparent 26%),
+      radial-gradient(circle at 82% 82%, rgba(93, 126, 255, 0.22), transparent 28%),
+      linear-gradient(145deg, #081027 0%, #10245d 50%, #2740a3 100%);
+  }
+  .canvas {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6% 4.2% 6% 6%;
+    gap: 1%;
+  }
+  .copy {
+    width: 38%;
+    align-self: flex-start;
+    padding-top: 1%;
+    z-index: 2;
+  }
+  h1 {
+    color: #ffffff;
+    font-size: 144px;
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.065em;
+    text-wrap: balance;
+  }
+  p {
+    margin-top: 18px;
+    color: rgba(237, 240, 255, 0.84);
+    font-size: 56px;
+    font-weight: 500;
+    line-height: 1.12;
+    text-wrap: balance;
+    max-width: 92%;
+  }
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 32px;
+    max-width: 92%;
+  }
+  .pill {
+    padding: 22px 26px;
+    border-radius: 28px;
+    color: #ffffff;
+    font-size: 34px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(16px);
+  }
+  .device-area {
+    position: relative;
+    width: 64%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .device-area::before {
+    content: "";
+    position: absolute;
+    bottom: 12%;
+    width: 88%;
+    height: 18%;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(72, 109, 255, 0.42), transparent 68%);
+    filter: blur(28px);
+  }
+  .device {
+    position: relative;
+    z-index: 2;
+    width: 124%;
+    transform: translateX(16%) rotate(10deg) translateY(4%);
+    transform-origin: center center;
+    filter: drop-shadow(0 36px 72px rgba(5, 10, 31, 0.45));
+  }
+  .device img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="copy">
+      <h1>{{headline}}</h1>
+      <p>{{subtitle}}</p>
+      <div class="stack">
+        <div class="pill">Sharpness check</div>
+        <div class="pill">Eyes open first</div>
+        <div class="pill">Framing included</div>
+      </div>
+    </div>
+    <div class="device-area">
+      <div class="device">
+        <img src="{{app_screenshot}}">
+      </div>
+    </div>
+  </div>
+</body>
+</html>

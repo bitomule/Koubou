@@ -1,50 +1,109 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="utf-8">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     width: 100vw;
     height: 100vh;
-    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+    background:
+      radial-gradient(circle at 22% 18%, rgba(255, 189, 76, 0.28), transparent 24%),
+      radial-gradient(circle at 84% 84%, rgba(60, 117, 255, 0.28), transparent 30%),
+      linear-gradient(180deg, #050814 0%, #121d4a 48%, #2442a7 100%);
+  }
+  .canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 6% 6% 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-    overflow: hidden;
+    align-items: flex-start;
   }
-  .headline {
-    color: #ffffff;
-    font-size: 130px;
+  .copy {
+    position: relative;
+    z-index: 3;
+    width: 72%;
+  }
+  h1 {
+    font-size: 148px;
+    line-height: 0.9;
+    letter-spacing: -0.065em;
     font-weight: 800;
-    text-align: center;
-    margin-top: 8%;
-    line-height: 1.1;
+    color: #ffffff;
+    text-wrap: balance;
     max-width: 90%;
   }
-  .subtitle {
-    color: #e0e0e0;
+  p {
+    margin-top: 24px;
     font-size: 58px;
-    text-align: center;
-    margin-top: 2%;
-    max-width: 85%;
+    line-height: 1.08;
+    font-weight: 500;
+    color: rgba(240, 244, 255, 0.86);
+    text-wrap: balance;
+    max-width: 78%;
+  }
+  .device-stage {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    margin-top: 1%;
+  }
+  .device-stage::before {
+    content: "";
+    position: absolute;
+    bottom: 5%;
+    right: 6%;
+    width: 72%;
+    height: 18%;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(47, 104, 255, 0.48), transparent 68%);
+    filter: blur(32px);
+  }
+  .halo {
+    position: absolute;
+    bottom: 34%;
+    right: 11%;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 178, 72, 0.46), transparent 70%);
+    filter: blur(12px);
+    z-index: 1;
   }
   .device {
-    margin-top: auto;
-    margin-bottom: -3%;
-    width: 75%;
+    position: relative;
+    z-index: 2;
+    width: 92%;
+    transform: translateX(12%) rotate(-8deg) translateY(14%);
+    transform-origin: center bottom;
+    filter: drop-shadow(0 42px 80px rgba(4, 8, 30, 0.52));
   }
   .device img {
     width: 100%;
     height: auto;
+    display: block;
   }
 </style>
 </head>
 <body>
-  <h1 class="headline">{{headline}}</h1>
-  <p class="subtitle">{{subtitle}}</p>
-  <div class="device">
-    <img src="{{app_screenshot}}">
+  <div class="canvas">
+    <div class="copy">
+      <h1>{{headline}}</h1>
+      <p>{{subtitle}}</p>
+    </div>
+    <div class="device-stage">
+      <div class="halo"></div>
+      <div class="device">
+        <img src="{{app_screenshot}}">
+      </div>
+    </div>
   </div>
 </body>
 </html>

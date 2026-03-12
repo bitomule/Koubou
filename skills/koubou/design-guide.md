@@ -6,7 +6,7 @@ Plan slides as a story, not a feature list.
 
 | # | Role | What to show | Notes |
 |---|------|-------------|-------|
-| 1 | **Hero/Hook** | Main value proposition. "What does this app solve?" | App icon + tagline. 80% of users only see this one |
+| 1 | **Hero/Hook** | Main value proposition. "What does this app solve?" | Optional app icon + strong tagline. 80% of users only see this one |
 | 2 | **Differentiator** | Star feature. What sets it apart from competitors | The unique selling point |
 | 3 | **Ecosystem** | Widgets, extensions, watch, integrations | Breadth of the product |
 | 4+ | **Core Features** | One feature per slide, prioritized by importance | One focus per screenshot |
@@ -14,6 +14,19 @@ Plan slides as a story, not a feature list.
 | Last | **More Features** | Extra features in pill/list format, "coming soon" | Expanded closing |
 
 **Critical**: Only the first 3 slides are visible in App Store search results without tapping into the listing. They must tell a complete story on their own.
+
+## Planning Before Layout
+
+- Write the full slide story first: slide role, headline, subtitle, screenshot choice
+- Do not start CSS until the first 3 slides already feel like a coherent ad campaign
+- Pick the strongest screenshot for the hero, not just the first one available
+- If the source captures are weak, cropped badly, or inconsistent, ask for better captures before polishing CSS forever
+
+## Source Material
+
+- Prefer clean simulator captures over noisy marketing exports
+- If the user can choose, prefer recent 6.1-inch iPhone captures as the source because they adapt cleanly across App Store compositions
+- Use screenshots with obvious focal points. Busy or low-contrast screens make the final slide weaker
 
 ## Copywriting Rules
 
@@ -23,6 +36,7 @@ Plan slides as a story, not a feature list.
 - **Simple vocabulary** — prefer 1-2 syllable words
 - **3-5 words per line** — readable in App Store thumbnail
 - **Arm test**: if you can't read it at arm's length, the text is too small
+- **One-second rule**: the headline should be understandable in about one second
 - **Intentional line breaks** — control wraps with `<br>` when needed
 
 ### Three approaches (choose per slide)
@@ -31,12 +45,20 @@ Plan slides as a story, not a feature list.
 2. **Declare an outcome** — "A home for every coffee you buy"
 3. **Kill a pain** — "Never waste a great bag of coffee"
 
+### Copy process
+
+1. Draft at least 2-3 headline directions before choosing one
+2. Prefer the simplest line that still feels premium and specific
+3. Read it at arm's length and apply the one-second rule
+4. Only then move on to layout
+
 ### What NOT to write
 
 - Headlines that are feature lists
 - Compound ideas joined with "and"
 - Buzzwords without substance ("AI-powered", "revolutionary")
 - More than 2 lines of text per screenshot
+- Tiny category labels pretending to be copy
 
 ## CSS Rules for Templates
 
@@ -47,6 +69,10 @@ Plan slides as a story, not a feature list.
 - **Font stack**: `-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif`
 - **Font weight**: 700-800 for headlines, 400-500 for subtitles
 - **Color**: White text on dark backgrounds. Never gray on gray
+- Avoid micro-labels and eyebrow text by default. If a small label is not essential to the selling message, remove it
+- Do not put the app name as a tiny decorative line at the top. Either omit it or render it at a clearly intentional, readable size
+- If a line of text feels like a section title, category tag, or UI annotation instead of marketing copy, it probably should not be there
+- If an app icon is used, it should support the hero composition or closing brand moment, not act as a miniature badge in a corner
 
 ### Backgrounds
 
@@ -60,6 +86,9 @@ Plan slides as a story, not a feature list.
 - Width: 70-80% of viewport width
 - The `{{asset_name}}` in templates receives the screenshot already composited inside the device frame — just use `<img>` to place it
 - Always leave margin between device and edges (minimum 3-5% of viewport)
+- The device should feel primary, not like a thumbnail floating in empty space
+- At least one of the first three slides should use a more assertive composition: tilt, crop, off-center placement, or edge break
+- Do not keep every device perfectly upright and centered. Repetition kills the set
 
 ### Layout variation (mandatory)
 
@@ -76,6 +105,13 @@ NEVER repeat the same layout in consecutive slides. Alternate between:
 - Include 1-2 contrast slides (no device, just text)
 - One focal point per screenshot — never overload
 
+### Vertical spacing
+
+- Large empty bands between headline/subtitle and the device are a failure
+- Text and device should feel compositionally related, not stacked as two unrelated blocks
+- If the middle of the slide is mostly empty background, tighten the composition
+- Use scale, overlap, tilt, and block placement to remove dead space before adding more text
+
 ## What NOT to do
 
 - Text smaller than 50px (invisible in thumbnail)
@@ -86,6 +122,22 @@ NEVER repeat the same layout in consecutive slides. Alternate between:
 - Showing features that don't exist in the app
 - Flat white or black backgrounds without gradient
 - Stacking multiple devices on one slide (unless deliberately showing ecosystem)
+- Tiny top-left labels like "review flow", "smart cleanup", or a miniature app name with no strategic value
+- Consecutive slides where the phone sits in nearly the same posture and position
+- Huge gaps where neither the text nor the device owns the slide
+- Presenting the first technically successful render without a quality pass
+
+## Rejection Checklist
+
+Do not present screenshots as final until all of these are true:
+
+- The first 3 slides tell a complete product story on their own
+- No two consecutive slides use the same device posture and composition
+- The device feels like a hero element whenever a device is present
+- There are no large dead zones between copy and imagery
+- Headlines sound like marketing, not documentation or feature labels
+- There are no tiny decorative top labels unless the user explicitly asked for them
+- The set reads like App Store advertising, not an internal product deck
 
 ## HTML Template Examples
 
@@ -108,12 +160,14 @@ All templates use viewport-sized layouts. Koubou sets the viewport to the exact 
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: space-between;
     background: linear-gradient(180deg, {{bg_start}} 0%, {{bg_end}} 100%);
+    padding: 8% 6% 0;
   }
   .text-area {
-    padding-top: 12%;
     text-align: center;
     flex-shrink: 0;
+    max-width: 88%;
   }
   h1 {
     font-size: 120px;
@@ -129,15 +183,18 @@ All templates use viewport-sized layouts. Koubou sets the viewport to the exact 
     line-height: 1.3;
   }
   .device-area {
-    margin-top: auto;
-    padding-bottom: 0;
     display: flex;
     justify-content: center;
+    align-items: flex-end;
+    width: 100%;
+    margin-top: 3%;
   }
   .device-area img {
-    width: 75%;
+    width: 82%;
     height: auto;
     object-fit: contain;
+    transform: translateY(2%) rotate(-6deg);
+    transform-origin: bottom center;
   }
 </style>
 </head>
@@ -170,23 +227,26 @@ All templates use viewport-sized layouts. Koubou sets the viewport to the exact 
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: space-between;
     background: linear-gradient(160deg, {{bg_start}} 0%, {{bg_end}} 100%);
+    padding: 5% 6% 6%;
   }
   .device-area {
-    padding-top: 5%;
     display: flex;
     justify-content: center;
+    align-items: flex-start;
+    width: 100%;
   }
   .device-area img {
-    width: 72%;
+    width: 78%;
     height: auto;
     object-fit: contain;
+    transform: translateY(-2%);
   }
   .text-area {
-    margin-top: auto;
-    margin-bottom: 6%;
     text-align: center;
-    padding: 0 8%;
+    padding: 0 6%;
+    max-width: 86%;
   }
   h1 {
     font-size: 110px;
@@ -235,20 +295,21 @@ All templates use viewport-sized layouts. Koubou sets the viewport to the exact 
     background: linear-gradient(135deg, {{bg_start}} 0%, {{bg_mid}} 50%, {{bg_end}} 100%);
   }
   .device-area {
-    width: 55%;
+    width: 58%;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 5%;
+    padding: 4% 2% 4% 5%;
   }
   .device-area img {
-    width: 90%;
+    width: 96%;
     height: auto;
     object-fit: contain;
+    transform: rotate(-7deg);
   }
   .text-area {
-    width: 45%;
-    padding-right: 6%;
+    width: 42%;
+    padding-right: 7%;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -396,3 +457,5 @@ These are starting points. For each project, adapt:
 - **Device image width**: Adjust between 65-85% based on how much screen real estate the device needs
 - **Spacing**: Adjust padding percentages based on text/device balance
 - **Additional elements**: Add app icons, floating UI elements, or badges as extra `<img>` tags using additional asset variables
+- **Composition**: If the template still feels generic after first render, change layout, scale, or posture instead of only tweaking colors
+- **Quality gate**: Do not ship the first successful render; compare it against the rejection checklist and iterate until it feels like App Store marketing

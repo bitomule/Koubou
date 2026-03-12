@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    background:
+      radial-gradient(circle at 18% 18%, rgba(255, 168, 54, 0.18), transparent 22%),
+      radial-gradient(circle at 84% 18%, rgba(52, 105, 255, 0.22), transparent 24%),
+      radial-gradient(circle at 22% 82%, rgba(255, 168, 54, 0.12), transparent 24%),
+      linear-gradient(180deg, #0a1025 0%, #17285d 54%, #2944a9 100%);
+    text-align: center;
+    padding: 14% 7% 0;
+  }
+  .wrap {
+    width: 100%;
+    max-width: 1140px;
+  }
+  h1 {
+    font-size: 140px;
+    font-weight: 800;
+    color: white;
+    line-height: 0.96;
+    letter-spacing: -0.065em;
+    margin-bottom: 32px;
+    text-wrap: balance;
+  }
+  .subtitle {
+    font-size: 52px;
+    line-height: 1.14;
+    font-weight: 500;
+    color: rgba(236, 241, 255, 0.84);
+    margin: 0 auto 40px;
+    max-width: 74%;
+  }
+  .pills {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    max-width: 100%;
+  }
+  .pill {
+    background: rgba(255, 255, 255, 0.13);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 34px;
+    padding: 30px 34px;
+    font-size: 42px;
+    font-weight: 700;
+    color: white;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>{{headline}}</h1>
+    <p class="subtitle">Photos, videos, screenshots, and more</p>
+    <div class="pills">
+      <span class="pill">{{feature_1}}</span>
+      <span class="pill">{{feature_2}}</span>
+      <span class="pill">{{feature_3}}</span>
+      <span class="pill">{{feature_4}}</span>
+      <span class="pill">{{feature_5}}</span>
+      <span class="pill">{{feature_6}}</span>
+    </div>
+  </div>
+</body>
+</html>

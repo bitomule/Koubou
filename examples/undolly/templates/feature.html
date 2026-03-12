@@ -1,51 +1,99 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="utf-8">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     width: 100vw;
     height: 100vh;
-    background: radial-gradient(circle at 30% 20%, #ff6b35, #f7931e, #d64000);
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+    background:
+      radial-gradient(circle at 18% 18%, rgba(255, 225, 126, 0.32), transparent 24%),
+      radial-gradient(circle at 84% 78%, rgba(255, 122, 24, 0.24), transparent 28%),
+      linear-gradient(180deg, #ffb138 0%, #ff7a00 62%, #d65300 100%);
+  }
+  .canvas {
+    width: 100%;
+    height: 100%;
+    padding: 4.5% 5.2% 5.2%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-    overflow: hidden;
+  }
+  .device-area {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5%;
+  }
+  .device-area::before {
+    content: "";
+    position: absolute;
+    bottom: 8%;
+    width: 82%;
+    height: 14%;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(120, 39, 0, 0.38), transparent 70%);
+    filter: blur(30px);
   }
   .device {
-    margin-top: 5%;
-    width: 75%;
+    position: relative;
+    z-index: 2;
+    width: 90%;
+    transform: rotate(3deg) translateY(1%);
+    transform-origin: center center;
+    filter: drop-shadow(0 34px 66px rgba(115, 35, 0, 0.34));
   }
   .device img {
     width: 100%;
     height: auto;
+    display: block;
   }
-  .text-block {
+  .text-card {
     margin-top: auto;
-    margin-bottom: 6%;
-    text-align: center;
+    width: 100%;
+    padding: 44px 46px 48px;
+    border-radius: 50px;
+    background: rgba(126, 39, 0, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 24px 46px rgba(130, 36, 2, 0.18);
+    text-align: left;
   }
-  .headline {
+  h1 {
     color: #ffffff;
-    font-size: 130px;
+    font-size: 132px;
     font-weight: 800;
-    line-height: 1.1;
+    line-height: 0.92;
+    letter-spacing: -0.06em;
+    text-wrap: balance;
+    max-width: 92%;
   }
-  .subtitle {
-    color: #f0f0f0;
-    font-size: 58px;
-    margin-top: 2%;
+  p {
+    margin-top: 18px;
+    color: rgba(255, 247, 239, 0.86);
+    font-size: 56px;
+    font-weight: 500;
+    line-height: 1.12;
+    max-width: 88%;
+    text-wrap: balance;
   }
 </style>
 </head>
 <body>
-  <div class="device">
-    <img src="{{app_screenshot}}">
-  </div>
-  <div class="text-block">
-    <h1 class="headline">{{headline}}</h1>
-    <p class="subtitle">{{subtitle}}</p>
+  <div class="canvas">
+    <div class="device-area">
+      <div class="device">
+        <img src="{{app_screenshot}}">
+      </div>
+    </div>
+    <div class="text-card">
+      <h1>{{headline}}</h1>
+      <p>{{subtitle}}</p>
+    </div>
   </div>
 </body>
 </html>
