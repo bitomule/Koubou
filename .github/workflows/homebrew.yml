@@ -1,0 +1,49 @@
+name: Homebrew
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag-name:
+        description: Git tag to bump the Homebrew formula to
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  bump-formula:
+    name: Bump Homebrew formula
+    if: ${{ github.event_name != 'push' || !contains(github.ref_name, '-') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine tag and version
+        id: release
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag_name="${{ github.event.inputs.tag-name }}"
+          else
+            tag_name="${{ github.ref_name }}"
+          fi
+          version="${tag_name#v}"
+          echo "tag-name=$tag_name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "download-url=https://files.pythonhosted.org/packages/source/k/koubou/koubou-$version.tar.gz" >> "$GITHUB_OUTPUT"
+
+      - name: Bump formula PR
+        uses: mislav/bump-homebrew-formula-action@v3.6
+        with:
+          formula-name: koubou
+          formula-path: Formula/koubou.rb
+          tag-name: ${{ steps.release.outputs.tag-name }}
+          download-url: ${{ steps.release.outputs.download-url }}
+          homebrew-tap: bitomule/homebrew-tap
+          push-to: bitomule/homebrew-tap
+          base-branch: master
+          create-branch: true
+          create-pullrequest: true
+        env:
+          COMMITTER_TOKEN: ${{ secrets.COMMITTER_TOKEN }}

@@ -113,13 +113,3 @@ jobs:
         twine upload dist/*.tar.gz dist/*.whl
       continue-on-error: true
         
-    - name: Update Homebrew formula
-      uses: dawidd6/action-homebrew-bump-formula@v4
-      with:
-        token: ${{ secrets.COMMITTER_TOKEN }}
-        tap: bitomule/homebrew-tap
-        formula: koubou
-        tag: ${{ steps.tag.outputs.tag }}
-        revision: ${{ github.sha }}
-        no_fork: true
-      continue-on-error: true
