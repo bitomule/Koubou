@@ -245,9 +245,7 @@ class TestCLI:
 
         setup_calls = []
 
-        def fake_prepare_html_environment(
-            *, setup_requested, verbose, output_console
-        ):
+        def fake_prepare_html_environment(*, setup_requested, verbose, output_console):
             setup_calls.append(
                 {
                     "setup_requested": setup_requested,
