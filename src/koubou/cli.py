@@ -18,6 +18,11 @@ from rich.text import Text
 from .config import ProjectConfig
 from .exceptions import KoubouError
 from .generator import ScreenshotGenerator
+from .html_setup import (
+    check_html_environment,
+    format_html_environment_error,
+    setup_html_environment,
+)
 from .live_generator import LiveScreenshotGenerator
 from .watcher import LiveWatcher
 
@@ -192,6 +197,36 @@ def _show_results(results, output_dir: str) -> None:
     console.print(f"\nOutput directory: {Path(output_dir).absolute()}", style="blue")
 
 
+def _project_uses_html_templates(project_config: ProjectConfig) -> bool:
+    return any(
+        screenshot_def.template
+        for screenshot_def in project_config.screenshots.values()
+    )
+
+
+def _prepare_html_environment(
+    *,
+    setup_requested: bool,
+    verbose: bool,
+    output_console: Console,
+) -> None:
+    if setup_requested:
+        status = setup_html_environment(verbose=verbose)
+        if status.did_install_browser:
+            output_console.print(
+                f"HTML ready: installed {status.browser_name}", style="green"
+            )
+        else:
+            output_console.print(
+                f"HTML ready: using {status.browser_name}", style="green"
+            )
+        return
+
+    status = check_html_environment()
+    if not status.ready:
+        raise KoubouError(format_html_environment_error(status))
+
+
 @app.callback(invoke_without_command=True)
 def main_callback(
     ctx: typer.Context,
@@ -237,6 +272,11 @@ def generate(
     output: str = typer.Option(
         "table", "--output", help="Output format: table or json"
     ),
+    setup_html: bool = typer.Option(
+        False,
+        "--setup-html",
+        help="Prepare HTML rendering before generating HTML template screenshots",
+    ),
     verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
 ):
     """Generate screenshots from YAML configuration file"""
@@ -262,6 +302,13 @@ def generate(
         except Exception as _e:
             stderr_console.print(f"Invalid configuration: {_e}", style="red")
             raise typer.Exit(1)
+
+        if _project_uses_html_templates(project_config):
+            _prepare_html_environment(
+                setup_requested=setup_html,
+                verbose=verbose,
+                output_console=stderr_console,
+            )
 
         stderr_console.print(
             f"Using YAML output directory: {project_config.project.output_dir}",
@@ -322,6 +369,34 @@ def generate(
         stderr_console.print(f"Unexpected error: {_e}", style="red")
         if verbose:
             stderr_console.print_exception()
+        raise typer.Exit(1)
+
+
+@app.command()
+def setup_html(
+    verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
+):
+    """Prepare HTML rendering support for the current Koubou installation."""
+
+    setup_logging(verbose)
+
+    try:
+        status = setup_html_environment(verbose=verbose)
+        if status.did_install_browser:
+            console.print(
+                "HTML ready: installed "
+                f"{status.browser_name} for this Koubou environment",
+                style="green",
+            )
+        else:
+            console.print(f"HTML ready: using {status.browser_name}", style="green")
+    except KoubouError as e:
+        console.print(f"{e}", style="red")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"{e}", style="red")
+        if verbose:
+            console.print_exception()
         raise typer.Exit(1)
 
 
@@ -448,6 +523,11 @@ def live(
     config_file: Path = typer.Argument(..., help="YAML configuration file to watch"),
     verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
     debounce: float = typer.Option(0.5, "--debounce", help="Debounce delay in seconds"),
+    setup_html: bool = typer.Option(
+        False,
+        "--setup-html",
+        help="Prepare HTML rendering before starting live mode",
+    ),
 ):
     """Live editing mode - regenerate screenshots when config or assets change"""
 
@@ -457,6 +537,20 @@ def live(
         if not config_file.exists():
             console.print(f"Configuration file not found: {config_file}", style="red")
             raise typer.Exit(1)
+
+        try:
+            with open(config_file) as f:
+                config_data = yaml.safe_load(f)
+            project_config = ProjectConfig(**config_data)
+        except Exception:
+            project_config = None
+
+        if project_config and _project_uses_html_templates(project_config):
+            _prepare_html_environment(
+                setup_requested=setup_html,
+                verbose=verbose,
+                output_console=console,
+            )
 
         live_generator = LiveScreenshotGenerator(config_file)
         watcher = LiveWatcher(config_file, debounce_delay=debounce)

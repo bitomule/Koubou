@@ -7,20 +7,12 @@ import tempfile
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
+from ..html_setup import (
+    browser_setup_message,
+    import_sync_playwright,
+)
+
 logger = logging.getLogger(__name__)
-
-
-def _import_playwright():
-    try:
-        from playwright.sync_api import sync_playwright
-
-        return sync_playwright
-    except ImportError:
-        raise RuntimeError(
-            "Playwright is required for HTML template rendering. "
-            "Install it with: pip install koubou[html]\n"
-            "Then install a browser: playwright install chromium"
-        )
 
 
 class HtmlRenderer:
@@ -34,7 +26,7 @@ class HtmlRenderer:
         if self._browser:
             return
 
-        sync_playwright = _import_playwright()
+        sync_playwright = import_sync_playwright()
         self._playwright = sync_playwright().start()
 
         # Try system Chrome first, fall back to Playwright's chromium
@@ -46,10 +38,7 @@ class HtmlRenderer:
                 self._browser = self._playwright.chromium.launch()
                 logger.info("Using Playwright Chromium for HTML rendering")
             except Exception as e:
-                raise RuntimeError(
-                    f"No browser available for HTML rendering: {e}\n"
-                    "Install Chrome or run: playwright install chromium"
-                )
+                raise RuntimeError(browser_setup_message(str(e)))
 
     def render(
         self,

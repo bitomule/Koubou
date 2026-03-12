@@ -29,7 +29,7 @@ Generate professional App Store screenshots using HTML/CSS templates with 100+ r
 **User instructions always take priority over defaults in this skill.**
 
 Reference files (read as needed, not upfront):
-- `setup.md` — Installation of koubou + Playwright
+- `setup.md` — Installation of koubou + HTML rendering support
 - `design-guide.md` — Design principles, copywriting rules, CSS rules, HTML template examples
 - `yaml-reference.md` — YAML config format, localization, assets, devices, sizes
 - `capabilities-reference.md` — Full koubou capabilities (content mode, highlights, zoom, gradients)
@@ -39,8 +39,8 @@ Reference files (read as needed, not upfront):
 Check if koubou is installed. If not, install it. Do not ask the user — just do it.
 
 ```bash
-python3 -c "import koubou" 2>/dev/null || pip3 install "koubou[html]"
-playwright install chromium 2>/dev/null || true
+command -v kou >/dev/null 2>&1 || pip3 install koubou
+kou setup-html 2>/dev/null || true
 ```
 
 Only inform the user if installation fails. Read `setup.md` for troubleshooting.
@@ -83,7 +83,7 @@ Read `design-guide.md` before generating templates. Read `yaml-reference.md` bef
 1. Create working directory (e.g., `AppStore/` or wherever makes sense for the project)
 2. Create `templates/` with HTML templates — **minimum 3 distinct layouts** (read `design-guide.md` for templates)
 3. Create `config.yaml` with koubou config (read `yaml-reference.md` for format)
-4. Run: `kou generate config.yaml --verbose`
+4. Run: `kou generate config.yaml --setup-html --verbose`
 5. Open output folder: `open <output_dir>`
 6. Ask if the user wants adjustments — iterate on specific slides without regenerating everything
 
@@ -91,8 +91,8 @@ Read `design-guide.md` before generating templates. Read `yaml-reference.md` bef
 
 - When user asks to change a specific slide, only modify that template + config entry
 - When user asks for a global style change (colors, fonts), update all templates
-- Re-run `kou generate config.yaml --verbose` after changes
-- Use `kou live config.yaml` if user wants real-time preview while editing
+- Re-run `kou generate config.yaml --setup-html --verbose` after changes
+- Use `kou live config.yaml --setup-html` if user wants real-time preview while editing
 
 ## Key Technical Details
 

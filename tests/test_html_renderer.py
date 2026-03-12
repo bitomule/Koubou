@@ -21,9 +21,18 @@ def _playwright_available():
     return importlib.util.find_spec("playwright") is not None
 
 
+def _html_runtime_available():
+    if not _playwright_available():
+        return False
+
+    from koubou.html_setup import check_html_environment
+
+    return check_html_environment().ready
+
+
 requires_playwright = pytest.mark.skipif(
-    not _playwright_available(),
-    reason="playwright not installed (install with: pip install koubou[html])",
+    not _html_runtime_available(),
+    reason="HTML rendering runtime not available in test environment",
 )
 
 

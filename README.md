@@ -12,6 +12,7 @@
 ## ✨ Features
 
 - **🔄 Live Editing** - Real-time screenshot regeneration when config or assets change
+- **🧩 HTML/CSS Templates** - Render polished marketing layouts with Chrome or Playwright Chromium
 - **🌍 Multi-Language Localization** - Generate localized screenshots using familiar xcstrings format from Xcode
 - **🖼️ Localized Assets** - Automatic language-specific asset resolution with convention-based and explicit mapping
 - **🎨 100+ Device Frames** - iPhone 16 Pro, iPad Air M2, MacBook Pro, Apple Watch Ultra, and more
@@ -40,6 +41,13 @@ pip install koubou
 brew install bitomule/tap/koubou
 ```
 
+**HTML Templates**
+```bash
+kou setup-html
+```
+
+If Google Chrome is already installed, HTML template rendering usually works without any extra setup. `kou setup-html` installs Playwright Chromium only when it is needed.
+
 **Python Developers**
 ```bash
 pip install koubou[dev]  # With development dependencies
@@ -67,6 +75,7 @@ Verify your installation:
 ```bash
 kou --version
 kou --help
+kou setup-html --help
 ```
 
 ## 🚀 Quick Start
@@ -78,9 +87,31 @@ kou --create-config my-screenshots.yaml
 # Generate screenshots
 kou generate my-screenshots.yaml
 
+# Prepare HTML rendering if your project uses HTML templates
+kou setup-html
+
 # Live editing mode - regenerate automatically when files change
 kou live my-screenshots.yaml
 ```
+
+## 🧩 HTML Templates
+
+Use `template:` when a screenshot needs full HTML/CSS layout control instead of the standard content pipeline.
+
+```yaml
+screenshots:
+  hero:
+    template: "templates/hero.html"
+    variables:
+      headline: "Private cleanup, instantly"
+    assets:
+      screen: "screenshots/home.png"
+```
+
+- `variables:` are localizable `{{key}}` substitutions
+- `assets:` are file-path substitutions exposed to the template as `{{key}}`
+- `kou generate config.yaml --setup-html` prepares HTML rendering and generates in one run
+- `kou live config.yaml --setup-html` does the same before starting live mode
 
 ## 🔄 Live Editing
 
@@ -308,6 +339,7 @@ See the YAML API Reference below for all available options including gradients, 
 ### Core Commands
 
 - `kou generate <config.yaml>` - Generate screenshots from configuration
+- `kou setup-html` - Prepare HTML rendering support for the current installation
 - `kou live <config.yaml>` - Live editing mode with real-time regeneration
 - `kou list-sizes` - List available App Store screenshot sizes
 - `kou --create-config <output.yaml>` - Create a sample configuration file
@@ -318,20 +350,32 @@ See the YAML API Reference below for all available options including gradients, 
 
 #### Generate Command
 ```bash
-# Override output directory
-kou generate config.yaml --output ./custom-screenshots
+# Emit machine-readable results
+kou generate config.yaml --output json
 
-# Use custom frame directory
-kou generate config.yaml --frames ./my-frames
+# Prepare HTML rendering and generate in one run
+kou generate config.yaml --setup-html
 
 # Enable verbose logging
 kou generate config.yaml --verbose
+```
+
+#### HTML Setup
+```bash
+# Prepare HTML rendering for the current installation
+kou setup-html
+
+# See setup diagnostics
+kou setup-html --verbose
 ```
 
 #### Live Editing Command
 ```bash
 # Start live editing with default settings
 kou live config.yaml
+
+# Prepare HTML rendering before starting live mode
+kou live config.yaml --setup-html
 
 # Adjust debounce delay (default: 0.5s)
 kou live config.yaml --debounce 1.0
