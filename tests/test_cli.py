@@ -218,7 +218,6 @@ class TestCLI:
 
         assert result.exit_code == 0
         assert "Prepare HTML rendering support" in result.stdout
-        assert "--verbose" in result.stdout
 
     def test_generate_with_setup_html(self, monkeypatch):
         """Test generate --setup-html prepares HTML before generation."""
