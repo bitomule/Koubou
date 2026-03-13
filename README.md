@@ -12,7 +12,7 @@
 ## ✨ Features
 
 - **🔄 Live Editing** - Real-time screenshot regeneration when config or assets change
-- **🖥️ HTML Live Preview** - Auto-open a local dashboard for HTML screenshots with hot reload
+- **🖥️ Live Preview Dashboard** - Auto-open a local dashboard for screenshot previews with hot reload
 - **🧩 HTML/CSS Templates** - Render polished marketing layouts with Chrome or Playwright Chromium
 - **🌍 Multi-Language Localization** - Generate localized screenshots using familiar xcstrings format from Xcode
 - **🖼️ Localized Assets** - Automatic language-specific asset resolution with convention-based and explicit mapping
@@ -133,7 +133,7 @@ kou live my-screenshots.yaml --debounce 1.0
 kou live my-screenshots.yaml --verbose
 ```
 
-When your config contains HTML screenshots, `kou live` also starts a local browser dashboard that previews every HTML slide in YAML order and hot-reloads the affected iframes as you edit templates or assets.
+`kou live` also starts a local browser dashboard that previews screenshots in YAML order. HTML slides render as live iframes, while standard Koubou slides render as regenerated PNGs in the same grid.
 
 ![HTML live preview dashboard](docs/images/html-live-preview-dashboard.png)
 
@@ -141,8 +141,8 @@ When your config contains HTML screenshots, `kou live` also starts a local brows
 - Monitors YAML config and all referenced assets
 - Regenerates only affected screenshots
 - Debounces rapid changes to prevent excessive regeneration
-- Starts a local HTML preview dashboard for template-based screenshots
-- Shows only HTML slides in mixed projects; content-based screenshots still regenerate to disk
+- Starts a local preview dashboard and auto-opens it when possible
+- Shows HTML slides as live HTML and standard Koubou slides as PNG previews
 - Uses the base language for preview while localized outputs continue regenerating on disk
 
 **Perfect for iterative design** - edit assets in design tools, update text, tweak positioning, and see results instantly.
@@ -409,7 +409,7 @@ kou live config.yaml --debounce 1.0
 kou live config.yaml --verbose
 ```
 
-When the config contains HTML screenshots, `kou live` also prints a local preview URL and opens a browser tab with the HTML live preview dashboard. The dashboard shows only HTML slides, uses the base language for preview, and hot-reloads changed slides without waiting for a full page refresh.
+`kou live` also prints a local preview URL and opens a browser tab with the live preview dashboard. HTML screenshots are previewed as live HTML, standard screenshots are previewed as PNGs, the dashboard uses the base language for preview, and changed slides hot-reload without waiting for a full page refresh.
 
 #### Configuration Creation
 ```bash

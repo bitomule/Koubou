@@ -241,6 +241,39 @@ class TestLiveScreenshotGenerator:
         assert result.has_errors is True
         assert "Failed to load configuration" in result.config_errors
 
+    def test_sync_preview_workspace_stages_content_png(self, tmp_path):
+        """Content screenshots should appear in the live preview as images."""
+        config_file, _ = self.create_test_config_file(tmp_path)
+        generator = LiveScreenshotGenerator(config_file)
+        generator.current_config = generator.load_config()
+
+        assert generator.current_config is not None
+        output_dir = (
+            tmp_path
+            / "output"
+            / generator.current_config.project.device.replace(" ", "_")
+        )
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / "welcome_screen.png"
+        Image.new("RGB", (120, 240), "blue").save(output_path)
+
+        errors = generator.sync_preview_workspace({"welcome_screen"})
+
+        assert errors == {}
+        staged = (
+            generator.preview_workspace.slides_dir / "welcome_screen" / "preview.png"
+        )
+        assert staged.exists()
+
+        slides = generator.get_preview_slides()
+        welcome_slide = next(
+            slide for slide in slides if slide.screenshot_id == "welcome_screen"
+        )
+        assert welcome_slide.kind == "image"
+        assert welcome_slide.path == "/slides/welcome_screen/preview.png"
+
+        generator.close()
+
     def test_handle_config_changes(self, tmp_path):
         """Test handling configuration file changes."""
         config_file, config_dir = self.create_test_config_file(tmp_path)

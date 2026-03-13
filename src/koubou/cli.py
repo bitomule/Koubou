@@ -781,19 +781,19 @@ def live(
                     style="green",
                 )
 
-            if live_generator.has_html_screenshots():
-                preview_errors = live_generator.sync_html_preview_workspace()
+            if live_generator.has_preview_screenshots():
+                preview_errors = live_generator.sync_preview_workspace()
                 preview_server = HtmlPreviewServer(live_generator.preview_workspace)
-                preview_server.set_slides(live_generator.get_html_preview_slides())
+                preview_server.set_slides(live_generator.get_preview_slides())
                 preview_server.start()
                 if preview_server.open_browser():
                     console.print(
-                        f"HTML live preview: {preview_server.url}",
+                        f"Live preview: {preview_server.url}",
                         style="blue",
                     )
                 else:
                     console.print(
-                        f"HTML live preview: {preview_server.url}",
+                        f"Live preview: {preview_server.url}",
                         style="yellow",
                     )
                 for screenshot_id, error in preview_errors.items():
@@ -829,44 +829,42 @@ def live(
                     for error in result.config_errors:
                         console.print(f"  - {error}", style="red")
 
-                if live_generator.has_html_screenshots():
+                if live_generator.has_preview_screenshots():
                     if preview_server is None:
-                        preview_errors = live_generator.sync_html_preview_workspace()
+                        preview_errors = live_generator.sync_preview_workspace()
                         preview_server = HtmlPreviewServer(
                             live_generator.preview_workspace
                         )
-                        preview_server.set_slides(
-                            live_generator.get_html_preview_slides()
-                        )
+                        preview_server.set_slides(live_generator.get_preview_slides())
                         preview_server.start()
                         if preview_server.open_browser():
                             console.print(
-                                f"HTML live preview: {preview_server.url}",
+                                f"Live preview: {preview_server.url}",
                                 style="blue",
                             )
                         else:
                             console.print(
-                                f"HTML live preview: {preview_server.url}",
+                                f"Live preview: {preview_server.url}",
                                 style="yellow",
                             )
-                    elif result.html_full_reload:
-                        preview_errors = live_generator.sync_html_preview_workspace()
-                        preview_server.set_slides(
-                            live_generator.get_html_preview_slides()
-                        )
+                    elif result.preview_full_reload:
+                        preview_errors = live_generator.sync_preview_workspace()
+                        preview_server.set_slides(live_generator.get_preview_slides())
                         preview_server.publish_full_reload()
                     else:
-                        updated_html = set(result.updated_html_screenshots)
+                        updated_preview = set(result.updated_preview_screenshots)
                         preview_errors = (
-                            live_generator.sync_html_preview_workspace(updated_html)
-                            if updated_html
+                            live_generator.sync_preview_workspace(updated_preview)
+                            if updated_preview
                             else {}
                         )
-                        if updated_html:
-                            preview_server.publish_reload_slides(sorted(updated_html))
+                        if updated_preview:
+                            preview_server.publish_reload_slides(
+                                sorted(updated_preview)
+                            )
 
                     for screenshot_id, error in {
-                        **result.html_preview_errors,
+                        **result.preview_errors,
                         **preview_errors,
                     }.items():
                         console.print(

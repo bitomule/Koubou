@@ -26,7 +26,15 @@ class TestHtmlPreviewServer:
 
             server = HtmlPreviewServer(workspace)
             server.set_slides(
-                [HtmlPreviewSlide("hero", "hero", aspect_ratio=1320 / 2868)]
+                [
+                    HtmlPreviewSlide(
+                        "hero",
+                        "hero",
+                        aspect_ratio=1320 / 2868,
+                        kind="html",
+                        path="/slides/hero/",
+                    )
+                ]
             )
             server.start()
 
@@ -34,7 +42,7 @@ class TestHtmlPreviewServer:
                 assert response.status == 200
                 assert "text/html" in response.headers["Content-Type"]
                 body = response.read().decode("utf-8")
-                assert "Koubou HTML Live Preview" in body
+                assert "Koubou Live Preview" in body
                 assert 'data-slide="hero"' in body
 
             with urllib.request.urlopen(
@@ -84,7 +92,15 @@ class TestHtmlPreviewServer:
 
             server = HtmlPreviewServer(workspace)
             server.set_slides(
-                [HtmlPreviewSlide("hero", "hero", aspect_ratio=1320 / 2868)]
+                [
+                    HtmlPreviewSlide(
+                        "hero",
+                        "hero",
+                        aspect_ratio=1320 / 2868,
+                        kind="html",
+                        path="/slides/hero/",
+                    )
+                ]
             )
             server.start()
 
@@ -101,6 +117,44 @@ class TestHtmlPreviewServer:
                 assert event_line == "event: reload-slides"
                 payload = json.loads(data_line.removeprefix("data: "))
                 assert payload["screenshots"] == ["hero"]
+
+            server.stop()
+        finally:
+            workspace.cleanup()
+
+    def test_dashboard_and_image_routes(self):
+        workspace = HtmlPreviewWorkspace()
+        try:
+            workspace.stage_slide(
+                screenshot_id="welcome",
+                builder=lambda stage_dir: Image.new("RGB", (40, 80), "#ff0000").save(
+                    stage_dir / "preview.png"
+                ),
+            )
+
+            server = HtmlPreviewServer(workspace)
+            server.set_slides(
+                [
+                    HtmlPreviewSlide(
+                        "welcome",
+                        "welcome",
+                        aspect_ratio=1320 / 2868,
+                        kind="image",
+                        path="/slides/welcome/preview.png",
+                    )
+                ]
+            )
+            server.start()
+
+            with urllib.request.urlopen(server.url, timeout=5) as response:
+                body = response.read().decode("utf-8")
+                assert 'data-image src="/slides/welcome/preview.png"' in body
+
+            with urllib.request.urlopen(
+                f"{server.url}slides/welcome/preview.png", timeout=5
+            ) as response:
+                assert response.status == 200
+                assert response.headers["Content-Type"] == "image/png"
 
             server.stop()
         finally:

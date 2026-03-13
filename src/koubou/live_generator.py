@@ -1,6 +1,7 @@
 """Live screenshot generation with selective regeneration capabilities."""
 
 import logging
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
@@ -30,9 +31,9 @@ class LiveGenerationResult:
         self.config_errors: List[str] = []
         self.total_time: float = 0.0
         self.generated_file_count: int = 0  # Track actual number of generated files
-        self.updated_html_screenshots: List[str] = []
-        self.html_preview_errors: Dict[str, str] = {}
-        self.html_full_reload: bool = False
+        self.updated_preview_screenshots: List[str] = []
+        self.preview_errors: Dict[str, str] = {}
+        self.preview_full_reload: bool = False
 
     @property
     def success_count(self) -> int:
@@ -160,7 +161,7 @@ class LiveScreenshotGenerator:
         # Separate different types of changes - resolve paths for consistent comparison
         resolved_changed_files = {f.resolve() for f in changed_files}
         config_changed = self.config_file in resolved_changed_files
-        previous_html_ids = self.get_html_screenshot_ids()
+        previous_preview_ids = self.get_preview_screenshot_ids()
 
         # Check for xcstrings changes
         xcstrings_changed = False
@@ -185,8 +186,8 @@ class LiveScreenshotGenerator:
             logger.info("📝 Config file changed, analyzing impact...")
             config_affected = self._handle_config_changes(result)
             affected_screenshots.update(config_affected)
-            if previous_html_ids != self.get_html_screenshot_ids():
-                result.html_full_reload = True
+            if previous_preview_ids != self.get_preview_screenshot_ids():
+                result.preview_full_reload = True
 
         # Handle xcstrings changes (affects all screenshots in localization mode)
         if xcstrings_changed:
@@ -240,15 +241,13 @@ class LiveScreenshotGenerator:
                     )
                     result.regenerated_screenshots.append(screenshot_id)
                     result.generated_file_count += generated_count
-                    if self._is_html_screenshot(screenshot_id):
-                        result.updated_html_screenshots.append(screenshot_id)
+                    result.updated_preview_screenshots.append(screenshot_id)
                     logger.info(
                         f"✅ Regenerated: {screenshot_id} ({generated_count} files)"
                     )
                 except Exception as e:
                     result.failed_screenshots[screenshot_id] = str(e)
-                    if self._is_html_screenshot(screenshot_id):
-                        result.html_preview_errors[screenshot_id] = str(e)
+                    result.preview_errors[screenshot_id] = str(e)
                     logger.error(f"❌ Failed to regenerate {screenshot_id}: {e}")
         else:
             logger.info("No screenshots affected by changes")
@@ -391,19 +390,15 @@ class LiveScreenshotGenerator:
         # Convert to dict using Pydantic's model_dump
         return config.model_dump()
 
-    def has_html_screenshots(self) -> bool:
-        return bool(self.get_html_screenshot_ids())
+    def has_preview_screenshots(self) -> bool:
+        return bool(self.get_preview_screenshot_ids())
 
-    def get_html_screenshot_ids(self) -> List[str]:
+    def get_preview_screenshot_ids(self) -> List[str]:
         if not self.current_config:
             return []
-        return [
-            screenshot_id
-            for screenshot_id, screenshot_def in self.current_config.screenshots.items()
-            if screenshot_def.template
-        ]
+        return list(self.current_config.screenshots.keys())
 
-    def get_html_preview_slides(self) -> List[HtmlPreviewSlide]:
+    def get_preview_slides(self) -> List[HtmlPreviewSlide]:
         if not self.current_config:
             return []
 
@@ -414,15 +409,17 @@ class LiveScreenshotGenerator:
                 screenshot_id=screenshot_id,
                 title=screenshot_id,
                 aspect_ratio=aspect_ratio,
+                kind="html" if screenshot_def.template else "image",
+                path=self._preview_slide_path(screenshot_id, screenshot_def),
             )
-            for screenshot_id in self.get_html_screenshot_ids()
+            for screenshot_id, screenshot_def in self.current_config.screenshots.items()
         ]
 
-    def sync_html_preview_workspace(
+    def sync_preview_workspace(
         self,
         screenshot_ids: Optional[Set[str]] = None,
     ) -> Dict[str, str]:
-        """Build or refresh staged HTML preview workspaces."""
+        """Build or refresh staged preview workspaces."""
         if not self.current_config:
             return {}
 
@@ -433,12 +430,12 @@ class LiveScreenshotGenerator:
                 self.current_config.localization, self.config_dir
             )
 
-        target_ids = screenshot_ids or set(self.get_html_screenshot_ids())
+        target_ids = screenshot_ids or set(self.get_preview_screenshot_ids())
         errors: Dict[str, str] = {}
 
         for screenshot_id in target_ids:
             screenshot_def = self.current_config.screenshots.get(screenshot_id)
-            if not screenshot_def or not screenshot_def.template:
+            if not screenshot_def:
                 continue
 
             try:
@@ -448,13 +445,21 @@ class LiveScreenshotGenerator:
                     sid: str = screenshot_id,
                     defn: Any = screenshot_def,
                 ) -> None:
-                    self._build_html_preview_slide(
-                        stage_dir=stage_dir,
-                        screenshot_id=sid,
-                        screenshot_def=defn,
-                        language=language,
-                        xcstrings_manager=xcstrings_manager,
-                    )
+                    if defn.template:
+                        self._build_html_preview_slide(
+                            stage_dir=stage_dir,
+                            screenshot_id=sid,
+                            screenshot_def=defn,
+                            language=language,
+                            xcstrings_manager=xcstrings_manager,
+                        )
+                    else:
+                        self._build_image_preview_slide(
+                            stage_dir=stage_dir,
+                            screenshot_id=sid,
+                            screenshot_def=defn,
+                            language=language,
+                        )
 
                 self.preview_workspace.stage_slide(
                     screenshot_id=screenshot_id,
@@ -463,7 +468,7 @@ class LiveScreenshotGenerator:
             except Exception as exc:
                 errors[screenshot_id] = str(exc)
 
-        self.preview_workspace.remove_stale_slides(self.get_html_screenshot_ids())
+        self.preview_workspace.remove_stale_slides(self.get_preview_screenshot_ids())
         return errors
 
     def close(self) -> None:
@@ -497,16 +502,95 @@ class LiveScreenshotGenerator:
         finally:
             prepared.cleanup()
 
+    def _build_image_preview_slide(
+        self,
+        *,
+        stage_dir: Path,
+        screenshot_id: str,
+        screenshot_def: Any,
+        language: str,
+    ) -> None:
+        output_path = self._resolve_preview_output_path(
+            screenshot_id=screenshot_id,
+            screenshot_def=screenshot_def,
+            language=language,
+        )
+        if not output_path.exists():
+            raise FileNotFoundError(f"Preview image not found: {output_path}")
+
+        target_path = stage_dir / f"preview{output_path.suffix.lower() or '.png'}"
+        shutil.copy2(output_path, target_path)
+
     def _get_preview_language(self) -> str:
         if self.current_config and self.current_config.localization:
             return self.current_config.localization.base_language
         return "en"
 
-    def _is_html_screenshot(self, screenshot_id: str) -> bool:
-        if not self.current_config:
-            return False
-        screenshot_def = self.current_config.screenshots.get(screenshot_id)
-        return bool(screenshot_def and screenshot_def.template)
+    def _preview_slide_path(self, screenshot_id: str, screenshot_def: Any) -> str:
+        if screenshot_def.template:
+            return f"/slides/{screenshot_id}/"
+
+        output_path = self._resolve_preview_output_path(
+            screenshot_id=screenshot_id,
+            screenshot_def=screenshot_def,
+            language=self._get_preview_language(),
+        )
+        return f"/slides/{screenshot_id}/preview{output_path.suffix.lower() or '.png'}"
+
+    def _resolve_preview_output_path(
+        self,
+        *,
+        screenshot_id: str,
+        screenshot_def: Any,
+        language: str,
+    ) -> Path:
+        assert self.current_config is not None
+
+        if self.current_config.localization:
+            device_output_dir = str(
+                Path(self.current_config.project.output_dir)
+                / language
+                / self.current_config.project.device.replace(" ", "_")
+            )
+        else:
+            device_output_dir = str(
+                Path(self.current_config.project.output_dir)
+                / self.current_config.project.device.replace(" ", "_")
+            )
+
+        if screenshot_def.template:
+            return self.generator._resolve_output_path(
+                device_output_dir,
+                screenshot_id,
+                self.config_dir,
+            )
+
+        default_background = (
+            self.current_config.defaults.get("background")
+            if self.current_config.defaults
+            else None
+        )
+        temp_config = self.generator._convert_to_screenshot_config(
+            screenshot_def,
+            self.current_config.project.device,
+            default_background,
+            device_output_dir,
+            self.config_dir,
+            screenshot_id,
+            output_size=self.current_config.project.output_size,
+            language=language,
+            base_language=(
+                self.current_config.localization.base_language
+                if self.current_config.localization
+                else None
+            ),
+        )
+        if not temp_config or not temp_config.output_path:
+            raise ConfigurationError(
+                f"Unable to resolve preview output path for '{screenshot_id}'"
+            )
+
+        return Path(temp_config.output_path)
 
     def get_dependency_summary(self) -> Dict:
         """Get summary of current dependency state.

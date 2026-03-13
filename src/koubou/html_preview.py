@@ -23,11 +23,13 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class HtmlPreviewSlide:
-    """Metadata for a live-previewed HTML slide."""
+    """Metadata for a live-previewed slide."""
 
     screenshot_id: str
     title: str
     aspect_ratio: float
+    kind: str
+    path: str
     status: str = "ready"
     error: Optional[str] = None
 
@@ -114,7 +116,7 @@ class _SseBroker:
 
 
 class HtmlPreviewServer:
-    """Serve the HTML live-preview dashboard and slide documents."""
+    """Serve the live-preview dashboard and staged slide assets."""
 
     def __init__(self, workspace: HtmlPreviewWorkspace) -> None:
         self.workspace = workspace
@@ -300,21 +302,15 @@ class HtmlPreviewServer:
             error = html.escape(slide.error or "")
             cards.append(
                 f"""
-                <article class="card" data-slide="{screenshot_id}">
-                  <header class="card-header">
-                    <strong>{title}</strong>
-                    <span class="status status-{status}" data-status>{status}</span>
-                  </header>
-                  <div class="frame-shell" style="--aspect:{ratio};">
-                    <iframe
-                      data-frame
-                      src="/slides/{screenshot_id}/"
-                      loading="eager"
-                      referrerpolicy="no-referrer"
-                    ></iframe>
-                    <div class="error-banner" data-error>{error}</div>
-                  </div>
-                </article>
+                {self._render_slide_card(
+                    screenshot_id=screenshot_id,
+                    title=title,
+                    status=status,
+                    ratio=ratio,
+                    error=error,
+                    kind=slide.kind,
+                    path=html.escape(slide.path),
+                )}
                 """
             )
 
@@ -323,7 +319,7 @@ class HtmlPreviewServer:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Koubou HTML Live Preview</title>
+  <title>Koubou Live Preview</title>
   <style>
     * {{ box-sizing: border-box; }}
     body {{
@@ -343,11 +339,13 @@ class HtmlPreviewServer:
     }}
     .grid {{
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 420px));
       gap: 20px;
       align-items: start;
+      justify-content: center;
     }}
     .card {{
+      width: 100%;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 18px;
@@ -383,11 +381,14 @@ class HtmlPreviewServer:
       background: #04060d;
       border: 1px solid rgba(255, 255, 255, 0.06);
     }}
-    iframe {{
+    iframe,
+    img {{
       width: 100%;
       height: 100%;
       border: 0;
       background: white;
+      display: block;
+      object-fit: contain;
     }}
     .error-banner {{
       position: absolute;
@@ -406,8 +407,8 @@ class HtmlPreviewServer:
   </style>
 </head>
 <body>
-  <h1>Koubou HTML Live Preview</h1>
-  <p>Hot reload is active for HTML screenshots in the current config.</p>
+  <h1>Koubou Live Preview</h1>
+  <p>Hot reload is active for screenshots in the current config.</p>
   <section class="grid">
     {''.join(cards)}
   </section>
@@ -436,12 +437,13 @@ class HtmlPreviewServer:
     function reloadFrame(slideId, sequence) {{
       const card = cards.get(slideId);
       if (!card) return;
-      const frame = card.querySelector('[data-frame]');
+      const media = card.querySelector('[data-frame], [data-image]');
+      if (!media) return;
       setStatus(slideId, 'updating');
-      const url = new URL(frame.getAttribute('src'), window.location.origin);
+      const url = new URL(media.getAttribute('src'), window.location.origin);
       url.searchParams.set('v', sequence);
-      frame.onload = () => setStatus(slideId, 'ready');
-      frame.src = url.toString();
+      media.onload = () => setStatus(slideId, 'ready');
+      media.src = url.toString();
     }}
 
     const source = new EventSource('/events');
@@ -460,3 +462,35 @@ class HtmlPreviewServer:
   </script>
 </body>
 </html>"""
+
+    def _render_slide_card(
+        self,
+        *,
+        screenshot_id: str,
+        title: str,
+        status: str,
+        ratio: float,
+        error: str,
+        kind: str,
+        path: str,
+    ) -> str:
+        if kind == "image":
+            media = f'<img data-image src="{path}" alt="{title}" loading="eager">'
+        else:
+            media = (
+                f'<iframe data-frame src="{path}" loading="eager" '
+                f'referrerpolicy="no-referrer"></iframe>'
+            )
+
+        return f"""
+        <article class="card" data-slide="{screenshot_id}">
+          <header class="card-header">
+            <strong>{title}</strong>
+            <span class="status status-{status}" data-status>{status}</span>
+          </header>
+          <div class="frame-shell" style="--aspect:{ratio};">
+            {media}
+            <div class="error-banner" data-error>{error}</div>
+          </div>
+        </article>
+        """

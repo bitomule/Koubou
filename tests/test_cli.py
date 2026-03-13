@@ -399,9 +399,9 @@ class TestCLI:
             error_count = 0
             config_errors = []
             failed_screenshots = {}
-            updated_html_screenshots = []
-            html_preview_errors = {}
-            html_full_reload = False
+            updated_preview_screenshots = []
+            preview_errors = {}
+            preview_full_reload = False
 
         class FakeLiveGenerator:
             def __init__(self, config_file):
@@ -417,13 +417,13 @@ class TestCLI:
             def get_dependency_summary(self):
                 return {"total_dependencies": 0}
 
-            def has_html_screenshots(self):
+            def has_preview_screenshots(self):
                 return True
 
-            def sync_html_preview_workspace(self, screenshot_ids=None):
+            def sync_preview_workspace(self, screenshot_ids=None):
                 return {}
 
-            def get_html_preview_slides(self):
+            def get_preview_slides(self):
                 return []
 
             def close(self):
@@ -521,8 +521,8 @@ class TestCLI:
         ]
         assert len(preview_servers) == 1
 
-    def test_live_without_html_does_not_start_preview(self, monkeypatch):
-        """Test live without HTML config keeps terminal-only mode."""
+    def test_live_without_html_starts_image_preview(self, monkeypatch):
+        """Test live without HTML config still starts the preview dashboard."""
         config_data = {
             "project": {
                 "name": "Content Live Test",
@@ -552,9 +552,9 @@ class TestCLI:
             error_count = 0
             config_errors = []
             failed_screenshots = {}
-            updated_html_screenshots = []
-            html_preview_errors = {}
-            html_full_reload = False
+            updated_preview_screenshots = []
+            preview_errors = {}
+            preview_full_reload = False
 
         class FakeLiveGenerator:
             def __init__(self, config_file):
@@ -570,8 +570,14 @@ class TestCLI:
             def get_dependency_summary(self):
                 return {"total_dependencies": 0}
 
-            def has_html_screenshots(self):
-                return False
+            def has_preview_screenshots(self):
+                return True
+
+            def sync_preview_workspace(self, screenshot_ids=None):
+                return {}
+
+            def get_preview_slides(self):
+                return []
 
             def close(self):
                 return None
@@ -614,7 +620,29 @@ class TestCLI:
 
         class FakePreviewServer:
             def __init__(self, workspace):
+                self.url = "http://127.0.0.1:9999/"
                 preview_calls.append(workspace)
+
+            def set_slides(self, slides):
+                self.slides = slides
+
+            def start(self):
+                return None
+
+            def open_browser(self):
+                return True
+
+            def publish_slide_error(self, screenshot_id, error):
+                return None
+
+            def publish_reload_slides(self, screenshot_ids):
+                return None
+
+            def publish_full_reload(self):
+                return None
+
+            def stop(self):
+                return None
 
         monkeypatch.setattr("koubou.cli.LiveScreenshotGenerator", FakeLiveGenerator)
         monkeypatch.setattr("koubou.cli.HtmlPreviewServer", FakePreviewServer)
@@ -630,4 +658,4 @@ class TestCLI:
         result = self.runner.invoke(app, ["live", str(config_path)])
 
         assert result.exit_code == 0
-        assert preview_calls == []
+        assert len(preview_calls) == 1
