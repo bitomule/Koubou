@@ -82,8 +82,11 @@ kou setup-html --help
 ## 🚀 Quick Start
 
 ```bash
-# Create a sample configuration
+# Create a sample content-based configuration
 kou --create-config my-screenshots.yaml
+
+# Create a sample HTML template project
+kou --create-config my-html-screenshots.yaml --mode html
 
 # Generate screenshots
 kou generate my-screenshots.yaml
@@ -97,6 +100,8 @@ kou inspect-frame "iPhone 16 Pro - Black Titanium - Portrait" --output-size iPho
 # Live editing mode - regenerate automatically when files change
 kou live my-screenshots.yaml
 ```
+
+`kou --create-config` also creates sample PNG assets in a sibling `screenshots/` directory, so the generated YAML can be rendered immediately. In `--mode html`, it also creates sample templates in `templates/` and the generated project is ready to run with `kou generate ... --setup-html`.
 
 ## 🧩 HTML Templates
 
@@ -359,7 +364,7 @@ See the YAML API Reference below for all available options including gradients, 
 - `kou live <config.yaml>` - Live editing mode with real-time regeneration
 - `kou inspect-frame "<device>" --output-size <size>` - Inspect real frame and screen geometry for layout decisions
 - `kou list-sizes` - List available App Store screenshot sizes
-- `kou --create-config <output.yaml>` - Create a sample configuration file
+- `kou --create-config <output.yaml>` - Create a sample configuration file (`content` by default, `html` with `--mode html`)
 - `kou --version` - Show version information
 - `kou --help` - Show detailed help
 
@@ -417,8 +422,11 @@ kou live config.yaml --verbose
 
 #### Configuration Creation
 ```bash
-# Create config with custom project name
+# Create the default content sample
 kou --create-config config.yaml --name "My App Screenshots"
+
+# Create an HTML template sample project
+kou --create-config config-html.yaml --mode html --name "My HTML Screenshots"
 ```
 
 #### Upload to App Store Connect

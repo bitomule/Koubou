@@ -8,6 +8,7 @@ from typing import Any, Optional, Set, Tuple
 
 import typer
 import yaml
+from PIL import Image, ImageDraw
 from rich.console import Console
 from rich.live import Live
 from rich.logging import RichHandler
@@ -47,6 +48,21 @@ def setup_logging(verbose: bool = False, log_console: Console = None) -> None:
 
 
 def _create_config_file(output_file: Path, name: str, force: bool = False) -> None:
+    _create_config_file_with_mode(
+        output_file,
+        name,
+        mode="content",
+        force=force,
+    )
+
+
+def _create_config_file_with_mode(
+    output_file: Path,
+    name: str,
+    *,
+    mode: str,
+    force: bool = False,
+) -> None:
     if output_file.exists() and not force:
         console.print(
             f"File {output_file} already exists. Use --force to overwrite.",
@@ -54,11 +70,52 @@ def _create_config_file(output_file: Path, name: str, force: bool = False) -> No
         )
         raise typer.Exit(1)
 
-    sample_config = {
+    normalized_mode = mode.strip().lower()
+    if normalized_mode not in {"content", "html"}:
+        console.print(
+            f"Unsupported create-config mode: {mode}. Use 'content' or 'html'.",
+            style="red",
+        )
+        raise typer.Exit(1)
+
+    if normalized_mode == "html":
+        sample_config = _build_html_sample_config(name)
+    else:
+        sample_config = _build_content_sample_config(name)
+
+    with open(output_file, "w") as f:
+        yaml.dump(sample_config, f, default_flow_style=False, indent=2)
+
+    _create_sample_assets(output_file.parent, force=force)
+    if normalized_mode == "html":
+        _create_sample_html_templates(output_file.parent, force=force)
+
+    console.print(
+        f"Created {normalized_mode} sample configuration: {output_file}",
+        style="green",
+    )
+    console.print(
+        f"Created sample assets: {output_file.parent / 'screenshots'}",
+        style="green",
+    )
+    if normalized_mode == "html":
+        console.print(
+            f"Created sample templates: {output_file.parent / 'templates'}",
+            style="green",
+        )
+    console.print("\nEdit the configuration file and run:", style="blue")
+    if normalized_mode == "html":
+        console.print(f"   kou generate {output_file} --setup-html", style="cyan")
+    else:
+        console.print(f"   kou generate {output_file}", style="cyan")
+
+
+def _build_content_sample_config(name: str) -> dict[str, Any]:
+    return {
         "project": {
             "name": name,
             "output_dir": "Screenshots/Generated",
-            "device": "iPhone 15 Pro Portrait",
+            "device": "iPhone 16 Pro - Black Titanium - Portrait",
             "output_size": "iPhone6_9",
         },
         "defaults": {
@@ -166,12 +223,271 @@ def _create_config_file(output_file: Path, name: str, force: bool = False) -> No
         },
     }
 
-    with open(output_file, "w") as f:
-        yaml.dump(sample_config, f, default_flow_style=False, indent=2)
 
-    console.print(f"Created sample configuration: {output_file}", style="green")
-    console.print("\nEdit the configuration file and run:", style="blue")
-    console.print(f"   kou generate {output_file}", style="cyan")
+def _build_html_sample_config(name: str) -> dict[str, Any]:
+    return {
+        "project": {
+            "name": name,
+            "output_dir": "Screenshots/Generated",
+            "device": "iPhone 16 Pro - Black Titanium - Portrait",
+            "output_size": "iPhone6_9",
+        },
+        "screenshots": {
+            "hero": {
+                "template": "templates/hero.html",
+                "variables": {
+                    "headline": "Beautiful App",
+                    "subtitle": "Launch polished App Store screenshots fast",
+                },
+                "assets": {
+                    "screen": "screenshots/home.png",
+                },
+            },
+            "feature": {
+                "template": "templates/feature.html",
+                "variables": {
+                    "headline": "Showcase Features",
+                    "subtitle": "Use HTML when you need more layout control",
+                },
+                "assets": {
+                    "screen": "screenshots/features.png",
+                },
+            },
+            "closing": {
+                "template": "templates/closing.html",
+                "frame": False,
+                "variables": {
+                    "headline": "Ship Faster",
+                    "subtitle": "Templates, localization, live preview",
+                },
+            },
+        },
+    }
+
+
+def _create_sample_assets(base_dir: Path, force: bool = False) -> None:
+    screenshots_dir = base_dir / "screenshots"
+    screenshots_dir.mkdir(parents=True, exist_ok=True)
+
+    _write_sample_image(
+        screenshots_dir / "home.png",
+        background="#f5f7ff",
+        accent="#4f46e5",
+        title="Home",
+        subtitle="Your workflow at a glance",
+        force=force,
+    )
+    _write_sample_image(
+        screenshots_dir / "features.png",
+        background="#eefbf6",
+        accent="#0f766e",
+        title="Features",
+        subtitle="Everything organized beautifully",
+        force=force,
+    )
+    _write_sample_image(
+        screenshots_dir / "gradient_demo.png",
+        background="#fff7ed",
+        accent="#ea580c",
+        title="Gradient Demo",
+        subtitle="Visual polish for your next launch",
+        force=force,
+    )
+
+
+def _write_sample_image(
+    path: Path,
+    *,
+    background: str,
+    accent: str,
+    title: str,
+    subtitle: str,
+    force: bool,
+) -> None:
+    if path.exists() and not force:
+        return
+
+    image = Image.new("RGB", (1290, 2796), background)
+    draw = ImageDraw.Draw(image)
+
+    card_bounds = (105, 180, 1185, 2616)
+    draw.rounded_rectangle(card_bounds, radius=110, fill="white")
+    draw.rounded_rectangle((165, 280, 1125, 520), radius=72, fill=accent)
+    draw.rounded_rectangle((165, 620, 1125, 1735), radius=84, fill="#f8fafc")
+    draw.rounded_rectangle((165, 1845, 1125, 2440), radius=84, fill="#f8fafc")
+
+    draw.text((230, 345), title, fill="white")
+    draw.text((230, 430), subtitle, fill="#e0e7ff")
+
+    for index in range(4):
+        top = 760 + index * 210
+        draw.rounded_rectangle(
+            (230, top, 1060, top + 130),
+            radius=36,
+            fill="white",
+            outline="#dbe4ff",
+            width=6,
+        )
+        draw.text((275, top + 38), f"Sample row {index + 1}", fill="#111827")
+        draw.rounded_rectangle(
+            (925, top + 34, 1030, top + 96),
+            radius=28,
+            fill=accent,
+        )
+
+    draw.text((230, 1925), "Highlights", fill="#111827")
+    draw.text(
+        (230, 2015), "Cards, gradients, and frames ready to tweak.", fill="#6b7280"
+    )
+    draw.rounded_rectangle((230, 2125, 1060, 2340), radius=48, fill=accent)
+    draw.text((290, 2200), "Drop in your own screenshots here", fill="white")
+
+    image.save(path)
+
+
+def _create_sample_html_templates(base_dir: Path, force: bool = False) -> None:
+    templates_dir = base_dir / "templates"
+    templates_dir.mkdir(parents=True, exist_ok=True)
+
+    template_files = {
+        "styles.css": """* { box-sizing: border-box; }
+body {
+  margin: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+}
+.page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  color: white;
+}
+.hero-page {
+  background: linear-gradient(180deg, #0b1020 0%, #1b1f3b 100%);
+}
+.feature-page {
+  background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%);
+  color: #111827;
+}
+.closing-page {
+  background: linear-gradient(180deg, #111827 0%, #1f2937 100%);
+}
+.copy {
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  top: 8%;
+  z-index: 2;
+}
+.copy h1 {
+  margin: 0;
+  font-size: 10vw;
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+.copy p {
+  margin: 2.5vh 0 0;
+  font-size: 3.9vw;
+  line-height: 1.25;
+  opacity: 0.8;
+}
+.device {
+  position: absolute;
+  left: 50%;
+  bottom: 4%;
+  transform: translateX(-50%);
+  width: 72vw;
+  filter: drop-shadow(0 40px 80px rgba(0, 0, 0, 0.32));
+}
+.feature-layout .copy {
+  top: 10%;
+  right: 44%;
+}
+.feature-layout .device {
+  left: auto;
+  right: -3%;
+  bottom: 8%;
+  transform: rotate(-7deg);
+  width: 60vw;
+}
+.closing-stack {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 3.5vh;
+  padding: 10%;
+  text-align: center;
+}
+.closing-stack h1 {
+  margin: 0;
+  font-size: 12vw;
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+}
+.closing-stack p {
+  margin: 0;
+  font-size: 4.2vw;
+  line-height: 1.3;
+  max-width: 80%;
+  opacity: 0.82;
+}
+""",
+        "hero.html": """<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page hero-page">
+  <div class="copy">
+    <h1>{{headline}}</h1>
+    <p>{{subtitle}}</p>
+  </div>
+  <img class="device" src="{{screen}}" alt="">
+</body>
+</html>
+""",
+        "feature.html": """<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page feature-page feature-layout">
+  <div class="copy">
+    <h1>{{headline}}</h1>
+    <p>{{subtitle}}</p>
+  </div>
+  <img class="device" src="{{screen}}" alt="">
+</body>
+</html>
+""",
+        "closing.html": """<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page closing-page">
+  <div class="closing-stack">
+    <h1>{{headline}}</h1>
+    <p>{{subtitle}}</p>
+  </div>
+</body>
+</html>
+""",
+    }
+
+    for filename, content in template_files.items():
+        path = templates_dir / filename
+        if path.exists() and not force:
+            continue
+        path.write_text(content, encoding="utf-8")
 
 
 def _show_results(results, output_dir: str) -> None:
@@ -329,6 +645,11 @@ def main_callback(
         "--name",
         help="Project name for config creation",
     ),
+    mode: str = typer.Option(
+        "content",
+        "--mode",
+        help="Sample config mode for --create-config: content or html",
+    ),
     version: bool = typer.Option(
         False,
         "--version",
@@ -349,7 +670,7 @@ def main_callback(
         raise typer.Exit()
 
     if create_config:
-        _create_config_file(create_config, name, force=force)
+        _create_config_file_with_mode(create_config, name, mode=mode, force=force)
         raise typer.Exit()
 
     if ctx.invoked_subcommand is None:
