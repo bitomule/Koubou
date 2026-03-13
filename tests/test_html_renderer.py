@@ -296,6 +296,38 @@ class TestDependencyAnalyzerHtml:
         affected = analyzer.get_asset_screenshots(css_file)
         assert "hero" in affected
 
+    def test_tracks_nested_template_assets(self, temp_dir):
+        from koubou.dependency_analyzer import DependencyAnalyzer
+
+        tpl_dir = temp_dir / "templates"
+        nested_dir = tpl_dir / "assets" / "icons"
+        nested_dir.mkdir(parents=True)
+
+        template = tpl_dir / "hero.html"
+        template.write_text("<html><body>Hello</body></html>")
+
+        nested_file = nested_dir / "check.svg"
+        nested_file.write_text("<svg></svg>")
+
+        config = ProjectConfig(
+            project=ProjectInfo(
+                name="Test",
+                output_dir=str(temp_dir / "output"),
+                device="iPhone 16 Pro - Black Titanium - Portrait",
+            ),
+            screenshots={
+                "hero": ScreenshotDefinition(
+                    template=str(template),
+                ),
+            },
+        )
+
+        analyzer = DependencyAnalyzer()
+        analyzer.analyze_project(config, temp_dir)
+
+        affected = analyzer.get_asset_screenshots(nested_file)
+        assert "hero" in affected
+
 
 class TestAssetsFieldValidation:
     """Test explicit variables/assets separation in ScreenshotDefinition."""

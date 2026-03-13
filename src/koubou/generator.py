@@ -5,6 +5,7 @@ import json
 import logging
 import tempfile
 from collections import deque
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -16,10 +17,25 @@ from .localization import LocalizedContentResolver, XCStringsManager
 from .renderers.background import BackgroundRenderer
 from .renderers.device_frame import DeviceFrameRenderer
 from .renderers.highlight import HighlightRenderer
+from .renderers.html_staging import stage_html_workspace
 from .renderers.text import TextRenderer
 from .renderers.zoom import ZoomRenderer
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class PreparedHtmlScreenshot:
+    """Prepared HTML render inputs for final rendering or live preview."""
+
+    template_path: Path
+    variables: Dict[str, str]
+    assets: Dict[str, str]
+    cleanup_paths: List[Path]
+
+    def cleanup(self) -> None:
+        for path in self.cleanup_paths:
+            path.unlink(missing_ok=True)
 
 
 def resolve_localized_asset(
@@ -276,6 +292,65 @@ class ScreenshotGenerator:
                 assets[value] = str(candidate.resolve())
         return assets
 
+    def prepare_html_screenshot(
+        self,
+        screenshot_def: Any,
+        config_dir: Optional[Path],
+        *,
+        device_frame_name: Optional[str] = None,
+        language: str = "en",
+        xcstrings_manager: Optional[Any] = None,
+        assets_output_dir: Optional[Path] = None,
+    ) -> PreparedHtmlScreenshot:
+        """Prepare resolved variables and staged assets for an HTML screenshot."""
+        template_path_str = screenshot_def.template
+        if config_dir and not Path(template_path_str).is_absolute():
+            template_path = config_dir / template_path_str
+        else:
+            template_path = Path(template_path_str)
+
+        if not template_path.exists():
+            raise ConfigurationError(f"HTML template not found: {template_path}")
+
+        resolved_text = self._resolve_template_variables(
+            screenshot_def.variables, language, xcstrings_manager
+        )
+
+        assets = self._build_assets_map(screenshot_def.assets, config_dir)
+        should_frame = screenshot_def.frame is not False and device_frame_name
+        cleanup_paths: List[Path] = []
+
+        if should_frame:
+            assert device_frame_name is not None
+            prepared_assets: Dict[str, str] = {}
+            for rel_path, abs_path in assets.items():
+                if Path(abs_path).suffix.lower() in (".png", ".jpg", ".jpeg"):
+                    framed = self._prerender_framed_asset(abs_path, device_frame_name)
+                    if assets_output_dir is not None:
+                        output_path = assets_output_dir / rel_path
+                        output_path.parent.mkdir(parents=True, exist_ok=True)
+                        framed.save(output_path, "PNG")
+                        prepared_assets[rel_path] = str(output_path.resolve())
+                    else:
+                        tmp = tempfile.NamedTemporaryFile(
+                            suffix=".png", delete=False, prefix="koubou_framed_"
+                        )
+                        framed.save(tmp.name, "PNG")
+                        tmp_path = Path(tmp.name)
+                        prepared_assets[rel_path] = str(tmp_path.resolve())
+                        cleanup_paths.append(tmp_path)
+                else:
+                    prepared_assets[rel_path] = abs_path
+            assets = prepared_assets
+
+        all_variables = {**resolved_text, **screenshot_def.assets}
+        return PreparedHtmlScreenshot(
+            template_path=template_path,
+            variables=all_variables,
+            assets=assets,
+            cleanup_paths=cleanup_paths,
+        )
+
     def _generate_html_screenshot(
         self,
         screenshot_def: Any,
@@ -288,48 +363,26 @@ class ScreenshotGenerator:
         xcstrings_manager: Optional[Any] = None,
     ) -> Path:
         """Generate a screenshot from an HTML template."""
-        template_path_str = screenshot_def.template
-        if config_dir and not Path(template_path_str).is_absolute():
-            template_path = config_dir / template_path_str
-        else:
-            template_path = Path(template_path_str)
-
-        if not template_path.exists():
-            raise ConfigurationError(f"HTML template not found: {template_path}")
-
-        # Resolve localizable text variables
-        resolved_text = self._resolve_template_variables(
-            screenshot_def.variables, language, xcstrings_manager
+        prepared = self.prepare_html_screenshot(
+            screenshot_def,
+            config_dir,
+            device_frame_name=device_frame_name,
+            language=language,
+            xcstrings_manager=xcstrings_manager,
         )
 
-        # Build assets map and pre-render with device frame
-        assets = self._build_assets_map(screenshot_def.assets, config_dir)
-        should_frame = screenshot_def.frame is not False and device_frame_name
-        temp_files: List[str] = []
-
-        if should_frame:
-            assert device_frame_name is not None
-            for rel_path, abs_path in assets.items():
-                if Path(abs_path).suffix.lower() in (".png", ".jpg", ".jpeg"):
-                    framed = self._prerender_framed_asset(abs_path, device_frame_name)
-                    tmp = tempfile.NamedTemporaryFile(
-                        suffix=".png", delete=False, prefix="koubou_framed_"
-                    )
-                    framed.save(tmp.name, "PNG")
-                    assets[rel_path] = tmp.name
-                    temp_files.append(tmp.name)
-
         try:
-            all_variables = {**resolved_text, **screenshot_def.assets}
-            png_bytes = self.html_renderer.render(
-                template_path=template_path,
-                variables=all_variables,
-                size=output_size,
-                assets=assets,
-            )
+            with tempfile.TemporaryDirectory(prefix="koubou_html_") as workspace:
+                workspace_dir = Path(workspace)
+                stage_html_workspace(
+                    template_path=prepared.template_path,
+                    variables=prepared.variables,
+                    destination_dir=workspace_dir,
+                    assets=prepared.assets,
+                )
+                png_bytes = self.html_renderer.render_staged(workspace_dir, output_size)
         finally:
-            for f in temp_files:
-                Path(f).unlink(missing_ok=True)
+            prepared.cleanup()
 
         output_path = self._resolve_output_path(output_dir, screenshot_id, config_dir)
         output_path.parent.mkdir(parents=True, exist_ok=True)

@@ -2,17 +2,19 @@
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 import yaml  # type: ignore[import-untyped]
 from rich.console import Console
 
-from .config import ProjectConfig
+from .config import ProjectConfig, resolve_output_size
 from .config_tree import ConfigDiffer
 from .dependency_analyzer import DependencyAnalyzer
 from .exceptions import ConfigurationError, KoubouError
 from .generator import ScreenshotGenerator
+from .html_preview import HtmlPreviewSlide, HtmlPreviewWorkspace
 from .localization import XCStringsManager
+from .renderers.html_staging import stage_html_workspace
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,9 @@ class LiveGenerationResult:
         self.config_errors: List[str] = []
         self.total_time: float = 0.0
         self.generated_file_count: int = 0  # Track actual number of generated files
+        self.updated_html_screenshots: List[str] = []
+        self.html_preview_errors: Dict[str, str] = {}
+        self.html_full_reload: bool = False
 
     @property
     def success_count(self) -> int:
@@ -67,6 +72,7 @@ class LiveScreenshotGenerator:
         # State
         self.current_config: Optional[ProjectConfig] = None
         self._last_successful_generation: Dict[str, float] = {}
+        self.preview_workspace = HtmlPreviewWorkspace()
 
         logger.info(f"Initialized live generator for: {self.config_file}")
 
@@ -154,6 +160,7 @@ class LiveScreenshotGenerator:
         # Separate different types of changes - resolve paths for consistent comparison
         resolved_changed_files = {f.resolve() for f in changed_files}
         config_changed = self.config_file in resolved_changed_files
+        previous_html_ids = self.get_html_screenshot_ids()
 
         # Check for xcstrings changes
         xcstrings_changed = False
@@ -178,6 +185,8 @@ class LiveScreenshotGenerator:
             logger.info("📝 Config file changed, analyzing impact...")
             config_affected = self._handle_config_changes(result)
             affected_screenshots.update(config_affected)
+            if previous_html_ids != self.get_html_screenshot_ids():
+                result.html_full_reload = True
 
         # Handle xcstrings changes (affects all screenshots in localization mode)
         if xcstrings_changed:
@@ -231,11 +240,15 @@ class LiveScreenshotGenerator:
                     )
                     result.regenerated_screenshots.append(screenshot_id)
                     result.generated_file_count += generated_count
+                    if self._is_html_screenshot(screenshot_id):
+                        result.updated_html_screenshots.append(screenshot_id)
                     logger.info(
                         f"✅ Regenerated: {screenshot_id} ({generated_count} files)"
                     )
                 except Exception as e:
                     result.failed_screenshots[screenshot_id] = str(e)
+                    if self._is_html_screenshot(screenshot_id):
+                        result.html_preview_errors[screenshot_id] = str(e)
                     logger.error(f"❌ Failed to regenerate {screenshot_id}: {e}")
         else:
             logger.info("No screenshots affected by changes")
@@ -377,6 +390,123 @@ class LiveScreenshotGenerator:
         """
         # Convert to dict using Pydantic's model_dump
         return config.model_dump()
+
+    def has_html_screenshots(self) -> bool:
+        return bool(self.get_html_screenshot_ids())
+
+    def get_html_screenshot_ids(self) -> List[str]:
+        if not self.current_config:
+            return []
+        return [
+            screenshot_id
+            for screenshot_id, screenshot_def in self.current_config.screenshots.items()
+            if screenshot_def.template
+        ]
+
+    def get_html_preview_slides(self) -> List[HtmlPreviewSlide]:
+        if not self.current_config:
+            return []
+
+        width, height = resolve_output_size(self.current_config.project.output_size)
+        aspect_ratio = width / height
+        return [
+            HtmlPreviewSlide(
+                screenshot_id=screenshot_id,
+                title=screenshot_id,
+                aspect_ratio=aspect_ratio,
+            )
+            for screenshot_id in self.get_html_screenshot_ids()
+        ]
+
+    def sync_html_preview_workspace(
+        self,
+        screenshot_ids: Optional[Set[str]] = None,
+    ) -> Dict[str, str]:
+        """Build or refresh staged HTML preview workspaces."""
+        if not self.current_config:
+            return {}
+
+        language = self._get_preview_language()
+        xcstrings_manager = None
+        if self.current_config.localization:
+            xcstrings_manager = XCStringsManager(
+                self.current_config.localization, self.config_dir
+            )
+
+        target_ids = screenshot_ids or set(self.get_html_screenshot_ids())
+        errors: Dict[str, str] = {}
+
+        for screenshot_id in target_ids:
+            screenshot_def = self.current_config.screenshots.get(screenshot_id)
+            if not screenshot_def or not screenshot_def.template:
+                continue
+
+            try:
+
+                def build_stage(
+                    stage_dir: Path,
+                    sid: str = screenshot_id,
+                    defn: Any = screenshot_def,
+                ) -> None:
+                    self._build_html_preview_slide(
+                        stage_dir=stage_dir,
+                        screenshot_id=sid,
+                        screenshot_def=defn,
+                        language=language,
+                        xcstrings_manager=xcstrings_manager,
+                    )
+
+                self.preview_workspace.stage_slide(
+                    screenshot_id=screenshot_id,
+                    builder=build_stage,
+                )
+            except Exception as exc:
+                errors[screenshot_id] = str(exc)
+
+        self.preview_workspace.remove_stale_slides(self.get_html_screenshot_ids())
+        return errors
+
+    def close(self) -> None:
+        self.preview_workspace.cleanup()
+
+    def _build_html_preview_slide(
+        self,
+        *,
+        stage_dir: Path,
+        screenshot_id: str,
+        screenshot_def: Any,
+        language: str,
+        xcstrings_manager: Optional[XCStringsManager],
+    ) -> None:
+        assert self.current_config is not None
+        prepared = self.generator.prepare_html_screenshot(
+            screenshot_def,
+            self.config_dir,
+            device_frame_name=self.current_config.project.device,
+            language=language,
+            xcstrings_manager=xcstrings_manager,
+            assets_output_dir=stage_dir,
+        )
+        try:
+            stage_html_workspace(
+                template_path=prepared.template_path,
+                variables=prepared.variables,
+                destination_dir=stage_dir,
+                assets=prepared.assets,
+            )
+        finally:
+            prepared.cleanup()
+
+    def _get_preview_language(self) -> str:
+        if self.current_config and self.current_config.localization:
+            return self.current_config.localization.base_language
+        return "en"
+
+    def _is_html_screenshot(self, screenshot_id: str) -> bool:
+        if not self.current_config:
+            return False
+        screenshot_def = self.current_config.screenshots.get(screenshot_id)
+        return bool(screenshot_def and screenshot_def.template)
 
     def get_dependency_summary(self) -> Dict:
         """Get summary of current dependency state.

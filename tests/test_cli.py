@@ -399,10 +399,14 @@ class TestCLI:
             error_count = 0
             config_errors = []
             failed_screenshots = {}
+            updated_html_screenshots = []
+            html_preview_errors = {}
+            html_full_reload = False
 
         class FakeLiveGenerator:
             def __init__(self, config_file):
                 self.config_file = config_file
+                self.preview_workspace = object()
 
             def initial_generation(self):
                 return FakeResult()
@@ -412,6 +416,18 @@ class TestCLI:
 
             def get_dependency_summary(self):
                 return {"total_dependencies": 0}
+
+            def has_html_screenshots(self):
+                return True
+
+            def sync_html_preview_workspace(self, screenshot_ids=None):
+                return {}
+
+            def get_html_preview_slides(self):
+                return []
+
+            def close(self):
+                return None
 
         class FakeWatcher:
             def __init__(self, config_file, debounce_delay):
@@ -447,10 +463,40 @@ class TestCLI:
             handler(signum, None)
             return None
 
+        preview_servers = []
+
+        class FakePreviewServer:
+            def __init__(self, workspace):
+                self.workspace = workspace
+                self.url = "http://127.0.0.1:9999/"
+                preview_servers.append(self)
+
+            def set_slides(self, slides):
+                self.slides = slides
+
+            def start(self):
+                return None
+
+            def open_browser(self):
+                return True
+
+            def publish_slide_error(self, screenshot_id, error):
+                return None
+
+            def publish_reload_slides(self, screenshot_ids):
+                return None
+
+            def publish_full_reload(self):
+                return None
+
+            def stop(self):
+                return None
+
         monkeypatch.setattr(
             "koubou.cli._prepare_html_environment", fake_prepare_html_environment
         )
         monkeypatch.setattr("koubou.cli.LiveScreenshotGenerator", FakeLiveGenerator)
+        monkeypatch.setattr("koubou.cli.HtmlPreviewServer", FakePreviewServer)
         monkeypatch.setattr("koubou.cli.LiveWatcher", FakeWatcher)
         monkeypatch.setattr("koubou.cli.Live", FakeLive)
         monkeypatch.setattr("koubou.cli.signal.signal", fake_signal)
@@ -473,3 +519,115 @@ class TestCLI:
                 "console_type": "Console",
             }
         ]
+        assert len(preview_servers) == 1
+
+    def test_live_without_html_does_not_start_preview(self, monkeypatch):
+        """Test live without HTML config keeps terminal-only mode."""
+        config_data = {
+            "project": {
+                "name": "Content Live Test",
+                "output_dir": str(self.temp_dir / "output"),
+                "device": "iPhone 16 Pro - Black Titanium - Portrait",
+                "output_size": "iPhone6_9",
+            },
+            "screenshots": {
+                "hero": {
+                    "content": [
+                        {
+                            "type": "text",
+                            "content": "Hello",
+                            "position": ["50%", "50%"],
+                        }
+                    ]
+                }
+            },
+        }
+        config_path = self.temp_dir / "live_content_config.yaml"
+        with open(config_path, "w") as f:
+            yaml.dump(config_data, f)
+
+        class FakeResult:
+            has_errors = False
+            success_count = 1
+            error_count = 0
+            config_errors = []
+            failed_screenshots = {}
+            updated_html_screenshots = []
+            html_preview_errors = {}
+            html_full_reload = False
+
+        class FakeLiveGenerator:
+            def __init__(self, config_file):
+                self.config_file = config_file
+                self.preview_workspace = object()
+
+            def initial_generation(self):
+                return FakeResult()
+
+            def get_asset_paths(self):
+                return set()
+
+            def get_dependency_summary(self):
+                return {"total_dependencies": 0}
+
+            def has_html_screenshots(self):
+                return False
+
+            def close(self):
+                return None
+
+        class FakeWatcher:
+            def __init__(self, config_file, debounce_delay):
+                self.config_file = config_file
+                self.debounce_delay = debounce_delay
+
+            def set_change_callback(self, callback):
+                self.callback = callback
+
+            def add_asset_paths(self, asset_paths):
+                self.asset_paths = asset_paths
+
+            def start(self):
+                return None
+
+            def stop(self):
+                return None
+
+            def get_watched_files(self):
+                return set()
+
+        class FakeLive:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        def fake_signal(signum, handler):
+            handler(signum, None)
+            return None
+
+        preview_calls = []
+
+        class FakePreviewServer:
+            def __init__(self, workspace):
+                preview_calls.append(workspace)
+
+        monkeypatch.setattr("koubou.cli.LiveScreenshotGenerator", FakeLiveGenerator)
+        monkeypatch.setattr("koubou.cli.HtmlPreviewServer", FakePreviewServer)
+        monkeypatch.setattr("koubou.cli.LiveWatcher", FakeWatcher)
+        monkeypatch.setattr("koubou.cli.Live", FakeLive)
+        monkeypatch.setattr("koubou.cli.signal.signal", fake_signal)
+        monkeypatch.setattr(
+            "koubou.cli._create_live_status_display",
+            lambda: type("StatusDisplay", (), {"renderable": None})(),
+        )
+        monkeypatch.setattr("koubou.cli._update_live_status", lambda *args: None)
+
+        result = self.runner.invoke(app, ["live", str(config_path)])
+
+        assert result.exit_code == 0
+        assert preview_calls == []

@@ -18,6 +18,7 @@ from rich.text import Text
 from .config import ProjectConfig, resolve_output_size
 from .exceptions import KoubouError
 from .generator import ScreenshotGenerator
+from .html_preview import HtmlPreviewServer
 from .html_setup import (
     check_html_environment,
     format_html_environment_error,
@@ -749,6 +750,7 @@ def live(
 
         live_generator = LiveScreenshotGenerator(config_file)
         watcher = LiveWatcher(config_file, debounce_delay=debounce)
+        preview_server = None
 
         stop_event = False
 
@@ -779,7 +781,30 @@ def live(
                     style="green",
                 )
 
+            if live_generator.has_html_screenshots():
+                preview_errors = live_generator.sync_html_preview_workspace()
+                preview_server = HtmlPreviewServer(live_generator.preview_workspace)
+                preview_server.set_slides(live_generator.get_html_preview_slides())
+                preview_server.start()
+                if preview_server.open_browser():
+                    console.print(
+                        f"HTML live preview: {preview_server.url}",
+                        style="blue",
+                    )
+                else:
+                    console.print(
+                        f"HTML live preview: {preview_server.url}",
+                        style="yellow",
+                    )
+                for screenshot_id, error in preview_errors.items():
+                    console.print(
+                        f"Preview build failed for {screenshot_id}: {error}",
+                        style="red",
+                    )
+                    preview_server.publish_slide_error(screenshot_id, error)
+
             def on_files_changed(changed_files: Set[Path]):
+                nonlocal preview_server
                 console.print(
                     f"{len(changed_files)} file(s) changed, processing...",
                     style="cyan",
@@ -803,6 +828,56 @@ def live(
                     console.print("Config errors:", style="red")
                     for error in result.config_errors:
                         console.print(f"  - {error}", style="red")
+
+                if live_generator.has_html_screenshots():
+                    if preview_server is None:
+                        preview_errors = live_generator.sync_html_preview_workspace()
+                        preview_server = HtmlPreviewServer(
+                            live_generator.preview_workspace
+                        )
+                        preview_server.set_slides(
+                            live_generator.get_html_preview_slides()
+                        )
+                        preview_server.start()
+                        if preview_server.open_browser():
+                            console.print(
+                                f"HTML live preview: {preview_server.url}",
+                                style="blue",
+                            )
+                        else:
+                            console.print(
+                                f"HTML live preview: {preview_server.url}",
+                                style="yellow",
+                            )
+                    elif result.html_full_reload:
+                        preview_errors = live_generator.sync_html_preview_workspace()
+                        preview_server.set_slides(
+                            live_generator.get_html_preview_slides()
+                        )
+                        preview_server.publish_full_reload()
+                    else:
+                        updated_html = set(result.updated_html_screenshots)
+                        preview_errors = (
+                            live_generator.sync_html_preview_workspace(updated_html)
+                            if updated_html
+                            else {}
+                        )
+                        if updated_html:
+                            preview_server.publish_reload_slides(sorted(updated_html))
+
+                    for screenshot_id, error in {
+                        **result.html_preview_errors,
+                        **preview_errors,
+                    }.items():
+                        console.print(
+                            f"Preview update failed for {screenshot_id}: {error}",
+                            style="red",
+                        )
+                        preview_server.publish_slide_error(screenshot_id, error)
+                elif preview_server is not None:
+                    live_generator.preview_workspace.remove_stale_slides([])
+                    preview_server.set_slides([])
+                    preview_server.publish_full_reload()
 
             watcher.set_change_callback(on_files_changed)
 
@@ -836,6 +911,9 @@ def live(
                 pass
 
         watcher.stop()
+        if preview_server:
+            preview_server.stop()
+        live_generator.close()
         console.print("Live mode stopped", style="green")
 
     except KoubouError as e:
