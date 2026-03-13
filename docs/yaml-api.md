@@ -514,6 +514,9 @@ Colors must be in hex format: `#RRGGBB` or `#RRGGBBAA`
 # Start live editing mode
 kou live my-screenshots.yaml
 
+# Prepare HTML rendering before live mode if the project uses templates
+kou live my-screenshots.yaml --setup-html
+
 # With custom debounce delay  
 kou live my-screenshots.yaml --debounce 1.0
 
@@ -527,6 +530,18 @@ kou live my-screenshots.yaml --verbose
 2. **Dependency Analysis**: Automatically detects which assets each screenshot uses
 3. **Smart Regeneration**: Only regenerates affected screenshots when changes occur
 4. **Debounced Updates**: Prevents excessive regeneration during rapid edits
+
+### HTML Live Preview
+
+When the config includes screenshots with `template:`, live mode also starts a local browser dashboard on `127.0.0.1` and opens it automatically when possible.
+
+- The dashboard shows HTML screenshots in YAML order
+- Each slide is rendered as live HTML inside an iframe, not as a PNG gallery
+- Hot reload updates only the changed HTML slides
+- Mixed projects show only HTML slides in the dashboard; content screenshots still regenerate to disk
+- The dashboard previews the base language only; localized outputs still regenerate on disk
+
+The preview HTML uses the same staged template, sibling files, and generated assets as the final Playwright export path, so the dashboard stays aligned with the final render.
 
 ### Live Editing Workflow
 

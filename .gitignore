@@ -70,5 +70,6 @@ temp/
 *.jpg
 *.jpeg
 !examples/*.png
+!docs/images/*.png
 !src/koubou/frames/*.png
 !examples/*.jpg
