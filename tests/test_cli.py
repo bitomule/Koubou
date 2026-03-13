@@ -1,14 +1,35 @@
 """Tests for CLI functionality."""
 
+import importlib
 import json
 import tempfile
 from pathlib import Path
 
+import pytest
 import yaml
 from PIL import Image
 from typer.testing import CliRunner
 
 from koubou.cli import app
+
+
+def _playwright_available():
+    return importlib.util.find_spec("playwright") is not None
+
+
+def _html_runtime_available():
+    if not _playwright_available():
+        return False
+
+    from koubou.html_setup import check_html_environment
+
+    return check_html_environment().ready
+
+
+requires_html_runtime = pytest.mark.skipif(
+    not _html_runtime_available(),
+    reason="HTML rendering runtime not available in test environment",
+)
 
 
 class TestCLI:
@@ -115,6 +136,34 @@ class TestCLI:
         assert (
             config["screenshots"]["hero"]["assets"]["screen"] == "screenshots/home.png"
         )
+
+    @requires_html_runtime
+    def test_create_config_html_mode_generates_successfully(self):
+        """HTML sample config should render successfully with setup-html."""
+        config_path = self.temp_dir / "sample_html_config.yaml"
+
+        create_result = self.runner.invoke(
+            app,
+            [
+                "--create-config",
+                str(config_path),
+                "--mode",
+                "html",
+                "--name",
+                "HTML Sample Project",
+            ],
+        )
+        assert create_result.exit_code == 0
+
+        generate_result = self.runner.invoke(
+            app, ["generate", str(config_path), "--setup-html"]
+        )
+
+        assert generate_result.exit_code == 0
+        output_files = list(
+            (self.temp_dir / "Screenshots" / "Generated").glob("**/*.png")
+        )
+        assert len(output_files) == 3
 
     def test_help_when_no_arguments(self):
         """Test help is shown when no arguments provided."""
