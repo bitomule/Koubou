@@ -79,7 +79,7 @@ class DeviceFrameRenderer:
             else:
                 # Fall back to simple overlay approach
                 logger.warning(
-                    "No metadata found for {device_frame_name}, using simple overlay"
+                    f"No metadata found for {device_frame_name}, using simple overlay"
                 )
                 result = self._compose_simple_overlay(canvas, frame_image)
 
@@ -142,7 +142,7 @@ class DeviceFrameRenderer:
                 current = current.get(variant)
                 if not current:
                     logger.warning(
-                        "Variant '{variant}' not found under {device_type} {model_key}"
+                        f"Variant '{variant}' not found under {device_type} {model_key}"
                     )
                     return None
 
@@ -193,7 +193,7 @@ class DeviceFrameRenderer:
             logger.info(f"📐 Using legacy format: x={screen_x}, y={screen_y}")
 
         logger.info(
-            "📐 Screen area: {screen_x}, {screen_y}, {screen_width}×{screen_height}"
+            f"📐 Screen area: {screen_x}, {screen_y}, {screen_width}×{screen_height}"
         )
 
         # Scale source image to fit the screen area properly
@@ -441,7 +441,7 @@ class DeviceFrameRenderer:
             )
 
             logger.info(
-                "📱 Generated screen mask for {frame_name} using boundary detection"
+                f"📱 Generated screen mask for {frame_name} using boundary detection"
             )
             return screen_mask
 
