@@ -297,6 +297,50 @@
         }
       }
     },
+    "16 Plus": {
+      "Plus": {
+        "Black": {
+          "Portrait": {
+            "y": "80",
+            "x": "80",
+            "name": "iPhone 16 Plus - Black - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        },
+        "Pink": {
+          "Portrait": {
+            "y": "80",
+            "x": "80",
+            "name": "iPhone 16 Plus - Pink - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        },
+        "Teal": {
+          "Portrait": {
+            "y": "80",
+            "x": "80",
+            "name": "iPhone 16 Plus - Teal - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        },
+        "Ultramarine": {
+          "Portrait": {
+            "y": "80",
+            "x": "80",
+            "name": "iPhone 16 Plus - Ultramarine - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        },
+        "White": {
+          "Portrait": {
+            "y": "80",
+            "x": "80",
+            "name": "iPhone 16 Plus - White - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        }
+      }
+    },
     "16 Pro": {
       "Pro": {
         "Natural Titanium": {
