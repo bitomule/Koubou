@@ -167,6 +167,136 @@
         }
       }
     },
+    "17": {
+      "Black": {
+        "Portrait": {
+          "x": "72",
+          "y": "69",
+          "name": "iPhone 17 - Black - Portrait",
+          "appstore_device_type": "IPHONE_69"
+        }
+      },
+      "White": {
+        "Portrait": {
+          "x": "72",
+          "y": "69",
+          "name": "iPhone 17 - White - Portrait",
+          "appstore_device_type": "IPHONE_69"
+        }
+      },
+      "Mist Blue": {
+        "Portrait": {
+          "x": "72",
+          "y": "69",
+          "name": "iPhone 17 - Mist Blue - Portrait",
+          "appstore_device_type": "IPHONE_69"
+        }
+      },
+      "Sage": {
+        "Portrait": {
+          "x": "72",
+          "y": "69",
+          "name": "iPhone 17 - Sage - Portrait",
+          "appstore_device_type": "IPHONE_69"
+        }
+      },
+      "Lavender": {
+        "Portrait": {
+          "x": "72",
+          "y": "69",
+          "name": "iPhone 17 - Lavender - Portrait",
+          "appstore_device_type": "IPHONE_69"
+        }
+      }
+    },
+    "17 Pro": {
+      "Pro": {
+        "Silver": {
+          "Portrait": {
+            "x": "72",
+            "y": "69",
+            "name": "iPhone 17 Pro - Silver - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        },
+        "Deep Blue": {
+          "Portrait": {
+            "x": "72",
+            "y": "69",
+            "name": "iPhone 17 Pro - Deep Blue - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        },
+        "Cosmic Orange": {
+          "Portrait": {
+            "x": "72",
+            "y": "69",
+            "name": "iPhone 17 Pro - Cosmic Orange - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        }
+      },
+      "Pro Max": {
+        "Silver": {
+          "Portrait": {
+            "x": "75",
+            "y": "66",
+            "name": "iPhone 17 Pro Max - Silver - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        },
+        "Deep Blue": {
+          "Portrait": {
+            "x": "75",
+            "y": "66",
+            "name": "iPhone 17 Pro Max - Deep Blue - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        },
+        "Cosmic Orange": {
+          "Portrait": {
+            "x": "75",
+            "y": "66",
+            "name": "iPhone 17 Pro Max - Cosmic Orange - Portrait",
+            "appstore_device_type": "IPHONE_69"
+          }
+        }
+      }
+    },
+    "Air": {
+      "Space Black": {
+        "Portrait": {
+          "x": "60",
+          "y": "72",
+          "name": "iPhone Air - Space Black - Portrait",
+          "appstore_device_type": "IPHONE_69"
+        }
+      },
+      "Cloud White": {
+        "Portrait": {
+          "x": "60",
+          "y": "72",
+          "name": "iPhone Air - Cloud White - Portrait",
+          "appstore_device_type": "IPHONE_69"
+        }
+      },
+      "Light Gold": {
+        "Portrait": {
+          "x": "60",
+          "y": "72",
+          "name": "iPhone Air - Light Gold - Portrait",
+          "appstore_device_type": "IPHONE_69"
+        }
+      },
+      "Sky Blue": {
+        "Portrait": {
+          "x": "60",
+          "y": "72",
+          "name": "iPhone Air - Sky Blue - Portrait",
+          "appstore_device_type": "IPHONE_69"
+        }
+      }
+    },
     "16 Pro": {
       "Pro": {
         "Natural Titanium": {

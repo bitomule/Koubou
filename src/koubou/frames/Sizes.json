@@ -1,12 +1,28 @@
 {
   "iPhone": {
+    "iPhone 17 Portrait": {
+      "width": 1206,
+      "height": 2622
+    },
+    "iPhone 17 Pro Portrait": {
+      "width": 1206,
+      "height": 2622
+    },
+    "iPhone 17 Pro Max Portrait": {
+      "width": 1320,
+      "height": 2868
+    },
+    "iPhone Air Portrait": {
+      "width": 1260,
+      "height": 2736
+    },
     "iPhone 16 Pro Portrait": {
       "width": 1320,
       "height": 2868
     },
     "iPhone 16 Pro Max Portrait": {
       "width": 1320,
-      "height": 2868  
+      "height": 2868
     },
     "iPhone 16 Portrait": {
       "width": 1179,

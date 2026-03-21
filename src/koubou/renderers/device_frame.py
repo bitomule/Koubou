@@ -160,6 +160,25 @@ class DeviceFrameRenderer:
                 else:
                     logger.warning(f"Orientation '{orientation}' not found")
 
+            elif len(model_parts) == 1:
+                model_key = model_parts[0]  # "17" or "Air"
+                current = current.get(model_key)
+                if not current:
+                    logger.warning(f"Model '{model_key}' not found under {device_type}")
+                    return None
+
+                current = current.get(color)
+                if not current:
+                    logger.warning(f"Color '{color}' not found")
+                    return None
+
+                frame_info = current.get(orientation)
+                if frame_info:
+                    logger.info(f"📱 Found metadata for {frame_name}: {frame_info}")
+                    return frame_info if isinstance(frame_info, dict) else None
+                else:
+                    logger.warning(f"Orientation '{orientation}' not found")
+
         logger.warning(f"No metadata found for frame: {frame_name}")
         return None
 
