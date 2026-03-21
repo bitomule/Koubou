@@ -125,6 +125,28 @@
     "Apple Watch S10 46mm": {
       "width": 410,
       "height": 502
+    },
+    "Apple Watch S11 42mm": {
+      "width": 394,
+      "height": 480
+    },
+    "Apple Watch S11 46mm": {
+      "width": 410,
+      "height": 502
+    },
+    "Apple Watch Ultra 2": {
+      "width": 410,
+      "height": 502
+    },
+    "Apple Watch Ultra 3": {
+      "width": 422,
+      "height": 514
+    }
+  },
+  "Apple TV": {
+    "Apple TV 4K": {
+      "width": 3840,
+      "height": 2160
     }
   }
 }

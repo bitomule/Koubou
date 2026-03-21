@@ -26,6 +26,21 @@
       "x": "330",
       "y": "218",
       "name": "MacBook Air 2022"
+    },
+    "MacBook Air M3 13": {
+      "x": "330",
+      "y": "218",
+      "name": "MacBook Air 13\" - 4th Gen - Midnight"
+    },
+    "MacBook Pro M4 14": {
+      "x": "460",
+      "y": "300",
+      "name": "MacBook Pro M4 14-inch Silver"
+    },
+    "MacBook Pro M4 16": {
+      "x": "442",
+      "y": "313",
+      "name": "MacBook Pro M4 16-inch Silver"
     }
   },
   "iPhone": {
@@ -578,6 +593,16 @@
       "y": "219",
       "name": "Watch Ultra 2022"
     },
+    "Ultra 2": {
+      "x": "95",
+      "y": "219",
+      "name": "AW Ultra 2"
+    },
+    "Ultra 3": {
+      "x": "89",
+      "y": "223",
+      "name": "AW Ultra 3"
+    },
     "Series 4": {
       "44": {
         "x": "66",
@@ -603,6 +628,25 @@
           "name": "Watch Series 7 45 Starlight"
         }
       }
+    },
+    "Series 11": {
+      "42mm": {
+        "x": "63",
+        "y": "160",
+        "name": "Apple Watch S11 42mm"
+      },
+      "46mm": {
+        "x": "75",
+        "y": "189",
+        "name": "Apple Watch S11 46mm"
+      }
+    }
+  },
+  "Apple TV": {
+    "4K": {
+      "x": "230",
+      "y": "310",
+      "name": "Apple TV - 4K"
     }
   },
   "version": "2.5"
