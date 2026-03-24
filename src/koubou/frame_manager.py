@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import pathlib
 import tarfile
 import tempfile
 import urllib.request
@@ -40,7 +41,7 @@ def _contains_frame_pngs(path: Path) -> bool:
 
 def _find_checkout_frames_path(start: Optional[Path] = None) -> Optional[Path]:
     """Find frames in a source checkout when installed assets are absent."""
-    current = (start or Path.cwd()).resolve()
+    current = (start or pathlib.Path.cwd()).resolve()
     for candidate_root in (current, *current.parents):
         frames = candidate_root / "src" / "koubou" / "frames"
         if _contains_frame_pngs(frames):
