@@ -178,6 +178,36 @@ class ScreenshotGenerator:
             self.frame_metadata = {}
             self.size_metadata = {}
 
+    def _fit_image_within_canvas(
+        self, image: Image.Image, canvas_size: Tuple[int, int]
+    ) -> Tuple[Image.Image, float]:
+        """Scale an image down so it fully fits within the canvas."""
+        image_width, image_height = image.size
+        canvas_width, canvas_height = canvas_size
+
+        if image_width <= 0 or image_height <= 0:
+            raise RenderError(
+                f"Invalid framed asset dimensions: {image_width}×{image_height}"
+            )
+
+        fit_scale = min(canvas_width / image_width, canvas_height / image_height, 1.0)
+        if fit_scale >= 1.0:
+            return image, 1.0
+
+        fitted_width = max(1, int(round(image_width * fit_scale)))
+        fitted_height = max(1, int(round(image_height * fit_scale)))
+
+        logger.info(
+            f"📱 Auto-fitting framed asset {image_width}×{image_height} into "
+            f"canvas {canvas_width}×{canvas_height}: "
+            f"scale={fit_scale:.6f}, result={fitted_width}×{fitted_height}"
+        )
+
+        return (
+            image.resize((fitted_width, fitted_height), Image.Resampling.LANCZOS),
+            fit_scale,
+        )
+
     @property
     def html_renderer(self):
         if self._html_renderer is None:
@@ -859,6 +889,15 @@ class ScreenshotGenerator:
                     -rotation_angle,  # Negative for clockwise rotation
                     resample=Image.Resampling.BICUBIC,
                     expand=True,
+                )
+
+            framed_asset, canvas_fit_scale = self._fit_image_within_canvas(
+                framed_asset, canvas.size
+            )
+            if canvas_fit_scale < 1.0:
+                logger.info(
+                    f"📱 Reduced framed asset scale from {asset_scale:.3f} "
+                    f"to {asset_scale * canvas_fit_scale:.6f} to avoid clipping"
                 )
 
             # Step 7: Place framed asset on canvas centered at requested position

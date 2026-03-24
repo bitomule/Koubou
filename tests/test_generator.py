@@ -447,6 +447,46 @@ class TestScreenshotGenerator:
         assert result.mode == "RGBA"
         assert result.size == canvas.size
 
+    def test_apply_asset_frame_auto_fits_oversized_frame_to_canvas(self):
+        """Oversized frames should be scaled down instead of clipping bezel edges."""
+        frame = Image.new("RGBA", (300, 600), (128, 128, 128, 255))
+        screen_x, screen_y = 30, 60
+        screen_width, screen_height = 240, 480
+
+        for y in range(screen_y, screen_y + screen_height):
+            for x in range(screen_x, screen_x + screen_width):
+                frame.putpixel((x, y), (128, 128, 128, 0))
+
+        frame_path = self.frame_dir / "Oversized Frame.png"
+        frame.save(frame_path)
+
+        repro_source = self.temp_dir / "issue_17_source.png"
+        Image.new("RGBA", (240, 480), (255, 0, 0, 255)).save(repro_source)
+
+        canvas = Image.new("RGBA", (240, 480), (255, 255, 255, 0))
+        config = ScreenshotConfig(
+            name="Issue 17 Regression",
+            source_image=str(repro_source),
+            output_size=(240, 480),
+            device_frame="Oversized Frame",
+            image_scale=1.0,
+            image_position=["50%", "50%"],
+            image_frame=True,
+        )
+
+        result = self.generator._apply_asset_frame(
+            Image.open(repro_source), canvas, config
+        )
+
+        assert result.size == canvas.size
+        assert result.getpixel((0, canvas.height // 2))[:3] == (128, 128, 128)
+        assert result.getpixel((canvas.width // 2, 0))[:3] == (128, 128, 128)
+        assert result.getpixel((canvas.width // 2, canvas.height // 2))[:3] == (
+            255,
+            0,
+            0,
+        )
+
 
 class TestResolveLocalizedAsset:
     """Tests for resolve_localized_asset() function."""
