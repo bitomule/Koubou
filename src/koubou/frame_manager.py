@@ -34,19 +34,33 @@ def _get_version() -> str:
     return __version__
 
 
-def get_bundled_frames_path() -> Optional[Path]:
-    """Return the bundled frames path if PNGs exist on disk (source install)."""
-    bundled = Path(__file__).parent / "frames"
-    if bundled.is_dir() and any(bundled.glob("*.png")):
-        return bundled
+def _contains_frame_pngs(path: Path) -> bool:
+    return path.is_dir() and any(path.glob("*.png"))
+
+
+def _find_checkout_frames_path(start: Optional[Path] = None) -> Optional[Path]:
+    """Find frames in a source checkout when installed assets are absent."""
+    current = (start or Path.cwd()).resolve()
+    for candidate_root in (current, *current.parents):
+        frames = candidate_root / "src" / "koubou" / "frames"
+        if _contains_frame_pngs(frames):
+            return frames
     return None
+
+
+def get_bundled_frames_path() -> Optional[Path]:
+    """Return bundled frames, or source-checkout frames when running from a repo."""
+    bundled = Path(__file__).parent / "frames"
+    if _contains_frame_pngs(bundled):
+        return bundled
+    return _find_checkout_frames_path()
 
 
 def get_cached_frames_path() -> Optional[Path]:
     """Return the cached frames path if it exists and has PNGs."""
     version = _get_version()
     cached = FRAMES_CACHE_DIR / version
-    if cached.is_dir() and any(cached.glob("*.png")):
+    if _contains_frame_pngs(cached):
         return cached
     return None
 
@@ -59,10 +73,11 @@ def resolve_frames_path() -> Optional[Path]:
 def download_frames(verbose: bool = False) -> Path:
     """Download frames tarball from GitHub Releases and extract to cache."""
     version = _get_version()
-    if version == "dev":
+    if version == "dev" or ".dev" in version or "+" in version:
         raise FramesNotAvailableError(
             "Cannot download frames for development version. "
-            "Use a source install or specify --frame-directory."
+            "Use a source checkout, run from the repository root, or specify "
+            "--frame-directory."
         )
 
     url = GITHUB_RELEASE_URL.format(version=version)

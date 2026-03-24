@@ -56,6 +56,25 @@ class TestGetBundledFramesPath:
             assert result is not None
             assert result.is_dir()
 
+    def test_falls_back_to_source_checkout_when_installed_frames_are_missing(
+        self, tmp_path, monkeypatch
+    ):
+        installed_pkg = tmp_path / "site-packages" / "koubou"
+        installed_pkg.mkdir(parents=True)
+        (installed_pkg / "frames").mkdir()
+
+        repo_root = tmp_path / "repo"
+        checkout_frames = repo_root / "src" / "koubou" / "frames"
+        checkout_frames.mkdir(parents=True)
+        (checkout_frames / "frame.png").write_bytes(b"fake png")
+
+        monkeypatch.setattr(
+            "koubou.frame_manager.__file__", str(installed_pkg / "frame_manager.py")
+        )
+        monkeypatch.chdir(repo_root)
+
+        assert get_bundled_frames_path() == checkout_frames
+
 
 class TestGetCachedFramesPath:
     def test_returns_none_when_cache_empty(self, temp_cache, fake_version):
@@ -105,6 +124,13 @@ class TestResolveFramesPath:
 class TestDownloadFrames:
     def test_raises_for_dev_version(self, monkeypatch):
         monkeypatch.setattr("koubou.frame_manager._get_version", lambda: "dev")
+        with pytest.raises(FramesNotAvailableError, match="development version"):
+            download_frames()
+
+    def test_raises_for_pep440_dev_version(self, monkeypatch):
+        monkeypatch.setattr(
+            "koubou.frame_manager._get_version", lambda: "0.1.dev1+g1234567"
+        )
         with pytest.raises(FramesNotAvailableError, match="development version"):
             download_frames()
 
