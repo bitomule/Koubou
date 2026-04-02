@@ -487,6 +487,55 @@ class TestScreenshotGenerator:
             0,
         )
 
+    def test_convert_position_supports_pixel_suffix(self):
+        """Position parser should support values with px suffix."""
+        assert self.generator._convert_position(["100px", "50px"], (1000, 500)) == (
+            100,
+            50,
+        )
+
+    def test_convert_position_supports_mixed_percent_and_pixels(self):
+        """Position parser should support mixed percent and pixel values."""
+        assert self.generator._convert_position(["50%", "120px"], (1000, 800)) == (
+            500,
+            120,
+        )
+
+    def test_project_generation_accepts_px_positions_for_text_and_image(self):
+        """Regression: project generation should accept px position values."""
+        from koubou.config import ContentItem, ProjectInfo, ScreenshotDefinition
+
+        project_config = ProjectConfig(
+            project=ProjectInfo(
+                name="PX Position Regression",
+                output_dir=str(self.temp_dir / "project_px_output"),
+                device="iPhone 15 Pro Portrait",
+            ),
+            screenshots={
+                "pixel_positions": ScreenshotDefinition(
+                    content=[
+                        ContentItem(
+                            type="image",
+                            asset=str(self.source_image_path),
+                            position=("100px", "200px"),
+                        ),
+                        ContentItem(
+                            type="text",
+                            content="Top Left",
+                            position=("120px", "80px"),
+                            alignment="left",
+                        ),
+                    ],
+                    frame=False,
+                )
+            },
+        )
+
+        results = self.generator.generate_project(project_config)
+
+        assert len(results) == 1
+        assert results[0].exists()
+
 
 class TestResolveLocalizedAsset:
     """Tests for resolve_localized_asset() function."""

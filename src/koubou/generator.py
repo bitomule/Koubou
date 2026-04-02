@@ -649,14 +649,19 @@ class ScreenshotGenerator:
 
         return TempConfig(base_config, img_config)
 
-    def _convert_percentage_to_pixels(self, percentage_str: str, dimension: int) -> int:
-        """Convert percentage string to pixel position."""
-        if percentage_str.endswith("%"):
-            percentage = float(percentage_str[:-1])
+    def _parse_position_value(self, value: str, dimension: int) -> int:
+        """Parse percentage, pixel-suffixed, or raw numeric position value."""
+        normalized = value.strip().lower()
+        if normalized.endswith("%"):
+            percentage = float(normalized[:-1])
             return int(dimension * percentage / 100.0)
-        else:
-            # If not a percentage, assume it's already pixels
-            return int(percentage_str)
+        if normalized.endswith("px"):
+            normalized = normalized[:-2].strip()
+        return int(float(normalized))
+
+    def _convert_percentage_to_pixels(self, percentage_str: str, dimension: int) -> int:
+        """Convert percentage or pixel value string to pixel position."""
+        return self._parse_position_value(percentage_str, dimension)
 
     def _apply_device_frame_overlay(
         self, canvas: Image.Image, device_frame_name: str
@@ -1407,16 +1412,7 @@ class ScreenshotGenerator:
         """Convert percentage or pixel position to absolute pixels."""
         canvas_width, canvas_height = canvas_size
 
-        # Convert X position
-        if position[0].endswith("%"):
-            x = int(canvas_width * float(position[0][:-1]) / 100)
-        else:
-            x = int(float(position[0]))
-
-        # Convert Y position
-        if position[1].endswith("%"):
-            y = int(canvas_height * float(position[1][:-1]) / 100)
-        else:
-            y = int(float(position[1]))
+        x = self._parse_position_value(position[0], canvas_width)
+        y = self._parse_position_value(position[1], canvas_height)
 
         return (x, y)
