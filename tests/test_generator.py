@@ -536,6 +536,91 @@ class TestScreenshotGenerator:
         assert len(results) == 1
         assert results[0].exists()
 
+    def test_project_text_alignment_controls_horizontal_anchor(self):
+        """Project text alignment should determine horizontal anchor semantics."""
+        from koubou.config import ContentItem, ScreenshotDefinition
+
+        expected_anchors = {
+            "left": "center-left",
+            "center": "center",
+            "right": "center-right",
+        }
+
+        for alignment, expected_anchor in expected_anchors.items():
+            screenshot_def = ScreenshotDefinition(
+                content=[
+                    ContentItem(
+                        type="image",
+                        asset=str(self.source_image_path),
+                        position=("50%", "50%"),
+                    ),
+                    ContentItem(
+                        type="text",
+                        content="Aligned text",
+                        position=("120px", "80px"),
+                        alignment=alignment,
+                    ),
+                ],
+                frame=False,
+            )
+
+            config = self.generator._convert_to_screenshot_config(
+                screenshot_def=screenshot_def,
+                device_frame=None,
+                default_background=None,
+                output_dir=str(self.temp_dir / "project_alignment_output"),
+                output_size=(1000, 800),
+            )
+
+            assert config is not None
+            assert len(config.text_overlays) == 1
+            assert config.text_overlays[0].alignment == alignment
+            assert config.text_overlays[0].anchor == expected_anchor
+            assert config.text_overlays[0].position == (120, 80)
+
+    def test_position_source_image_respects_left_alignment(self):
+        """Image alignment should control horizontal placement for project assets."""
+        canvas = Image.new("RGBA", (400, 300), (255, 255, 255, 0))
+        source_image = Image.open(self.source_image_path)
+
+        class TempConfig:
+            image_scale = 1.0
+            image_position = ["120px", "50%"]
+            image_alignment = "left"
+            image_rotation = 0
+
+        result = self.generator._position_source_image(source_image, canvas, TempConfig())
+
+        assert result.getbbox() == (120, 0, 320, 300)
+
+    def test_apply_asset_frame_respects_left_alignment(self):
+        """Framed images should use left alignment for horizontal placement."""
+        frame = Image.new("RGBA", (200, 400), (128, 128, 128, 255))
+        screen_x, screen_y = 20, 40
+        screen_width, screen_height = 160, 320
+
+        for y in range(screen_y, screen_y + screen_height):
+            for x in range(screen_x, screen_x + screen_width):
+                frame.putpixel((x, y), (128, 128, 128, 0))
+
+        frame_path = self.frame_dir / "Left Align Frame.png"
+        frame.save(frame_path)
+
+        canvas = Image.new("RGBA", (800, 1200), (255, 255, 255, 0))
+
+        class TempConfig:
+            device_frame = "Left Align Frame"
+            image_scale = 1.0
+            image_position = ["120px", "50%"]
+            image_alignment = "left"
+            image_rotation = 0
+
+        result = self.generator._apply_asset_frame(
+            Image.open(self.source_image_path), canvas, TempConfig()
+        )
+
+        assert result.getbbox() == (120, 400, 320, 800)
+
 
 class TestResolveLocalizedAsset:
     """Tests for resolve_localized_asset() function."""
