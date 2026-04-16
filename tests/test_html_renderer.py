@@ -354,3 +354,99 @@ class TestAssetsFieldValidation:
             assets={"screen": "assets/screen.png"},
         )
         assert defn.variables == {}
+
+    def test_assets_support_localized_mapping(self):
+        defn = ScreenshotDefinition(
+            template="hero.html",
+            assets={
+                "app_screenshot": {
+                    "en": "assets/en/screen.png",
+                    "es": "assets/es/screen.png",
+                    "default": "assets/default.png",
+                }
+            },
+        )
+        assert defn.assets["app_screenshot"]["es"] == "assets/es/screen.png"
+
+
+class TestHtmlTemplateAssetLocalization:
+    """Test localized asset resolution for template-based screenshots."""
+
+    def _make_generator(self, temp_dir):
+        from koubou.generator import ScreenshotGenerator
+
+        frames_dir = temp_dir / "frames"
+        frames_dir.mkdir()
+        (frames_dir / "Frames.json").write_text("{}", encoding="utf-8")
+        (frames_dir / "Sizes.json").write_text("{}", encoding="utf-8")
+        return ScreenshotGenerator(frame_directory=str(frames_dir))
+
+    def test_prepare_html_screenshot_localizes_string_assets(self, temp_dir):
+        generator = self._make_generator(temp_dir)
+
+        template = temp_dir / "hero.html"
+        template.write_text(
+            '<html><body><img src="{{app_screenshot}}"></body></html>',
+            encoding="utf-8",
+        )
+
+        raw_dir = temp_dir / "raw"
+        (raw_dir / "en").mkdir(parents=True)
+        (raw_dir / "es").mkdir(parents=True)
+        Image.new("RGB", (20, 20), (255, 0, 0)).save(raw_dir / "en" / "hello.png")
+        Image.new("RGB", (20, 20), (0, 255, 0)).save(raw_dir / "es" / "hello.png")
+
+        screenshot = ScreenshotDefinition(
+            template=str(template),
+            assets={"app_screenshot": "raw/hello.png"},
+            frame=False,
+        )
+
+        prepared = generator.prepare_html_screenshot(
+            screenshot,
+            temp_dir,
+            language="es",
+            base_language="en",
+        )
+
+        assert prepared.variables["app_screenshot"] == "app_screenshot.png"
+        assert prepared.assets["app_screenshot.png"] == str(
+            (raw_dir / "es" / "hello.png").resolve()
+        )
+
+    def test_prepare_html_screenshot_localizes_dict_assets(self, temp_dir):
+        generator = self._make_generator(temp_dir)
+
+        template = temp_dir / "hero.html"
+        template.write_text(
+            '<html><body><img src="{{app_screenshot}}"></body></html>',
+            encoding="utf-8",
+        )
+
+        raw_dir = temp_dir / "raw"
+        raw_dir.mkdir()
+        Image.new("RGB", (20, 20), (255, 0, 0)).save(raw_dir / "fallback.png")
+        Image.new("RGB", (20, 20), (0, 255, 0)).save(raw_dir / "es.png")
+
+        screenshot = ScreenshotDefinition(
+            template=str(template),
+            assets={
+                "app_screenshot": {
+                    "es": "raw/es.png",
+                    "default": "raw/fallback.png",
+                }
+            },
+            frame=False,
+        )
+
+        prepared = generator.prepare_html_screenshot(
+            screenshot,
+            temp_dir,
+            language="fr",
+            base_language="en",
+        )
+
+        assert prepared.variables["app_screenshot"] == "app_screenshot.png"
+        assert prepared.assets["app_screenshot.png"] == str(
+            (raw_dir / "fallback.png").resolve()
+        )
