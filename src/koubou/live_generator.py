@@ -489,6 +489,11 @@ class LiveScreenshotGenerator:
             self.config_dir,
             device_frame_name=self.current_config.project.device,
             language=language,
+            base_language=(
+                self.current_config.localization.base_language
+                if self.current_config.localization
+                else language
+            ),
             xcstrings_manager=xcstrings_manager,
             assets_output_dir=stage_dir,
         )

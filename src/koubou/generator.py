@@ -11,7 +11,13 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from PIL import Image
 
-from .config import GradientConfig, ProjectConfig, ScreenshotConfig, TextOverlay
+from .config import (
+    GradientConfig,
+    LocalizedAsset,
+    ProjectConfig,
+    ScreenshotConfig,
+    TextOverlay,
+)
 from .exceptions import ConfigurationError, RenderError
 from .localization import LocalizedContentResolver, XCStringsManager
 from .renderers.background import BackgroundRenderer
@@ -310,19 +316,30 @@ class ScreenshotGenerator:
 
     def _build_assets_map(
         self,
-        asset_variables: Dict[str, str],
+        asset_variables: Dict[str, LocalizedAsset],
         config_dir: Optional[Path],
-    ) -> Dict[str, str]:
-        """Build {relative_name: absolute_path} map for HTML sandbox."""
+        language: str = "en",
+        base_language: str = "en",
+    ) -> Tuple[Dict[str, str], Dict[str, str]]:
+        """Build HTML asset mounts and template variables for the sandbox."""
         assets: Dict[str, str] = {}
+        template_assets: Dict[str, str] = {}
         for key, value in asset_variables.items():
-            if config_dir:
-                candidate = config_dir / value
-            else:
-                candidate = Path(value)
+            resolved = resolve_localized_asset(
+                value, language, base_language, config_dir
+            )
+            if not resolved:
+                continue
+
+            candidate = Path(resolved)
+            if not candidate.is_absolute() and config_dir:
+                candidate = config_dir / candidate
+
             if candidate.exists():
-                assets[value] = str(candidate.resolve())
-        return assets
+                mounted_name = key if Path(key).suffix else f"{key}{candidate.suffix}"
+                assets[mounted_name] = str(candidate.resolve())
+                template_assets[key] = mounted_name
+        return assets, template_assets
 
     def prepare_html_screenshot(
         self,
@@ -331,6 +348,7 @@ class ScreenshotGenerator:
         *,
         device_frame_name: Optional[str] = None,
         language: str = "en",
+        base_language: Optional[str] = None,
         xcstrings_manager: Optional[Any] = None,
         assets_output_dir: Optional[Path] = None,
     ) -> PreparedHtmlScreenshot:
@@ -348,7 +366,13 @@ class ScreenshotGenerator:
             screenshot_def.variables, language, xcstrings_manager
         )
 
-        assets = self._build_assets_map(screenshot_def.assets, config_dir)
+        resolved_base_language = base_language or language
+        assets, resolved_asset_variables = self._build_assets_map(
+            screenshot_def.assets,
+            config_dir,
+            language=language,
+            base_language=resolved_base_language,
+        )
         should_frame = screenshot_def.frame is not False and device_frame_name
         cleanup_paths: List[Path] = []
 
@@ -375,7 +399,7 @@ class ScreenshotGenerator:
                     prepared_assets[rel_path] = abs_path
             assets = prepared_assets
 
-        all_variables = {**resolved_text, **screenshot_def.assets}
+        all_variables = {**resolved_text, **resolved_asset_variables}
         return PreparedHtmlScreenshot(
             template_path=template_path,
             variables=all_variables,
@@ -392,6 +416,7 @@ class ScreenshotGenerator:
         config_dir: Optional[Path],
         device_frame_name: Optional[str] = None,
         language: str = "en",
+        base_language: Optional[str] = None,
         xcstrings_manager: Optional[Any] = None,
     ) -> Path:
         """Generate a screenshot from an HTML template."""
@@ -400,6 +425,7 @@ class ScreenshotGenerator:
             config_dir,
             device_frame_name=device_frame_name,
             language=language,
+            base_language=base_language,
             xcstrings_manager=xcstrings_manager,
         )
 
@@ -1061,6 +1087,11 @@ class ScreenshotGenerator:
                             config_dir=config_dir,
                             device_frame_name=device,
                             language=language,
+                            base_language=(
+                                localization_config.base_language
+                                if localization_config
+                                else None
+                            ),
                             xcstrings_manager=xcm,
                         )
                         all_results.append(output_path)

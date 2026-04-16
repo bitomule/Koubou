@@ -8,6 +8,9 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 
+LocalizedAsset = Union[str, Dict[str, str]]
+
+
 def load_appstore_sizes() -> Dict[str, Dict[str, Union[int, str]]]:
     """Load App Store standard sizes from JSON file."""
     sizes_file = Path(__file__).parent / "appstore_sizes.json"
@@ -311,7 +314,7 @@ class ContentItem(BaseModel):
         ..., description="Type of content item"
     )
     content: Optional[str] = Field(default=None, description="Text content")
-    asset: Optional[Union[str, Dict[str, str]]] = Field(
+    asset: Optional[LocalizedAsset] = Field(
         default=None,
         description=(
             "Image asset path. Supports two formats:\n"
@@ -590,8 +593,8 @@ class ContentItem(BaseModel):
     @field_validator("asset")
     @classmethod
     def validate_asset_format(
-        cls, v: Optional[Union[str, Dict[str, str]]]
-    ) -> Optional[Union[str, Dict[str, str]]]:
+        cls, v: Optional[LocalizedAsset]
+    ) -> Optional[LocalizedAsset]:
         """Validate asset field format."""
         if v is None:
             return v
@@ -638,9 +641,12 @@ class ScreenshotDefinition(BaseModel):
         default_factory=dict,
         description="Localizable text variables for {{key}} substitution",
     )
-    assets: Dict[str, str] = Field(
+    assets: Dict[str, LocalizedAsset] = Field(
         default_factory=dict,
-        description="Asset path variables for {{key}} substitution (not localized)",
+        description=(
+            "Asset path variables for {{key}} substitution. Supports strings "
+            "with localized directory conventions and explicit language maps."
+        ),
     )
     frame: Optional[bool] = Field(
         default=None,
@@ -661,6 +667,18 @@ class ScreenshotDefinition(BaseModel):
         if not has_template and not has_content:
             raise ValueError("Must specify either 'template' or 'content'.")
         return self
+
+    @field_validator("assets")
+    @classmethod
+    def validate_assets_format(
+        cls, v: Dict[str, LocalizedAsset]
+    ) -> Dict[str, LocalizedAsset]:
+        """Validate template asset mappings using the same rules as content assets."""
+        for key, asset in v.items():
+            validated = ContentItem.validate_asset_format(asset)
+            if validated in (None, ""):
+                raise ValueError(f"Asset '{key}' must be a non-empty string or mapping")
+        return v
 
 
 class LocalizationConfig(BaseModel):
