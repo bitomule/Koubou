@@ -5,6 +5,13 @@ All notable changes to Koubou will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.3] - 2026-04-16
+
+### Fixed
+- HTML template screenshots now resolve `assets` with the same localization rules as content mode, so both `{lang}/path` conventions and explicit language mappings pick the correct asset per output language.
+- Live preview now uses the same base-language fallback for template assets as final generation, keeping preview and exported screenshots aligned.
+- `ScreenshotDefinition.assets` now accepts localized asset mappings for HTML templates, with regression tests covering string and dict-based localized resolution.
+
 ## [0.18.2] - 2026-04-02
 
 ### Fixed
