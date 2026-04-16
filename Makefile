@@ -13,6 +13,8 @@ format:
 	$(ISORT) src/ tests/
 
 lint:
+	$(BLACK) --check src/ tests/
+	$(ISORT) --check-only --diff src/ tests/
 	$(FLAKE8) src/ tests/
 	$(MYPY) src/
 

@@ -7,7 +7,6 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
-
 LocalizedAsset = Union[str, Dict[str, str]]
 
 
