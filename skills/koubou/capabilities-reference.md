@@ -18,6 +18,8 @@ screenshots:
       app_screenshot: "screenshots/home.png"
 ```
 
+When HTML contains `data-kou-id` annotations, `kou generate ... --output json` also returns `layout_path`, which points to a compact sidecar JSON containing normalized element geometry and mathematical overlaps for the final rendered layout.
+
 ### 2. Content YAML Mode (programmatic)
 
 Items positioned by coordinates. Useful for simple layouts without HTML.

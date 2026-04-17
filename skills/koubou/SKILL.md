@@ -40,6 +40,8 @@ If breaking a default produces a better screenshot set, break it deliberately an
 Reference files (read as needed, not upfront):
 - `setup.md` — Installation and HTML runtime setup
 - `design-guide.md` — Design principles, copywriting rules, CSS rules, HTML template examples
+- `style-intake.md` — How to inspect the app's real visual language before asking questions
+- `style-interview.md` — Short, high-signal style questions and conversation patterns
 - `yaml-reference.md` — YAML config format, localization, assets, devices, sizes
 - `capabilities-reference.md` — Full koubou capabilities (content mode, highlights, zoom, gradients)
 
@@ -68,43 +70,124 @@ For HTML rendering support:
 
 Only inform the user if setup fails. Never mutate a working installation.
 
-## Phase 2: Gather Information
+## Phase 2: Read The App, Then Ask
 
-Collect what you need through natural conversation. Do NOT dump all questions at once.
+Do not begin with a generic style questionnaire. Inspect the app's real visual language first, then ask only what is still missing or ambiguous.
 
-### Required (ask in order, naturally)
+Read `style-intake.md` before asking style questions. Follow this order.
+
+### 2.1 Style discovery (mandatory before style questions)
+
+Inspect local project sources first. Search automatically before asking the user for visual direction.
+
+Prioritize these sources:
+
+1. `Assets.xcassets`, app icons, illustrations, logos, color assets
+2. Existing screenshots and marketing folders:
+   - `.maestro/`
+   - `screenshots/`
+   - `AppStore/`
+   - `fastlane/screenshots/`
+   - `marketing/`
+3. Product docs and positioning:
+   - `README*`
+   - `CLAUDE.md`
+   - launch plans, landing-page copy, docs folders
+4. Design tokens and UI code:
+   - CSS variables
+   - SwiftUI colors, gradients, materials, typography choices
+   - web theme files and shared design constants
+5. Prior App Store artifacts if they exist:
+   - previous templates
+   - old screenshot campaigns
+   - localized marketing assets
+
+Extract and summarize at least these signals:
+
+- dominant colors and accent colors
+- overall contrast: dark, light, mixed, muted, vivid
+- UI density: airy, balanced, dense
+- shape language: sharp, soft, rounded, card-heavy, flat
+- iconography and illustration style
+- typography direction if visible
+- copy tone: calm, technical, playful, premium, warm, urgent
+- whether the app feels calm, technical, warm, energetic, polished, playful, etc.
+
+If the app style is clear:
+- summarize the detected signals to the user in plain language
+- confirm that you will build from that direction instead of restarting from a generic template language
+
+If the signals are weak, missing, or contradictory:
+- say what you found
+- ask focused follow-up questions about the uncertainty instead of asking a broad design questionnaire
+
+### 2.2 Intent interview (short, high-signal)
+
+Read `style-interview.md` and ask only the minimum needed. Keep it conversational. Do not dump every question at once.
+
+Required style questions when still needed:
+
+1. What feeling should the campaign project: premium, playful, editorial, utilitarian, technical, warm, etc.?
+2. Are there App Store references, brands, or screenshot sets that should influence the direction?
+3. What is visually forbidden: loud gradients, glassmorphism, dark-only, card grids, overly playful styling, etc.?
+4. What visual trait from the app itself must still be recognizable in the screenshots?
+
+Optional questions only when still unresolved:
+
+5. Preferred type direction or font personality
+6. Light, dark, or mixed bias
+7. Density preference: more air vs more information
+8. Whether the set should feel tightly consistent or visibly varied across slides
+
+### 2.3 Product information (still required)
+
+After style discovery starts, collect the remaining production inputs naturally:
 
 1. **App**: Name, what it does (1 sentence), main value proposition
 2. **Screenshots**: Where are the app captures? Search automatically first:
-   - Glob for: `.maestro/`, `screenshots/`, `AppStore/`, `fastlane/screenshots/`, `marketing/`
    - If found, show what you found and confirm
    - If not found, ask how the user generates them
    - Prefer clean simulator captures that show the app UI clearly. If the user can choose, prefer recent 6.1-inch iPhone captures as the source material
-3. **Visual style**: Brand colors, preferred font, dark/light/colorful preference, and App Store references if any
-   - If `Assets.xcassets`, `marketing/plan.md`, prior marketing, or brand assets exist, derive colors/font direction from there without asking
-   - If the user gives directional feedback like "more premium", "more bold", "more editorial", "more airy", or "more dense", treat that as a real design constraint
-4. **Features to highlight**: Prioritized list of features/benefits (recommend 3-5). Each slide = 1 feature
-5. **Hero assets**: App icon or other brand asset. Search automatically before asking
-6. **Slide count**: How many screenshots (recommend 3-5 to start, Apple allows up to 10)
+3. **Features to highlight**: Prioritized list of features/benefits (recommend 3-5). Each slide = 1 feature
+4. **Hero assets**: App icon or other brand asset. Search automatically before asking
+5. **Slide count**: How many screenshots (recommend 3-5 to start, Apple allows up to 10)
 
-### Optional (ask only if relevant)
+Optional only if relevant:
 
-7. **Device**: Default is `iPhone 16 Pro - Black Titanium - Portrait`. Only ask if iPad/Mac/other makes sense
-8. **Localization**: Only if the project already has xcstrings or multiple language support
-9. **Extra assets**: Floating UI elements, badges, supporting illustrations
-10. **Additional constraints**: Any required claims, forbidden styles, or marketing constraints
+6. **Device**: Default is `iPhone 16 Pro - Black Titanium - Portrait`. Only ask if iPad/Mac/other makes sense
+7. **Localization**: Only if the project already has xcstrings or multiple language support
+8. **Extra assets**: Floating UI elements, badges, supporting illustrations
+9. **Additional constraints**: Required claims, forbidden styles, or marketing constraints
 
-### Derived (do NOT ask — figure out automatically)
+### 2.4 Style decision (mandatory before HTML)
 
-- Background gradients (from brand colors)
+Before drafting templates, explicitly decide and internally lock these six items:
+
+- `brand signals detected`
+- `chosen campaign style`
+- `copy voice`
+- `background system`
+- `device composition rhythm`
+- `variation plan across slides`
+
+Each item must be justified by either:
+
+- app evidence from style discovery, or
+- direct user feedback from the interview
+
+If you cannot justify one of these, keep asking focused questions before designing.
+
+### Derived (do NOT ask unless blocked)
+
+- Background gradients or textures from brand colors and UI mood
 - Layout distribution (hero → feature-top → feature-bottom → alternating)
-- Headline copy (from features and value proposition)
-- Secondary palette (variations of brand colors)
+- Headline copy from features and value proposition
+- Secondary palette from the app's actual palette
 - Canvas class from `project.device` + `project.output_size` via `kou inspect-frame`
-- Whether the app name should appear in the slide at all. Default: omit it unless it adds real brand value at readable size
+- Whether the app name should appear at all. Default: omit it unless it adds real brand value at readable size
 - Whether the app icon should appear. Default: use it sparingly on hero or closing slides, not as a tiny decorative marker
 
-**Principle**: If context is available (CLAUDE.md, existing configs, marketing/plan.md, Assets.xcassets), use it without re-asking.
+**Principle**: if context is available locally, use it before asking. Style questions come after inspection, not before.
 
 ## Phase 3: Generate
 
@@ -115,31 +198,43 @@ Read `design-guide.md` before generating templates. Read `yaml-reference.md` bef
 3. Read `project.device` and `project.output_size` from the YAML
 4. Run `kou inspect-frame "<device>" --output-size <size> --output json` and use that geometry before writing CSS
 5. Draft the narrative arc and 2-3 headline/subtitle options per slide before touching layout. Pick the strongest one first. Copy quality comes before CSS
-6. Create `templates/` with HTML templates — **minimum 3 distinct layouts** (read `design-guide.md` for templates)
-7. Create `config.yaml` with koubou config (read `yaml-reference.md` for format)
-8. Use CSS that adapts to the canvas and copy length: use `vw` or `clamp()` deliberately, prefer CSS Grid, overlap, and absolute-positioned layers, and verify the final computed text scale on the real canvas
-9. **Before writing HTML**: plan text/device zones for each slide (which area owns what percentage of the canvas). Do not start CSS until zones are clear
-10. Run: `kou generate config.yaml --verbose`
-11. **Post-render QA** (mandatory — do not skip):
+6. Translate the style decision into a campaign brief:
+   - what the set should feel like
+   - what motifs are allowed
+   - what motifs are banned
+   - how much variation the first 5 slides should show
+7. Create `templates/` with HTML templates — **minimum 3 distinct layouts**, and the first 3 slides must not repeat the same composition archetype
+8. In HTML templates, annotate measurable layout elements with `data-kou-id`; add `data-kou-role` when it clarifies intent. Minimum annotations for most slides: headline, subtitle/supporting text, and main device image
+9. Create `config.yaml` with koubou config (read `yaml-reference.md` for format)
+10. Use CSS that adapts to the canvas and copy length: use `vw` or `clamp()` deliberately, prefer CSS Grid, overlap, and absolute-positioned layers, and verify the final computed text scale on the real canvas
+11. **Before writing HTML**: plan text/device zones for each slide (which area owns what percentage of the canvas). Do not start CSS until zones are clear
+12. Run: `kou generate config.yaml --output json`
+13. For each generated HTML screenshot, read `layout_path` from the JSON result and inspect the sidecar before deciding the layout is acceptable
+14. **Post-render QA** (mandatory — do not skip):
     - Review each generated slide visually
+    - Open each `*.layout.json` sidecar referenced by `layout_path`
     - Check against the rejection checklist in `design-guide.md`
+    - Check that the rendered set still reflects the app style you discovered instead of generic App Store defaults
+    - Use layout JSON only for objective geometry: positions, occupied space, proportions, and mathematical overlaps
+    - If `elements` is empty for an HTML slide that should be measured, treat that as missing or broken annotation and fix the template
     - Verify: no emoji icons, no identical card grids, no decentered devices, no text below minimum scale, no unintentional device cropping (device top/notch must be visible on hero slides; screen content must be readable)
     - Apply the logo-swap test: would these slides work for a competitor?
     - If any slide fails, fix and regenerate before showing to the user
-12. Open output folder: `open <output_dir>`
-13. Ask if the user wants adjustments — iterate on specific slides without regenerating everything
+15. Open output folder: `open <output_dir>`
+16. Ask if the user wants adjustments — iterate on specific slides without regenerating everything
 
 ### Iteration Rules
 
 - When user asks to change a specific slide, only modify that template + config entry
 - When user asks for a global style change (colors, fonts, mood, density, boldness), update all templates
-- Re-run `kou generate config.yaml --verbose` after changes
+- Re-run `kou generate config.yaml --output json` after changes so the new `layout_path` values and sidecars stay in sync
 - Use `kou live config.yaml` if user wants real-time preview while editing
 - If a slide feels small, first increase scale or switch layout. Do not hide the problem with extra gradients or labels
 - If copy forces tiny text, rewrite the copy or choose a more suitable layout; never accept a timid slide because "the text had to fit"
 - Keep variety high: the goal is campaign consistency, not layout repetition
 - Do not stop after the first successful render if the output still violates the design rules or rejection checklist
 - If the user asks for a mood change, reinterpret the whole set inside the quality limits instead of defending the previous defaults
+- If screenshot and layout JSON disagree, trust the rendered screenshot for taste and investigate the annotation or render timing instead of forcing a layout decision from stale geometry
 
 ## Hard Rules
 
@@ -173,6 +268,8 @@ Read `design-guide.md` before generating templates. Read `yaml-reference.md` bef
 - Do not present the first technically successful render as final — always review against the rejection checklist in design-guide.md
 - Do not let the rules flatten the creative direction. A strange but strong composition is valid if it stays readable and high-impact
 - Defaults can be broken when the final result is stronger, clearer, and more specific to the app
+- Do not start from the generic fallback of dark gradient + centered phone + big white headline unless the app genuinely supports that language or the user explicitly wants it
+- You should be able to explain to yourself why the campaign looks like this app and not a competitor with the same feature list
 
 ## Key Technical Details
 
@@ -188,6 +285,37 @@ To disable frame for a specific screenshot: set `frame: false` in its YAML defin
 
 - `variables:` in YAML → `{{key}}` in HTML → localizable text (extracted to xcstrings)
 - `assets:` in YAML → `{{key}}` in HTML → image file paths (pre-rendered with device frame)
+
+### Layout JSON for HTML screenshots
+
+For HTML screenshots, Koubou can emit a compact sidecar JSON with measured layout geometry.
+
+- Use `data-kou-id` on any element that should be measurable
+- Use `data-kou-role` only when the role helps the model interpret the element
+- Keep annotations minimal and structural, not exhaustive
+- Good defaults: annotate the main headline, supporting copy, and primary device or hero image
+
+Example:
+
+```html
+<h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
+<p data-kou-id="subtitle" data-kou-role="supporting">{{subtitle}}</p>
+<img data-kou-id="device" data-kou-role="device" src="{{app_screenshot}}" alt="">
+```
+
+Generation workflow:
+
+- Run `kou generate config.yaml --output json`
+- Read `layout_path` from the command output
+- Open the referenced `*.layout.json`
+
+Interpretation rules:
+
+- Geometry fields are normalized ratios from `0..1`
+- `elements` contains only annotated nodes
+- `overlaps` contains only mathematical box intersections
+- Use this file to understand layout facts, not to decide taste
+- Do not invent subjective rules such as "too small" from the JSON alone; combine the geometry with the actual screenshot review
 
 ### Output structure
 

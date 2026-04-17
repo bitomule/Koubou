@@ -52,6 +52,16 @@ screenshots:
       app_screenshot: "screenshots/home.png"
 ```
 
+Recommended HTML annotation for measured layouts:
+
+```html
+<h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
+<p data-kou-id="subtitle" data-kou-role="supporting">{{subtitle}}</p>
+<img data-kou-id="device" data-kou-role="device" src="{{app_screenshot}}" alt="">
+```
+
+When HTML elements are annotated this way, `kou generate config.yaml --output json` returns a `layout_path` for each generated screenshot, pointing to a compact `*.layout.json` sidecar with normalized geometry and overlaps.
+
 ### variables vs assets
 
 | Field | Template syntax | What it does | Localized? |

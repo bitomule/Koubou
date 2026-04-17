@@ -427,6 +427,74 @@ class TestCLI:
             }
         ]
 
+    def test_generate_json_includes_layout_path_for_html(self, monkeypatch):
+        """HTML JSON output should expose the sidecar layout path."""
+        template_path = self.temp_dir / "hero.html"
+        template_path.write_text("<html><body>{{headline}}</body></html>")
+
+        output_dir = self.temp_dir / "output"
+        config_data = {
+            "project": {
+                "name": "HTML CLI JSON Test",
+                "output_dir": str(output_dir),
+                "device": "iPhone 16 Pro - Black Titanium - Portrait",
+                "output_size": "iPhone6_9",
+            },
+            "screenshots": {
+                "hero": {
+                    "template": str(template_path),
+                    "variables": {"headline": "Hello"},
+                }
+            },
+        }
+        config_path = self.temp_dir / "html_json_config.yaml"
+        with open(config_path, "w") as f:
+            yaml.dump(config_data, f)
+
+        def fake_prepare_html_environment(*, setup_requested, verbose, output_console):
+            return None
+
+        class FakeGenerator:
+            def generate_project(self, project_config, config_dir):
+                return [
+                    output_dir
+                    / "iPhone_16_Pro_-_Black_Titanium_-_Portrait"
+                    / "hero.png"
+                ]
+
+        monkeypatch.setattr(
+            "koubou.cli._prepare_html_environment", fake_prepare_html_environment
+        )
+        monkeypatch.setattr("koubou.cli.ScreenshotGenerator", FakeGenerator)
+
+        result = self.runner.invoke(
+            app,
+            ["generate", str(config_path), "--output", "json"],
+        )
+
+        assert result.exit_code == 0
+        json_line = next(
+            line for line in reversed(result.stdout.splitlines()) if line.strip()
+        )
+        payload = json.loads(json_line)
+        assert payload == [
+            {
+                "name": "hero",
+                "path": str(
+                    output_dir
+                    / "iPhone_16_Pro_-_Black_Titanium_-_Portrait"
+                    / "hero.png"
+                ),
+                "layout_path": str(
+                    output_dir
+                    / "iPhone_16_Pro_-_Black_Titanium_-_Portrait"
+                    / "hero.layout.json"
+                ),
+                "success": True,
+                "error": None,
+            }
+        ]
+
     def test_generate_html_without_setup_shows_actionable_error(self, monkeypatch):
         """Test generate shows kou setup-html guidance when HTML is not ready."""
         template_path = self.temp_dir / "hero.html"

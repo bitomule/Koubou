@@ -26,6 +26,14 @@ def _symlink_or_copy(source: Path, destination: Path) -> None:
             shutil.copy2(source, destination)
 
 
+def _copy_item(source: Path, destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if source.is_dir():
+        shutil.copytree(source, destination)
+    else:
+        shutil.copy2(source, destination)
+
+
 def stage_html_workspace(
     *,
     template_path: Path,
@@ -51,7 +59,8 @@ def stage_html_workspace(
         target = destination_dir / item.name
         if target.exists() or target.is_symlink():
             _remove_existing(target)
-        _symlink_or_copy(item, target)
+        # Copy template siblings to avoid browser quirks with file:// symlinked CSS.
+        _copy_item(item, target)
 
     if assets:
         for rel_name, abs_path in assets.items():

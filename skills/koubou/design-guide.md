@@ -22,6 +22,54 @@ Plan slides as a story, not a feature list.
 - Pick the strongest screenshot for the hero, not just the first one available
 - If the source captures are weak, cropped badly, or inconsistent, ask for better captures before polishing CSS forever
 
+## Style Intake Before Narrative
+
+Before writing the narrative arc, inspect the app's real visual language. The screenshot campaign should feel like a stronger expression of the product, not a detached generic ad system.
+
+Read `style-intake.md` when gathering inputs. Do this before asking broad visual questions.
+
+### Signals to extract from the product
+
+| Signal | What to inspect | What it tells you |
+|---|---|---|
+| Dominant colors | App icon, color assets, theme tokens, screenshots | Brand palette, accent logic, warmth/coolness |
+| Contrast | Light/dark surfaces, text contrast, UI backgrounds | Whether the campaign should feel bright, moody, restrained, or vivid |
+| UI density | Screen layouts, card count, spacing, information load | Whether the campaign should simplify, condense, or preserve structure |
+| Corners and shadows | Cards, buttons, panels, materials | Whether the style feels soft, tactile, flat, glossy, or technical |
+| Iconography | SF Symbols, custom icons, illustrations, badges | How decorative or austere the campaign can be |
+| Copy tone | README, landing copy, UI text, onboarding | Whether headlines should feel calm, technical, warm, playful, or premium |
+| General feeling | Whole product impression | Calm, technical, warm, energetic, editorial, playful, etc. |
+
+### Translate product signals into screenshot direction
+
+| Product signal combination | Screenshot direction |
+|---|---|
+| Sober palette + austere type + dense UI | More editorial or utility-led campaign, less glossy, cleaner hierarchy |
+| Colorful UI + illustration + casual tone | More layered or playful campaign with richer depth and stronger accents |
+| Technical workflow UI + trust-sensitive product | Cleaner, structured, credibility-first campaign with restrained effects |
+| Warm palette + rounded cards + friendly voice | Softer, warmer, more tactile campaign with approachable copy |
+| Dark UI + neon/vivid accents | High-contrast campaign is valid, but avoid the generic dark-gradient fallback by varying composition and texture |
+| Neutral UI with weak branding | Let copy voice and strong UI crops carry identity instead of inventing unrelated decoration |
+
+### When not to copy the app literally
+
+- If the UI is too dense, simplify it for the campaign
+- If the UI is visually plain, amplify hierarchy and copy without inventing a foreign brand language
+- If the UI style hurts readability at thumbnail size, adapt it for App Store constraints while keeping brand truth
+
+### Style decision record
+
+Before touching layout, explicitly decide:
+
+- `brand signals detected`
+- `chosen campaign style`
+- `copy voice`
+- `background system`
+- `device composition rhythm`
+- `variation plan across slides`
+
+If any item is unsupported by app evidence or user direction, gather more information first.
+
 ## Source Material
 
 - Prefer clean simulator captures over noisy marketing exports
@@ -101,6 +149,17 @@ After generating, ask: "Could I replace this app's name with a competitor's and 
 | `clamp()` that can produce tiny text | Use `vw` or a safer `clamp()`, then verify the computed size on the target canvas |
 | Generic gradient (#667eea → #764ba2) | Derive from actual brand colors |
 | Buzzword headline | Concrete outcome in simple words |
+
+### Generic fallback warning
+
+The default AI failure mode is:
+
+- dark gradient
+- centered phone
+- large white headline
+- one mild tilt on a later slide
+
+Do not use this as a starting point unless the app really supports that language or the user explicitly asks for it. A valid set should feel grounded in the app's own palette, tone, and UI character.
 
 ## Device-Aware Typography
 
@@ -333,6 +392,19 @@ NEVER repeat the same layout in consecutive slides. Alternate between:
   - contrast slide vs device slide rhythm
 - Consistency should come from palette, typography family, and narrative arc, not from cloning the same composition
 - When the user asks for a specific direction, adapt the whole set to that mood without collapsing all slides into one repeated solution
+
+### Sameness check
+
+Reject the set if consecutive slides repeat too many of the same ingredients:
+
+- same background logic
+- same text block geometry
+- same device posture
+- same crop aggressiveness
+- same card/list motif
+- same emotional tone
+
+Campaign consistency should come from brand signals and narrative, not from reusing the same template shape.
 
 ## Closing Slide Rules
 

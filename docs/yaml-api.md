@@ -198,6 +198,84 @@ screenshots:
         position: ["50%", "15%"]
 ```
 
+### HTML Template Layout JSON
+
+HTML screenshots can emit a compact sidecar layout manifest for LLM-friendly inspection. Add `data-kou-id` to any template element you want included in `<screenshot_id>.layout.json`, and optionally add `data-kou-role` for lightweight context.
+
+```html
+<h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
+<p data-kou-id="subtitle" data-kou-role="subheadline">{{subtitle}}</p>
+<img data-kou-id="device" data-kou-role="device" src="{{screen}}" alt="">
+```
+
+Generation flow:
+
+1. Annotate only the HTML elements you want measured
+2. Run `kou generate config.yaml --output json`
+3. Read `layout_path` from the command result
+4. Open the referenced `<screenshot_id>.layout.json`
+
+The generated JSON stores only normalized geometry and mathematical overlaps:
+
+```json
+{
+  "version": 1,
+  "elements": [
+    {
+      "id": "headline",
+      "role": "headline",
+      "x": 0.08,
+      "y": 0.07,
+      "width": 0.62,
+      "height": 0.18
+    }
+  ],
+  "overlaps": []
+}
+```
+
+Contract:
+
+- Root keys:
+  - `version`
+  - `elements`
+  - `overlaps`
+- `elements[]` keys:
+  - `id`
+  - `x`
+  - `y`
+  - `width`
+  - `height`
+  - optional `role`
+  - optional `text`
+  - optional `src`
+  - optional `zIndex`
+- `overlaps[]` keys:
+  - `first`
+  - `second`
+  - `x`
+  - `y`
+  - `width`
+  - `height`
+
+Rules:
+
+- All geometry values are ratios from `0..1` relative to the final output canvas
+- No pixel geometry is stored in the sidecar
+- Only annotated elements appear in `elements`
+- `overlaps` includes only mathematical box intersections between exported elements
+- Koubou does not classify whether a layout is good or bad; it only measures
+
+If no elements are annotated, Koubou still writes the sidecar in this form:
+
+```json
+{
+  "version": 1,
+  "elements": [],
+  "overlaps": []
+}
+```
+
 ---
 
 ## Content Items

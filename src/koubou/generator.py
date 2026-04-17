@@ -407,6 +407,10 @@ class ScreenshotGenerator:
             cleanup_paths=cleanup_paths,
         )
 
+    def _resolve_layout_output_path(self, output_path: Path) -> Path:
+        """Resolve the sidecar layout JSON path for an HTML screenshot."""
+        return output_path.with_suffix(".layout.json")
+
     def _generate_html_screenshot(
         self,
         screenshot_def: Any,
@@ -438,14 +442,17 @@ class ScreenshotGenerator:
                     destination_dir=workspace_dir,
                     assets=prepared.assets,
                 )
-                png_bytes = self.html_renderer.render_staged(workspace_dir, output_size)
+                render_result = self.html_renderer.render_staged_with_layout(
+                    workspace_dir, output_size
+                )
         finally:
             prepared.cleanup()
 
         output_path = self._resolve_output_path(output_dir, screenshot_id, config_dir)
+        layout_path = self._resolve_layout_output_path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        img = Image.open(io.BytesIO(png_bytes))
+        img = Image.open(io.BytesIO(render_result.png_bytes))
         rgb_img = Image.new("RGB", img.size, (255, 255, 255))
         rgb_img.paste(img, mask=img if img.mode == "RGBA" else None)
 
@@ -453,6 +460,11 @@ class ScreenshotGenerator:
             rgb_img.save(output_path, "JPEG", quality=95)
         else:
             rgb_img.save(output_path, "PNG")
+
+        layout_path.write_text(
+            json.dumps(render_result.layout, separators=(",", ":")),
+            encoding="utf-8",
+        )
 
         logger.info(f"Generated HTML screenshot: {output_path}")
         return output_path
