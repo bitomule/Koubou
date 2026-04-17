@@ -870,7 +870,7 @@ def install_skills(
     cmd = ["npx"]
     if yes:
         cmd.append("--yes")
-    cmd.extend(["skills", "add", "bitomule/Koubou"])
+    cmd.extend(["skills", "add", "bitomule/Koubou", "--global"])
     if yes:
         cmd.extend(["--yes"])
     if agent:

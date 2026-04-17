@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.2] - 2026-04-17
+
+### Fixed
+- `kou install-skills` now installs to global agent directories (`~/.claude/skills/`, `~/.cursor/rules/`, etc.) instead of the current project directory.
+
 ## [0.19.1] - 2026-04-17
 
 ### Added
@@ -515,7 +520,8 @@ For multiple devices, create separate YAML files (e.g., `iphone-6-9.yaml`, `ipad
 - PyPI distribution
 - GitHub Actions CI/CD pipeline
 
-[Unreleased]: https://github.com/bitomule/koubou/compare/v0.19.1...HEAD
+[Unreleased]: https://github.com/bitomule/koubou/compare/v0.19.2...HEAD
+[0.19.2]: https://github.com/bitomule/koubou/compare/v0.19.1...v0.19.2
 [0.19.1]: https://github.com/bitomule/koubou/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/bitomule/koubou/compare/v0.18.3...v0.19.0
 [0.18.3]: https://github.com/bitomule/koubou/compare/v0.18.2...v0.18.3
