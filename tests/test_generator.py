@@ -589,7 +589,9 @@ class TestScreenshotGenerator:
             image_alignment = "left"
             image_rotation = 0
 
-        result = self.generator._position_source_image(source_image, canvas, TempConfig())
+        result = self.generator._position_source_image(
+            source_image, canvas, TempConfig()
+        )
 
         assert result.getbbox() == (120, 0, 320, 300)
 
