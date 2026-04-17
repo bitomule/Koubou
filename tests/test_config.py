@@ -185,7 +185,9 @@ class TestContentItemAlignment:
             assert item.alignment == alignment
 
     def test_alignment_rejects_invalid_value(self):
-        with pytest.raises(ValidationError, match="Input should be 'left', 'center' or 'right'"):
+        with pytest.raises(
+            ValidationError, match="Input should be 'left', 'center' or 'right'"
+        ):
             ContentItem(
                 type="image",
                 asset="image.png",
