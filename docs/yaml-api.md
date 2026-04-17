@@ -208,6 +208,13 @@ HTML screenshots can emit a compact sidecar layout manifest for LLM-friendly ins
 <img data-kou-id="device" data-kou-role="device" src="{{screen}}" alt="">
 ```
 
+Generation flow:
+
+1. Annotate only the HTML elements you want measured
+2. Run `kou generate config.yaml --output json`
+3. Read `layout_path` from the command result
+4. Open the referenced `<screenshot_id>.layout.json`
+
 The generated JSON stores only normalized geometry and mathematical overlaps:
 
 ```json
@@ -223,6 +230,48 @@ The generated JSON stores only normalized geometry and mathematical overlaps:
       "height": 0.18
     }
   ],
+  "overlaps": []
+}
+```
+
+Contract:
+
+- Root keys:
+  - `version`
+  - `elements`
+  - `overlaps`
+- `elements[]` keys:
+  - `id`
+  - `x`
+  - `y`
+  - `width`
+  - `height`
+  - optional `role`
+  - optional `text`
+  - optional `src`
+  - optional `zIndex`
+- `overlaps[]` keys:
+  - `first`
+  - `second`
+  - `x`
+  - `y`
+  - `width`
+  - `height`
+
+Rules:
+
+- All geometry values are ratios from `0..1` relative to the final output canvas
+- No pixel geometry is stored in the sidecar
+- Only annotated elements appear in `elements`
+- `overlaps` includes only mathematical box intersections between exported elements
+- Koubou does not classify whether a layout is good or bad; it only measures
+
+If no elements are annotated, Koubou still writes the sidecar in this form:
+
+```json
+{
+  "version": 1,
+  "elements": [],
   "overlaps": []
 }
 ```

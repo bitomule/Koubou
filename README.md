@@ -138,7 +138,40 @@ Koubou can export a compact sidecar layout manifest for every HTML screenshot. A
 - `data-kou-id` is required for an element to appear in the manifest
 - `data-kou-role` is optional contextual metadata
 - Koubou writes `<screenshot_id>.layout.json` next to the PNG
+- `kou generate config.yaml --output json` also returns `layout_path` for each generated HTML screenshot
 - The JSON contains only normalized `x`, `y`, `width`, `height` plus optional `role`, `text`, `src`, `zIndex`, and mathematical `overlaps`
+- All geometry values are ratios from `0..1` relative to the final canvas
+- If a template has no `data-kou-id` annotations, the sidecar is still written with empty `elements` and `overlaps`
+
+Example:
+
+```json
+{
+  "version": 1,
+  "elements": [
+    {
+      "id": "headline",
+      "role": "headline",
+      "x": 0.08,
+      "y": 0.07,
+      "width": 0.62,
+      "height": 0.18
+    },
+    {
+      "id": "device",
+      "role": "device",
+      "src": "home.png",
+      "x": 0.19,
+      "y": 0.31,
+      "width": 0.61,
+      "height": 0.58
+    }
+  ],
+  "overlaps": []
+}
+```
+
+Use this file for objective layout facts only: element positions, occupied space, and real overlaps. Koubou does not interpret whether something is too small, too large, or aesthetically correct.
 
 ## 🔄 Live Editing
 
@@ -398,6 +431,8 @@ kou generate config.yaml --setup-html
 # Enable verbose logging
 kou generate config.yaml --verbose
 ```
+
+For HTML screenshots, `--output json` includes `layout_path` alongside the PNG path so tooling can open the measured layout sidecar directly.
 
 #### HTML Setup
 ```bash
