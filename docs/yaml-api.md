@@ -198,6 +198,35 @@ screenshots:
         position: ["50%", "15%"]
 ```
 
+### HTML Template Layout JSON
+
+HTML screenshots can emit a compact sidecar layout manifest for LLM-friendly inspection. Add `data-kou-id` to any template element you want included in `<screenshot_id>.layout.json`, and optionally add `data-kou-role` for lightweight context.
+
+```html
+<h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
+<p data-kou-id="subtitle" data-kou-role="subheadline">{{subtitle}}</p>
+<img data-kou-id="device" data-kou-role="device" src="{{screen}}" alt="">
+```
+
+The generated JSON stores only normalized geometry and mathematical overlaps:
+
+```json
+{
+  "version": 1,
+  "elements": [
+    {
+      "id": "headline",
+      "role": "headline",
+      "x": 0.08,
+      "y": 0.07,
+      "width": 0.62,
+      "height": 0.18
+    }
+  ],
+  "overlaps": []
+}
+```
+
 ---
 
 ## Content Items

@@ -360,8 +360,6 @@ body {
 }
 .page {
   position: relative;
-  width: 100%;
-  height: 100%;
   color: white;
 }
 .hero-page {
@@ -445,10 +443,10 @@ body {
 </head>
 <body class="page hero-page">
   <div class="copy">
-    <h1>{{headline}}</h1>
-    <p>{{subtitle}}</p>
+    <h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
+    <p data-kou-id="subtitle" data-kou-role="subheadline">{{subtitle}}</p>
   </div>
-  <img class="device" src="{{screen}}" alt="">
+  <img class="device" data-kou-id="device" data-kou-role="device" src="{{screen}}" alt="">
 </body>
 </html>
 """,
@@ -460,10 +458,10 @@ body {
 </head>
 <body class="page feature-page feature-layout">
   <div class="copy">
-    <h1>{{headline}}</h1>
-    <p>{{subtitle}}</p>
+    <h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
+    <p data-kou-id="subtitle" data-kou-role="subheadline">{{subtitle}}</p>
   </div>
-  <img class="device" src="{{screen}}" alt="">
+  <img class="device" data-kou-id="device" data-kou-role="device" src="{{screen}}" alt="">
 </body>
 </html>
 """,
@@ -475,8 +473,8 @@ body {
 </head>
 <body class="page closing-page">
   <div class="closing-stack">
-    <h1>{{headline}}</h1>
-    <p>{{subtitle}}</p>
+    <h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
+    <p data-kou-id="subtitle" data-kou-role="subheadline">{{subtitle}}</p>
   </div>
 </body>
 </html>
@@ -498,7 +496,12 @@ def _show_results(results, output_dir: str) -> None:
     table.add_column("Status", style="green")
     table.add_column("Output Path", style="blue")
 
-    for name, path, success, error in results:
+    for entry in results:
+        if len(entry) == 5:
+            name, path, _layout_path, success, error = entry
+        else:
+            name, path, success, error = entry
+
         if success:
             status = "Success"
             output_path = str(path) if path else ""
@@ -519,6 +522,10 @@ def _project_uses_html_templates(project_config: ProjectConfig) -> bool:
         screenshot_def.template
         for screenshot_def in project_config.screenshots.values()
     )
+
+
+def _layout_output_path(output_path: Path) -> Path:
+    return output_path.with_suffix(".layout.json")
 
 
 def _prepare_html_environment(
@@ -739,9 +746,19 @@ def generate(
                 project_config.screenshots.items()
             ):
                 if i < len(result_paths):
-                    results.append((screenshot_id, result_paths[i], True, None))
+                    result_path = result_paths[i]
+                    layout_path = (
+                        _layout_output_path(result_path)
+                        if screenshot_def.template
+                        else None
+                    )
+                    results.append(
+                        (screenshot_id, result_path, layout_path, True, None)
+                    )
                 else:
-                    results.append((screenshot_id, None, False, "Generation failed"))
+                    results.append(
+                        (screenshot_id, None, None, False, "Generation failed")
+                    )
         except Exception as _e:
             stderr_console.print(f"Project generation failed: {_e}", style="red")
             raise typer.Exit(1)
@@ -751,16 +768,17 @@ def generate(
                 {
                     "name": name,
                     "path": str(path) if path else None,
+                    "layout_path": str(layout_path) if layout_path else None,
                     "success": success,
                     "error": error,
                 }
-                for name, path, success, error in results
+                for name, path, layout_path, success, error in results
             ]
             print(json.dumps(json_results))
         else:
             _show_results(results, project_config.project.output_dir)
 
-        failed_count = sum(1 for _, _, success, _ in results if not success)
+        failed_count = sum(1 for *_, success, _ in results if not success)
         if failed_count > 0:
             stderr_console.print(
                 f"\n{failed_count} screenshot(s) failed to generate",

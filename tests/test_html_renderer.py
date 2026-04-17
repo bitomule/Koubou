@@ -2,6 +2,7 @@
 
 import importlib
 import io
+import json
 import shutil
 import tempfile
 from pathlib import Path
@@ -87,6 +88,103 @@ class TestScreenshotDefinitionValidation:
         )
         assert defn.content is not None
         assert defn.template is None
+
+
+class TestLayoutManifestHelpers:
+    """Unit tests for compact layout JSON helpers."""
+
+    def test_build_layout_manifest_with_overlap(self):
+        from koubou.renderers.html_renderer import _build_layout_manifest
+
+        manifest = _build_layout_manifest(
+            [
+                {
+                    "id": "headline",
+                    "role": "headline",
+                    "text": "Track every expense",
+                    "left": 40,
+                    "top": 80,
+                    "right": 360,
+                    "bottom": 240,
+                },
+                {
+                    "id": "phone",
+                    "role": "device",
+                    "src": "app_screenshot.png",
+                    "left": 200,
+                    "top": 180,
+                    "right": 520,
+                    "bottom": 700,
+                    "zIndex": 2,
+                },
+            ],
+            (800, 1000),
+        )
+
+        assert manifest == {
+            "version": 1,
+            "elements": [
+                {
+                    "id": "headline",
+                    "role": "headline",
+                    "text": "Track every expense",
+                    "x": 0.05,
+                    "y": 0.08,
+                    "width": 0.4,
+                    "height": 0.16,
+                },
+                {
+                    "id": "phone",
+                    "role": "device",
+                    "src": "app_screenshot.png",
+                    "x": 0.25,
+                    "y": 0.18,
+                    "width": 0.4,
+                    "height": 0.52,
+                    "zIndex": 2,
+                },
+            ],
+            "overlaps": [
+                {
+                    "first": "headline",
+                    "second": "phone",
+                    "x": 0.25,
+                    "y": 0.18,
+                    "width": 0.2,
+                    "height": 0.06,
+                }
+            ],
+        }
+
+    def test_build_layout_manifest_clips_to_canvas(self):
+        from koubou.renderers.html_renderer import _build_layout_manifest
+
+        manifest = _build_layout_manifest(
+            [
+                {
+                    "id": "offscreen",
+                    "left": -40,
+                    "top": -20,
+                    "right": 120,
+                    "bottom": 80,
+                }
+            ],
+            (200, 100),
+        )
+
+        assert manifest == {
+            "version": 1,
+            "elements": [
+                {
+                    "id": "offscreen",
+                    "x": 0.0,
+                    "y": 0.0,
+                    "width": 0.6,
+                    "height": 0.8,
+                }
+            ],
+            "overlaps": [],
+        }
 
 
 @requires_playwright
@@ -199,7 +297,8 @@ class TestHtmlRenderer:
             """<!DOCTYPE html>
 <html>
 <body style="margin:0; background:#1a1a2e; width:100vw; height:100vh;">
-  <h1 style="color:white; text-align:center; padding-top:40%;">
+  <h1 data-kou-id="headline" data-kou-role="headline"
+      style="color:white; text-align:center; padding-top:40%;">
     {{headline}}
   </h1>
 </body>
@@ -228,9 +327,39 @@ class TestHtmlRenderer:
 
         assert len(results) == 1
         assert results[0].exists()
+        assert results[0].with_suffix(".layout.json").exists()
 
         img = Image.open(results[0])
         assert img.size == (1320, 2868)
+
+        layout = json.loads(results[0].with_suffix(".layout.json").read_text())
+        assert layout["version"] == 1
+        assert len(layout["elements"]) == 1
+        assert layout["elements"][0]["id"] == "headline"
+        assert layout["elements"][0]["role"] == "headline"
+        assert layout["overlaps"] == []
+
+    def test_render_staged_with_layout_returns_empty_manifest_without_annotations(
+        self, temp_dir, renderer
+    ):
+        template = temp_dir / "plain.html"
+        template.write_text(
+            """<!DOCTYPE html>
+<html>
+<body style="margin:0; width:100vw; height:100vh; background:#fff;">
+  <p>Hello</p>
+</body>
+</html>"""
+        )
+
+        result = renderer.render_with_layout(
+            template_path=template,
+            variables={},
+            size=(400, 800),
+        )
+
+        assert len(result.png_bytes) > 0
+        assert result.layout == {"version": 1, "elements": [], "overlaps": []}
 
 
 class TestDependencyAnalyzerHtml:

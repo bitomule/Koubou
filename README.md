@@ -123,6 +123,23 @@ screenshots:
 - `kou live config.yaml --setup-html` does the same before starting live mode
 - `kou inspect-frame "<device>" --output-size <size> --output json` exposes frame and screen geometry for layout decisions
 
+### Compact Layout JSON
+
+Koubou can export a compact sidecar layout manifest for every HTML screenshot. Annotate only the elements you want to expose to the LLM:
+
+```html
+<div class="copy">
+  <h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
+  <p data-kou-id="subtitle" data-kou-role="subheadline">{{subtitle}}</p>
+</div>
+<img class="device" data-kou-id="device" data-kou-role="device" src="{{screen}}" alt="">
+```
+
+- `data-kou-id` is required for an element to appear in the manifest
+- `data-kou-role` is optional contextual metadata
+- Koubou writes `<screenshot_id>.layout.json` next to the PNG
+- The JSON contains only normalized `x`, `y`, `width`, `height` plus optional `role`, `text`, `src`, `zIndex`, and mathematical `overlaps`
+
 ## 🔄 Live Editing
 
 Real-time screenshot regeneration when your YAML configuration or assets change.
