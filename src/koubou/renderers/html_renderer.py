@@ -1,9 +1,9 @@
 """HTML template renderer using Playwright headless browser."""
 
-from dataclasses import dataclass
 import logging
 import shutil
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -260,7 +260,8 @@ class HtmlRenderer:
                         try {
                             await document.fonts.ready;
                         } catch (error) {
-                            // Ignore font readiness errors and fall back to current layout.
+                            // Ignore font readiness errors and fall back
+                            // to the current layout.
                         }
                     }
 
@@ -269,8 +270,16 @@ class HtmlRenderer:
                         images.map(async (image) => {
                             if (!image.complete) {
                                 await new Promise((resolve, reject) => {
-                                    image.addEventListener("load", resolve, { once: true });
-                                    image.addEventListener("error", reject, { once: true });
+                                    image.addEventListener(
+                                        "load",
+                                        resolve,
+                                        { once: true }
+                                    );
+                                    image.addEventListener(
+                                        "error",
+                                        reject,
+                                        { once: true }
+                                    );
                                 }).catch(() => undefined);
                             }
 
@@ -278,13 +287,16 @@ class HtmlRenderer:
                                 try {
                                     await image.decode();
                                 } catch (error) {
-                                    // Ignore decode failures and use the current layout.
+                                    // Ignore decode failures and use the
+                                    // current layout.
                                 }
                             }
                         })
                     );
 
-                    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+                    await new Promise((resolve) =>
+                        requestAnimationFrame(() => resolve())
+                    );
 
                     return Array.from(document.querySelectorAll("[data-kou-id]"))
                         .map((node) => {
@@ -303,7 +315,9 @@ class HtmlRenderer:
                                 element.role = role;
                             }
 
-                            const text = (node.innerText || "").replace(/\\s+/g, " ").trim();
+                            const text = (node.innerText || "")
+                                .replace(/\\s+/g, " ")
+                                .trim();
                             if (text) {
                                 element.text = text;
                             }

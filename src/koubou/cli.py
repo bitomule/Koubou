@@ -446,7 +446,13 @@ body {
     <h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
     <p data-kou-id="subtitle" data-kou-role="subheadline">{{subtitle}}</p>
   </div>
-  <img class="device" data-kou-id="device" data-kou-role="device" src="{{screen}}" alt="">
+  <img
+    class="device"
+    data-kou-id="device"
+    data-kou-role="device"
+    src="{{screen}}"
+    alt=""
+  >
 </body>
 </html>
 """,
@@ -461,7 +467,13 @@ body {
     <h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
     <p data-kou-id="subtitle" data-kou-role="subheadline">{{subtitle}}</p>
   </div>
-  <img class="device" data-kou-id="device" data-kou-role="device" src="{{screen}}" alt="">
+  <img
+    class="device"
+    data-kou-id="device"
+    data-kou-role="device"
+    src="{{screen}}"
+    alt=""
+  >
 </body>
 </html>
 """,

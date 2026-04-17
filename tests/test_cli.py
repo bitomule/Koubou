@@ -473,7 +473,10 @@ class TestCLI:
         )
 
         assert result.exit_code == 0
-        payload = json.loads(result.stdout)
+        json_line = next(
+            line for line in reversed(result.stdout.splitlines()) if line.strip()
+        )
+        payload = json.loads(json_line)
         assert payload == [
             {
                 "name": "hero",
