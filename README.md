@@ -99,6 +99,9 @@ kou inspect-frame "iPhone 16 Pro - Black Titanium - Portrait" --output-size iPho
 
 # Live editing mode - regenerate automatically when files change
 kou live my-screenshots.yaml
+
+# Install the Koubou skill pack for your AI coding agents
+kou install-skills
 ```
 
 `kou --create-config` also creates sample PNG assets in a sibling `screenshots/` directory, so the generated YAML can be rendered immediately. In `--mode html`, it also creates sample templates in `templates/` and the generated project is ready to run with `kou generate ... --setup-html`.
@@ -411,6 +414,7 @@ See the YAML API Reference below for all available options including gradients, 
 
 - `kou generate <config.yaml>` - Generate screenshots from configuration
 - `kou setup-html` - Prepare HTML rendering support for the current installation
+- `kou install-skills` - Install the Koubou skill pack for AI coding agents
 - `kou live <config.yaml>` - Live editing mode with real-time regeneration
 - `kou inspect-frame "<device>" --output-size <size>` - Inspect real frame and screen geometry for layout decisions
 - `kou list-sizes` - List available App Store screenshot sizes
@@ -441,6 +445,22 @@ kou setup-html
 
 # See setup diagnostics
 kou setup-html --verbose
+```
+
+#### Skill Installation
+
+Install the Koubou skill pack to all detected AI coding agents on your machine (Claude Code, Cursor, Windsurf, Codex, OpenCode, and 40+ others). Requires Node.js.
+
+```bash
+# Interactive — prompts for agent and skill selection
+kou install-skills
+
+# Non-interactive — installs to all detected agents without prompts
+kou install-skills --yes
+
+# Target a specific agent
+kou install-skills --agent claude-code
+kou install-skills --agent cursor
 ```
 
 #### Frame Inspection

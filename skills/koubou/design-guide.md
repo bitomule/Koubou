@@ -498,6 +498,15 @@ Do not present screenshots as final until all of these are true:
 
 All templates use viewport-sized layouts. Koubou sets the viewport to the exact App Store dimensions (e.g., 1320x2868 for iPhone6_9).
 
+Every template body **must** annotate measurable elements so Koubou can emit a layout sidecar JSON:
+
+```html
+<!-- data-kou-id: unique identifier — required for JSON layout extraction -->
+<!-- data-kou-role: semantic hint — headline | supporting | device | feature-title | feature-sub -->
+```
+
+If `data-kou-id` is missing from an element, it will not appear in the sidecar and QA is blind to its geometry.
+
 ### Hero Template (text top, device bottom)
 
 ```html
@@ -559,11 +568,11 @@ All templates use viewport-sized layouts. Koubou sets the viewport to the exact 
 </head>
 <body>
   <div class="text-area">
-    <h1>{{headline}}</h1>
-    <p>{{subtitle}}</p>
+    <h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
+    <p data-kou-id="subtitle" data-kou-role="supporting">{{subtitle}}</p>
   </div>
   <div class="device-area">
-    <img src="{{app_screenshot}}">
+    <img data-kou-id="device" data-kou-role="device" src="{{app_screenshot}}" alt="">
   </div>
 </body>
 </html>
@@ -625,11 +634,11 @@ All templates use viewport-sized layouts. Koubou sets the viewport to the exact 
 </head>
 <body>
   <div class="device-area">
-    <img src="{{app_screenshot}}">
+    <img data-kou-id="device" data-kou-role="device" src="{{app_screenshot}}" alt="">
   </div>
   <div class="text-area">
-    <h1>{{headline}}</h1>
-    <p>{{subtitle}}</p>
+    <h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
+    <p data-kou-id="subtitle" data-kou-role="supporting">{{subtitle}}</p>
   </div>
 </body>
 </html>
@@ -692,11 +701,11 @@ All templates use viewport-sized layouts. Koubou sets the viewport to the exact 
 </head>
 <body>
   <div class="device-area">
-    <img src="{{app_screenshot}}">
+    <img data-kou-id="device" data-kou-role="device" src="{{app_screenshot}}" alt="">
   </div>
   <div class="text-area">
-    <h1>{{headline}}</h1>
-    <p>{{subtitle}}</p>
+    <h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
+    <p data-kou-id="subtitle" data-kou-role="supporting">{{subtitle}}</p>
   </div>
 </body>
 </html>
@@ -741,8 +750,8 @@ All templates use viewport-sized layouts. Koubou sets the viewport to the exact 
 </style>
 </head>
 <body>
-  <h1>{{headline}}</h1>
-  <p>{{subtitle}}</p>
+  <h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
+  <p data-kou-id="subtitle" data-kou-role="supporting">{{subtitle}}</p>
 </body>
 </html>
 ```
@@ -821,16 +830,16 @@ Uses CSS accent bars instead of emoji or icons. Clean, premium, scales well.
 </head>
 <body>
   <div class="content">
-    <h1>{{headline}}</h1>
+    <h1 data-kou-id="headline" data-kou-role="headline">{{headline}}</h1>
     <div class="features">
       <div class="feature">
         <div class="feature-accent"></div>
         <div>
-          <div class="feature-title">{{feature_1_title}}</div>
-          <div class="feature-sub">{{feature_1_sub}}</div>
+          <div data-kou-id="feature-1-title" data-kou-role="feature-title" class="feature-title">{{feature_1_title}}</div>
+          <div data-kou-id="feature-1-sub" data-kou-role="feature-sub" class="feature-sub">{{feature_1_sub}}</div>
         </div>
       </div>
-      <!-- Repeat for each feature -->
+      <!-- Repeat for each feature: use data-kou-id="feature-N-title" / "feature-N-sub" -->
     </div>
   </div>
 </body>

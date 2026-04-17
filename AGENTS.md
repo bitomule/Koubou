@@ -1,5 +1,15 @@
 # AGENTS.md
 
+## Agent Skill Setup
+
+Install the Koubou skill pack so your agent has built-in knowledge of how to generate screenshots:
+
+```bash
+kou install-skills --yes
+```
+
+This installs to all detected AI coding agents (Claude Code, Cursor, Windsurf, and others) automatically. Requires Node.js.
+
 ## What is Koubou?
 
 Koubou generates App Store screenshots from YAML configuration files. Input: YAML config + image assets. Output: pixel-perfect screenshots organized by `{language}/{device}/`.
