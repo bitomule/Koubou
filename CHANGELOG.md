@@ -5,6 +5,22 @@ All notable changes to Koubou will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2026-04-17
+
+### Added
+- HTML template screenshots now emit a compact `<screenshot_id>.layout.json` sidecar with normalized element geometry, optional metadata, and mathematical overlaps for annotated `data-kou-id` elements.
+- `kou generate --output json` now includes `layout_path` for HTML screenshots so agents and tooling can read the measured layout sidecar directly.
+- README, YAML API docs, and Koubou skill documentation now describe the layout JSON workflow, annotation strategy, and agent-facing usage.
+
+### Changed
+- **BREAKING**: Project content `alignment` now controls the true horizontal anchor for text and image items. Configs that relied on the previous inconsistent semantics may need their `position.x` values adjusted.
+- Project image alignment now uses consistent left/center/right semantics for both framed and unframed assets.
+- HTML layout measurement now waits for stylesheets, fonts, and images before extracting geometry, making sidecar output stable against load timing.
+- HTML staging now copies template sibling files into the workspace to avoid `file://` CSS quirks during rendering.
+
+### Testing
+- 420 tests passing locally
+
 ## [0.18.3] - 2026-04-16
 
 ### Fixed
