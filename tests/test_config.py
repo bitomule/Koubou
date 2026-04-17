@@ -171,6 +171,31 @@ class TestContentItemFontFamily:
         assert item.font_family is None
 
 
+class TestContentItemAlignment:
+    """Tests for ContentItem alignment validation."""
+
+    def test_alignment_accepts_supported_values(self):
+        for alignment in ["left", "center", "right"]:
+            item = ContentItem(
+                type="image",
+                asset="image.png",
+                position=("50%", "50%"),
+                alignment=alignment,
+            )
+            assert item.alignment == alignment
+
+    def test_alignment_rejects_invalid_value(self):
+        with pytest.raises(
+            ValidationError, match="Input should be 'left', 'center' or 'right'"
+        ):
+            ContentItem(
+                type="image",
+                asset="image.png",
+                position=("50%", "50%"),
+                alignment="centre",
+            )
+
+
 class TestContentItemHighlight:
     """Tests for ContentItem with type='highlight'."""
 

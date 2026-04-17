@@ -638,17 +638,17 @@ class ScreenshotGenerator:
         position = config.image_position or ["50%", "50%"]
         x_percent, y_percent = position
 
-        # Convert percentage strings to pixel positions (asset center positioning)
-        center_x = self._convert_percentage_to_pixels(x_percent, canvas_width)
+        # Resolve requested position, then apply horizontal alignment semantics
+        requested_x = self._convert_percentage_to_pixels(x_percent, canvas_width)
         center_y = self._convert_percentage_to_pixels(y_percent, canvas_height)
+        alignment = getattr(config, "image_alignment", "center") or "center"
 
-        # Calculate top-left position (center the asset at the % position)
-        x = center_x - scaled_width // 2
+        x = self._calculate_horizontal_position(requested_x, scaled_width, alignment)
         y = center_y - scaled_height // 2
 
         logger.info(
-            f"📐 Positioning asset: center at {position} → "
-            f"({center_x}, {center_y}), top-left at ({x}, {y})"
+            f"📐 Positioning asset: requested={position}, alignment={alignment} → "
+            f"top-left at ({x}, {y})"
         )
 
         # Create positioned image
@@ -669,6 +669,7 @@ class ScreenshotGenerator:
                 self.device_frame = base.device_frame
                 self.output_size = base.output_size
                 self.image_position = img["position"]
+                self.image_alignment = img.get("alignment", "center")
                 self.image_scale = img["scale"]
                 self.image_frame = img["frame"]
                 self.image_rotation = img.get("rotation", 0)
@@ -877,8 +878,9 @@ class ScreenshotGenerator:
 
             # Step 4: Calculate positioning
             position = config.image_position or ["50%", "50%"]
-            center_x = self._convert_percentage_to_pixels(position[0], canvas.width)
+            requested_x = self._convert_percentage_to_pixels(position[0], canvas.width)
             center_y = self._convert_percentage_to_pixels(position[1], canvas.height)
+            alignment = getattr(config, "image_alignment", "center") or "center"
 
             # Source position (centered within frame's screen area)
             scaled_screen_x = int(screen_x * asset_scale)
@@ -931,14 +933,16 @@ class ScreenshotGenerator:
                     f"to {asset_scale * canvas_fit_scale:.6f} to avoid clipping"
                 )
 
-            # Step 7: Place framed asset on canvas centered at requested position
+            # Step 7: Place framed asset on canvas using horizontal alignment
             framed_width, framed_height = framed_asset.size
-            frame_x = center_x - framed_width // 2
+            frame_x = self._calculate_horizontal_position(
+                requested_x, framed_width, alignment
+            )
             frame_y = center_y - framed_height // 2
 
             logger.info(
-                f"📱 Positioning framed asset: center at ({center_x}, {center_y}), "
-                f"top-left at ({frame_x}, {frame_y})"
+                f"📱 Positioning framed asset: requested={position}, "
+                f"alignment={alignment}, top-left at ({frame_x}, {frame_y})"
             )
 
             result = Image.new("RGBA", canvas.size, (255, 255, 255, 0))
@@ -1221,6 +1225,7 @@ class ScreenshotGenerator:
 
                 image_scale = item.scale or 1.0
                 image_position = item.position or ["50%", "50%"]  # Default to center
+                image_alignment = getattr(item, "alignment", "center") or "center"
 
                 # Store image configuration including frame and rotation settings
                 image_rotation = getattr(item, "rotation", 0) or 0
@@ -1228,6 +1233,7 @@ class ScreenshotGenerator:
                     "path": source_image_path,
                     "scale": image_scale,
                     "position": image_position,
+                    "alignment": image_alignment,
                     "frame": getattr(item, "frame", False),  # Capture frame setting
                     "rotation": image_rotation,  # Capture rotation setting
                 }
@@ -1235,6 +1241,7 @@ class ScreenshotGenerator:
                 logger.info(
                     f"📏 Image: scale={image_scale * 100:.0f}%, "
                     f"position={image_position}, "
+                    f"alignment={image_alignment}, "
                     f"frame={getattr(item, 'frame', False)}, rotation={image_rotation}°"
                 )
                 # Continue processing more images instead of breaking
@@ -1348,6 +1355,7 @@ class ScreenshotGenerator:
             if item.type == "text":
                 # Convert to TextOverlay
                 if item.content:
+                    alignment = getattr(item, "alignment", "center") or "center"
                     position = self._convert_position(
                         item.position, (canvas_width, canvas_height)
                     )
@@ -1360,9 +1368,8 @@ class ScreenshotGenerator:
                         color=item.color,  # Don't default to black if gradient
                         # is provided
                         gradient=item.gradient,  # Pass gradient configuration
-                        alignment=getattr(item, "alignment", "center") or "center",
-                        anchor="center",  # Use center anchor for
-                        # percentage-based positioning
+                        alignment=alignment,
+                        anchor=self._text_anchor_from_alignment(alignment),
                         max_width=item.max_width,
                         max_lines=item.max_lines,
                         min_font_size=item.min_size,
@@ -1436,6 +1443,31 @@ class ScreenshotGenerator:
         config._zoom_configs = zoom_configs  # type: ignore[attr-defined]
 
         return config
+
+    @staticmethod
+    def _text_anchor_from_alignment(alignment: str) -> str:
+        """Map project text alignment to the corresponding horizontal anchor.
+
+        Project YAML exposes only left/center/right alignment. We keep the
+        existing vertical centering behavior, but make the x-position reference
+        match the chosen alignment so pixel offsets remain stable.
+        """
+        if alignment == "left":
+            return "center-left"
+        if alignment == "right":
+            return "center-right"
+        return "center"
+
+    @staticmethod
+    def _calculate_horizontal_position(
+        requested_x: int, content_width: int, alignment: str
+    ) -> int:
+        """Resolve top-left x from the requested x and horizontal alignment."""
+        if alignment == "left":
+            return requested_x
+        if alignment == "right":
+            return requested_x - content_width
+        return requested_x - content_width // 2
 
     def _convert_position(
         self, position: list[str], canvas_size: tuple[int, int]

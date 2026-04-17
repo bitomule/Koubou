@@ -226,6 +226,8 @@ Content items define the visual elements within each screenshot.
   weight: string?            # "normal" or "bold" (default: "normal")
   font_family: string?       # Font family name (default: "Arial")
   alignment: string?         # "left", "center", "right" (default: "center")
+                             # Also defines how position.x is interpreted:
+                             # left=edge, center=midpoint, right=edge
 
   # Stroke Options (optional):
   stroke_width: int?         # Stroke width in pixels
@@ -286,6 +288,9 @@ When `min_size`, `max_width`, and `max_height` are all set, Koubou automatically
 - type: "image"
   asset: string              # Path to image file (required)
   position: [string, string] # Position as ["50%", "60%"] or ["200px", "300px"] (required)
+  alignment: string?         # "left", "center", "right" (default: "center")
+                             # Defines how position.x is interpreted:
+                             # left=edge, center=midpoint, right=edge
   scale: float?              # Scale factor (default: 1.0)
   frame: bool?               # Apply device frame around image (default: false)
 ```
