@@ -843,6 +843,51 @@ def setup_html(
 
 
 @app.command()
+def install_skills(
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompts"),
+    agent: Optional[str] = typer.Option(
+        None,
+        "--agent",
+        "-a",
+        help="Target a specific agent (e.g. claude-code, cursor). Installs to all detected agents by default.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
+):
+    """Install the Koubou skill pack for AI coding agents (Claude Code, Cursor, Windsurf, and more)."""
+
+    setup_logging(verbose)
+
+    import shutil
+    import subprocess
+
+    if not shutil.which("npx"):
+        console.print(
+            "npx not found. Install Node.js to use install-skills.",
+            style="red",
+        )
+        raise typer.Exit(1)
+
+    cmd = ["npx"]
+    if yes:
+        cmd.append("--yes")
+    cmd.extend(["skills", "add", "bitomule/Koubou"])
+    if yes:
+        cmd.extend(["--yes"])
+    if agent:
+        cmd.extend(["--agent", agent])
+
+    try:
+        result = subprocess.run(cmd, check=False)
+        if result.returncode != 0:
+            raise typer.Exit(result.returncode)
+    except Exception as e:
+        console.print(f"{e}", style="red")
+        if verbose:
+            console.print_exception()
+        raise typer.Exit(1)
+
+
+@app.command()
 def setup_frames(
     force: bool = typer.Option(
         False, "--force", help="Re-download frames even if already cached"

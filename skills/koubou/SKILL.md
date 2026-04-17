@@ -204,7 +204,13 @@ Read `design-guide.md` before generating templates. Read `yaml-reference.md` bef
    - what motifs are banned
    - how much variation the first 5 slides should show
 7. Create `templates/` with HTML templates — **minimum 3 distinct layouts**, and the first 3 slides must not repeat the same composition archetype
-8. In HTML templates, annotate measurable layout elements with `data-kou-id`; add `data-kou-role` when it clarifies intent. Minimum annotations for most slides: headline, subtitle/supporting text, and main device image
+8. In every HTML template, add `data-kou-id` and `data-kou-role` to these elements **before writing any CSS**:
+   - Main headline: `data-kou-id="headline" data-kou-role="headline"`
+   - Supporting copy: `data-kou-id="subtitle" data-kou-role="supporting"`
+   - Primary device image: `data-kou-id="device" data-kou-role="device"`
+   - Feature titles/subs (closing/feature slides): `data-kou-id="feature-N-title" data-kou-role="feature-title"`, `data-kou-id="feature-N-sub" data-kou-role="feature-sub"`
+
+   Without these, the layout sidecar `elements` array will be empty and post-render QA is blind. See `design-guide.md` template examples for correct annotation patterns.
 9. Create `config.yaml` with koubou config (read `yaml-reference.md` for format)
 10. Use CSS that adapts to the canvas and copy length: use `vw` or `clamp()` deliberately, prefer CSS Grid, overlap, and absolute-positioned layers, and verify the final computed text scale on the real canvas
 11. **Before writing HTML**: plan text/device zones for each slide (which area owns what percentage of the canvas). Do not start CSS until zones are clear
@@ -242,6 +248,7 @@ Read `design-guide.md` before generating templates. Read `yaml-reference.md` bef
 - **Never use emoji as icons** — use CSS shapes (accent bars, dots) or text-only
 - **Never use banned copy phrases** — "revolutionary", "seamless", "unlock", "game-changing", etc.
 - **Apply the logo-swap test** — if a competitor's name would fit, the set is too generic
+- **Every HTML template must have `data-kou-id` annotations** — at minimum: `headline`, `subtitle`, and `device`. If `elements` in the layout sidecar is empty after generation, annotations are missing — fix the template before QA passes. Do not present unannotated slides to the user.
 
 ### Scale
 - On tall iPhone portrait (`iPhone6_9`, `iPhone6_7`), hero headlines must be `>=10vw`, side-layout headlines `>=10vw`, subtitles `>=4.5vw`

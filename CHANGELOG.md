@@ -5,6 +5,15 @@ All notable changes to Koubou will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.19.1] - 2026-04-17
+
+### Added
+- `kou install-skills` command — installs the Koubou skill pack to all detected AI coding agents (Claude Code, Cursor, Windsurf, and 40+ others) via `npx skills`. Supports `--yes` for non-interactive installs and `--agent` to target a specific agent.
+- `data-kou-id` and `data-kou-role` annotations added to all HTML template examples in `design-guide.md` so agents copy the correct annotation pattern by default.
+- Annotation requirement elevated to a hard constraint in SKILL.md — templates with empty layout sidecars are now a QA blocker.
+
 ## [0.19.0] - 2026-04-17
 
 ### Added
@@ -506,7 +515,19 @@ For multiple devices, create separate YAML files (e.g., `iphone-6-9.yaml`, `ipad
 - PyPI distribution
 - GitHub Actions CI/CD pipeline
 
-[Unreleased]: https://github.com/bitomule/koubou/compare/v0.11.1...HEAD
+[Unreleased]: https://github.com/bitomule/koubou/compare/v0.19.1...HEAD
+[0.19.1]: https://github.com/bitomule/koubou/compare/v0.19.0...v0.19.1
+[0.19.0]: https://github.com/bitomule/koubou/compare/v0.18.3...v0.19.0
+[0.18.3]: https://github.com/bitomule/koubou/compare/v0.18.2...v0.18.3
+[0.18.2]: https://github.com/bitomule/koubou/compare/v0.18.1...v0.18.2
+[0.18.1]: https://github.com/bitomule/koubou/compare/v0.18.0...v0.18.1
+[0.18.0]: https://github.com/bitomule/koubou/compare/v0.17.1...v0.18.0
+[0.17.1]: https://github.com/bitomule/koubou/compare/v0.17.0...v0.17.1
+[0.17.0]: https://github.com/bitomule/koubou/compare/v0.16.0...v0.17.0
+[0.16.0]: https://github.com/bitomule/koubou/compare/v0.15.1...v0.16.0
+[0.15.1]: https://github.com/bitomule/koubou/compare/v0.15.0...v0.15.1
+[0.15.0]: https://github.com/bitomule/koubou/compare/v0.11.1...v0.15.0
+[0.11.1]: https://github.com/bitomule/koubou/compare/v0.11.0...v0.11.1
 [0.11.1]: https://github.com/bitomule/koubou/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/bitomule/koubou/compare/v0.10.3...v0.11.0
 [0.10.3]: https://github.com/bitomule/koubou/compare/v0.10.2...v0.10.3
