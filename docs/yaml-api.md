@@ -540,8 +540,8 @@ Professional background rendering with gradients and solid colors.
 
 ```yaml
 background:
-  type: "solid" | "linear" | "radial" | "conic"  # Background type (required)
-  colors: [string, ...]      # Array of hex colors (required)
+  type: "solid" | "linear" | "radial" | "conic" | "transparent"  # Required
+  colors: [string, ...]      # Array of hex colors (not used for transparent)
   
   # Linear gradient options:
   direction: float?          # Direction in degrees (default: 0)
@@ -557,6 +557,20 @@ background:
 background:
   type: "solid"
   colors: ["#667eea"]        # Single color required
+```
+
+#### Transparent Background
+```yaml
+background:
+  type: "transparent"        # Preserves alpha in PNG output
+```
+
+You can also use an 8-digit hex color with alpha:
+
+```yaml
+background:
+  type: "solid"
+  colors: ["#00000000"]
 ```
 
 #### Linear Gradient
@@ -584,7 +598,9 @@ background:
 ```
 
 ### Color Format
-Colors must be in hex format: `#RRGGBB` or `#RRGGBBAA`
+Colors must be in hex format: `#RGB`, `#RRGGBB`, or `#RRGGBBAA`.
+PNG output preserves alpha when the background explicitly uses transparency.
+JPEG output is always flattened over white.
 
 ---
 

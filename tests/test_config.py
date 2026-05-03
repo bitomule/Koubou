@@ -30,6 +30,17 @@ class TestGradientConfig:
         assert config.colors == ["#ff0000", "#00ff00"]
         assert config.direction == 45
 
+    def test_transparent_background_valid(self):
+        """Test transparent background configuration."""
+        config = GradientConfig(type="transparent")
+        assert config.type == "transparent"
+        assert config.colors == []
+
+    def test_transparent_background_rejects_colors(self):
+        """Test transparent background does not accept colors."""
+        with pytest.raises(ValidationError, match="do not accept colors"):
+            GradientConfig(type="transparent", colors=["#00000000"])
+
     def test_gradient_insufficient_colors(self):
         """Test gradient with insufficient colors fails validation."""
         with pytest.raises(ValidationError, match="at least 2 colors"):
