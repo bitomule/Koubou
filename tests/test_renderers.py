@@ -31,6 +31,25 @@ class TestBackgroundRenderer:
         pixel = self.canvas.getpixel((100, 100))
         assert pixel == (255, 0, 0, 255)  # Red
 
+    def test_solid_background_with_alpha(self):
+        """Test solid background rendering preserves color alpha."""
+        config = GradientConfig(type="solid", colors=["#00000000"])
+
+        self.renderer.render(config, self.canvas)
+
+        pixel = self.canvas.getpixel((100, 100))
+        assert pixel == (0, 0, 0, 0)
+
+    def test_transparent_background(self):
+        """Test transparent background clears the canvas alpha."""
+        self.canvas.paste(Image.new("RGBA", self.canvas.size, (255, 0, 0, 255)))
+        config = GradientConfig(type="transparent")
+
+        self.renderer.render(config, self.canvas)
+
+        pixel = self.canvas.getpixel((100, 100))
+        assert pixel == (255, 255, 255, 0)
+
     def test_linear_gradient(self):
         """Test linear gradient rendering."""
         config = GradientConfig(

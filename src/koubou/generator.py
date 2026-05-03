@@ -578,15 +578,16 @@ class ScreenshotGenerator:
             # Ensure output directory exists
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            # Convert RGBA to RGB to remove alpha channel
-            # App Store does not accept images with alpha channels
-            rgb_canvas = Image.new("RGB", canvas.size, (255, 255, 255))
-            rgb_canvas.paste(canvas, mask=canvas)
-
             # Save based on file extension
             if output_path.suffix.lower() == ".jpg":
+                rgb_canvas = self._flatten_to_rgb(canvas)
                 rgb_canvas.save(output_path, "JPEG", quality=95)
+            elif self._should_preserve_alpha(config.background):
+                canvas.save(output_path, "PNG")
             else:
+                # App Store screenshots should not include alpha unless the
+                # background explicitly requests transparency.
+                rgb_canvas = self._flatten_to_rgb(canvas)
                 rgb_canvas.save(output_path, "PNG")
 
             logger.info(f"✅ Generated: {config.name}")
@@ -597,6 +598,24 @@ class ScreenshotGenerator:
             raise RenderError(
                 f"Failed to generate screenshot '{config.name}': {_e}"
             ) from _e
+
+    def _flatten_to_rgb(self, image: Image.Image) -> Image.Image:
+        """Composite an RGBA image over white and return RGB output."""
+        rgb_image = Image.new("RGB", image.size, (255, 255, 255))
+        rgb_image.paste(image, mask=image if image.mode == "RGBA" else None)
+        return rgb_image
+
+    def _should_preserve_alpha(self, background: Optional[GradientConfig]) -> bool:
+        """Return whether PNG output should keep transparency."""
+        if background is None:
+            return False
+        if background.type == "transparent":
+            return True
+        for color in background.colors:
+            hex_color = color.lstrip("#")
+            if len(hex_color) == 8 and int(hex_color[6:8], 16) < 255:
+                return True
+        return False
 
     def _load_source_image(self, image_path: str) -> Image.Image:
         """Load and validate source image."""
@@ -1400,9 +1419,13 @@ class ScreenshotGenerator:
             background_config = screenshot_def.background
         elif default_background:
             # Fallback to project default background
+            default_background_type = default_background.get("type", "solid")
             background_config = GradientConfig(
-                type=default_background.get("type", "solid"),
-                colors=default_background.get("colors", ["#ffffff"]),
+                type=default_background_type,
+                colors=default_background.get(
+                    "colors",
+                    [] if default_background_type == "transparent" else ["#ffffff"],
+                ),
                 direction=default_background.get("direction", 0),
                 positions=default_background.get("positions"),
                 center=default_background.get("center"),

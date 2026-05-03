@@ -228,6 +228,39 @@ class TestScreenshotGenerator:
         for result_path in results:
             assert result_path.exists()
 
+    def test_project_default_background_with_alpha_preserves_png_alpha(self):
+        """Test YAML-style default background alpha is preserved in PNG output."""
+        from koubou.config import ContentItem, ProjectInfo, ScreenshotDefinition
+
+        project_config = ProjectConfig(
+            project=ProjectInfo(
+                name="Transparent Project",
+                output_dir=str(self.temp_dir / "project_transparent_output"),
+                device="iPhone 15 Pro Portrait",
+                output_size=(400, 800),
+            ),
+            defaults={"background": {"type": "solid", "colors": ["#00000000"]}},
+            screenshots={
+                "transparent": ScreenshotDefinition(
+                    content=[
+                        ContentItem(
+                            type="image",
+                            asset=str(self.source_image_path),
+                            position=("50%", "50%"),
+                        )
+                    ],
+                    frame=False,
+                )
+            },
+        )
+
+        results = self.generator.generate_project(project_config)
+
+        assert len(results) == 1
+        output_image = Image.open(results[0])
+        assert output_image.mode == "RGBA"
+        assert output_image.getpixel((0, 0))[3] == 0
+
     def test_png_has_no_alpha_channel(self):
         """Test that PNG files don't have alpha (App Store requirement)."""
         config = ScreenshotConfig(
@@ -250,6 +283,39 @@ class TestScreenshotGenerator:
         assert (
             "transparency" not in output_image.info
         ), "Image should not have transparency info"
+
+    def test_png_preserves_alpha_for_transparent_solid_background(self):
+        """PNG output keeps alpha when the background color explicitly has alpha."""
+        config = ScreenshotConfig(
+            name="Transparent Alpha Test",
+            source_image=str(self.source_image_path),
+            output_size=(400, 800),
+            output_path=str(self.temp_dir / "transparent_alpha.png"),
+            background=GradientConfig(type="solid", colors=["#00000000"]),
+        )
+
+        result_path = self.generator.generate_screenshot(config)
+
+        output_image = Image.open(result_path)
+        assert output_image.mode == "RGBA"
+        assert output_image.getpixel((0, 0))[3] == 0
+        assert output_image.getpixel((200, 400))[3] == 255
+
+    def test_png_preserves_alpha_for_transparent_background_type(self):
+        """PNG output keeps alpha when using background type transparent."""
+        config = ScreenshotConfig(
+            name="Transparent Type Test",
+            source_image=str(self.source_image_path),
+            output_size=(400, 800),
+            output_path=str(self.temp_dir / "transparent_type.png"),
+            background=GradientConfig(type="transparent"),
+        )
+
+        result_path = self.generator.generate_screenshot(config)
+
+        output_image = Image.open(result_path)
+        assert output_image.mode == "RGBA"
+        assert output_image.getpixel((0, 0))[3] == 0
 
     def test_jpeg_has_no_alpha_channel(self):
         """Test that generated JPEG files don't have alpha channel."""

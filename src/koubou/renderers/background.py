@@ -30,7 +30,9 @@ class BackgroundRenderer:
             BackgroundRenderError: If rendering fails
         """
         try:
-            if background_config.type == "solid":
+            if background_config.type == "transparent":
+                self._render_transparent(canvas)
+            elif background_config.type == "solid":
                 self._render_solid(background_config, canvas)
             else:
                 # Use unified gradient renderer for all gradients
@@ -53,6 +55,11 @@ class BackgroundRenderer:
 
         # Create solid color overlay
         overlay = Image.new("RGBA", canvas.size, color)
+        canvas.paste(overlay, (0, 0))
+
+    def _render_transparent(self, canvas: Image.Image) -> None:
+        """Render a fully transparent background."""
+        overlay = Image.new("RGBA", canvas.size, (255, 255, 255, 0))
         canvas.paste(overlay, (0, 0))
 
     def _parse_color(self, color_string: str) -> Tuple[int, int, int, int]:

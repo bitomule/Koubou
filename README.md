@@ -550,7 +550,7 @@ project:
 
 defaults:                    # Default settings applied to all screenshots
   background:                # Default background configuration
-    type: "solid" | "linear" | "radial" | "conic"
+    type: "solid" | "linear" | "radial" | "conic" | "transparent"
     colors: [string, ...]    # Hex colors array
     direction: float?        # Degrees for gradients (default: 0)
 ```
@@ -577,11 +577,15 @@ screenshots:
 ### Background Configuration
 ```yaml
 background:
-  type: "solid" | "linear" | "radial" | "conic"
+  type: "solid" | "linear" | "radial" | "conic" | "transparent"
   colors: [string, ...]      # Hex colors (e.g., ["#667eea", "#764ba2"])
   direction: float?          # Degrees for linear gradients (default: 0)
   center: [string, string]?  # Center point for radial/conic ["x%", "y%"]
 ```
+
+Use `type: "transparent"` or an 8-digit hex color with alpha (for example
+`"#00000000"`) to preserve transparency in PNG output. JPEG output is always
+flattened over white.
 
 ### Content Items
 ```yaml

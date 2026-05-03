@@ -74,10 +74,10 @@ def validate_hex_color(color: str, field_name: str = "Color") -> None:
 class GradientConfig(BaseModel):
     """Universal gradient configuration for text and backgrounds."""
 
-    type: Literal["solid", "linear", "radial", "conic"] = Field(
+    type: Literal["solid", "linear", "radial", "conic", "transparent"] = Field(
         ..., description="Gradient type"
     )
-    colors: List[str] = Field(..., description="List of hex colors")
+    colors: List[str] = Field(default_factory=list, description="List of hex colors")
     positions: Optional[List[float]] = Field(
         default=None, description="Color stop positions (0.0-1.0)"
     )
@@ -96,17 +96,7 @@ class GradientConfig(BaseModel):
 
     @field_validator("colors")
     @classmethod
-    def validate_colors(cls, v: List[str], info: ValidationInfo) -> List[str]:
-        gradient_type = info.data.get("type")
-
-        # Validate minimum colors based on type
-        if gradient_type == "solid" and len(v) != 1:
-            raise ValueError("Solid backgrounds require exactly 1 color")
-        elif gradient_type in ["linear", "radial", "conic"] and len(v) < 2:
-            raise ValueError("Gradients require at least 2 colors")
-        elif not v:
-            raise ValueError("At least one color is required")
-
+    def validate_colors(cls, v: List[str]) -> List[str]:
         # Validate color format
         for i, color in enumerate(v):
             try:
@@ -115,6 +105,20 @@ class GradientConfig(BaseModel):
                 # Re-raise with more context
                 raise ValueError(str(e)) from None
         return v
+
+    @model_validator(mode="after")
+    def validate_color_count(self):
+        """Validate color count after defaults have been applied."""
+        if self.type == "transparent":
+            if self.colors:
+                raise ValueError("Transparent backgrounds do not accept colors")
+        elif self.type == "solid" and len(self.colors) != 1:
+            raise ValueError("Solid backgrounds require exactly 1 color")
+        elif self.type in ["linear", "radial", "conic"] and len(self.colors) < 2:
+            raise ValueError("Gradients require at least 2 colors")
+        elif not self.colors:
+            raise ValueError("At least one color is required")
+        return self
 
     @field_validator("positions")
     @classmethod
