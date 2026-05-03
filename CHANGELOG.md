@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.19.3] - 2026-05-03
 
-### Added
+### Fixed
 - Transparent screenshot backgrounds now support `background.type: "transparent"` and preserve PNG alpha when backgrounds use 8-digit hex colors such as `#00000000`.
 
 ## [0.19.2] - 2026-04-17
