@@ -342,7 +342,7 @@ kou list-sizes
 - `iPhone6_7` - iPhone 15/14/13/12 Pro Max, Plus (1290×2796)
 - `iPhone6_1` - iPhone 16/15/14/13 Pro (1179×2556)
 - `iPadPro12_9` - iPad Pro 12.9" (2048×2732)
-- `iPadPro11` - iPad Pro 11", iPad Air 11" M2 (1668×2388)
+- `iPadPro11` - iPad Pro 11, iPad Air 11 M2 (1668×2388)
 - `AppDesktop_2880` - Mac App Store desktop (2880×1800)
 - `AppDesktop_2560` - Mac App Store desktop (2560×1600)
 - `AppDesktop_1440` - Mac App Store desktop (1440×900)
@@ -529,13 +529,13 @@ Koubou includes 100+ professionally crafted device frames:
 - iPhone 14 Pro/Max, 12-13 series, and more
 
 ### iPad Frames
-- iPad Air 11"/13" M2 (Blue, Purple, Space Gray, Stardust)
-- iPad Pro 11"/13" M4 (Silver, Space Gray)
+- iPad Air 11/13 M2 (Blue, Purple, Space Gray, Stardust)
+- iPad Pro 11/13 M4 (Silver, Space Gray)
 - iPad Pro 2018-2021, iPad mini, and classic models
 
 ### Mac & Watch Frames
 - MacBook Pro 2021 (14" & 16"), MacBook Air 2020/2022
-- iMac 24" Silver, iMac 2021
+- iMac 24 Silver, iMac 2021
 - Apple Watch Series 4/7, Watch Ultra
 
 ## 📖 YAML API Reference
