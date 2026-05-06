@@ -73,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Apple Watch S11 frames**: 42mm and 46mm sizes with Aluminum and Titanium finishes across all band options
 - **iPhone 16 Plus frames**: All five colors (Black, Pink, Teal, Ultramarine, White) in portrait and landscape
 - **Apple TV 4K frame**
-- **MacBook frames**: MacBook Air 13" 4th Gen Midnight, MacBook Pro M4 14" and 16" Silver
+- **MacBook frames**: MacBook Air 13 4th Gen Midnight, MacBook Pro M4 14" and 16" Silver
 - Device frame renderer now handles single-segment model names (e.g., "17", "Air") for the new iPhone naming scheme
 - **On-demand frame downloads**: Device frame PNGs are no longer bundled in the wheel — they are downloaded automatically on first `kou generate` and cached at `~/.koubou/frames/`. This reduces the PyPI package from 111MB to under 5MB.
 - `kou setup-frames` command to explicitly download frames (mirrors `kou setup-html` pattern). Supports `--force` to re-download.

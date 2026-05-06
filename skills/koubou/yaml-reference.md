@@ -262,9 +262,9 @@ Device names must match exactly as shown by `kou list-frames`.
 | `iPhone6_5` | 1242x2688 | iPhone 11 Pro Max, XS Max (6.5") |
 | `iPhone6_1` | 1179x2556 | iPhone 16/15/14/13 Pro, 12 Pro, 11, XR (6.1") |
 | `iPhone5_5` | 1242x2208 | iPhone 8 Plus, 7 Plus, 6s Plus (5.5") |
-| `iPadPro13` | 2064x2752 | iPad Pro 13" M4, iPad Air 13" M2 |
+| `iPadPro13` | 2064x2752 | iPad Pro 13 M4, iPad Air 13 M2 |
 | `iPadPro12_9` | 2048x2732 | iPad Pro 12.9" (3rd gen and later) |
-| `iPadPro11` | 1668x2388 | iPad Pro 11", iPad Air 11" M2 |
+| `iPadPro11` | 1668x2388 | iPad Pro 11, iPad Air 11 M2 |
 
 List all: `kou list-sizes`
 
