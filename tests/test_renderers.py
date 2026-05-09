@@ -209,35 +209,37 @@ class TestTextRenderer:
         assert self.canvas.getpixel((32, first_line_y))[:3] == (0, 255, 0)
         assert self.canvas.getpixel((95, first_line_y))[:3] == (0, 255, 0)
 
-    def test_text_box_character_keeps_spaces_unboxed(self):
-        """Character boxes should leave visible spaces without box fill."""
+    def test_text_box_character_keeps_wrapped_lines_separate(self):
+        """Character level should not fill the vertical gap between wrapped lines."""
         overlay = TextOverlay(
-            content="A  B",
+            content="AB C",
             position=(40, 60),
             anchor="top-left",
             alignment="left",
+            max_width=45,
             font_size=32,
             color="#000000",
             box={
                 "level": "character",
                 "color": "#0000ff",
-                "padding": 0,
+                "padding": 4,
                 "type": "straight",
             },
         )
 
         self.renderer.render(overlay, self.canvas)
 
-        gap_pixels = [self.canvas.getpixel((x, 72)) for x in range(60, 78)]
+        gap_pixels = [self.canvas.getpixel((50, y)) for y in range(88, 98)]
         assert (255, 255, 255, 255) in gap_pixels
 
-    def test_text_box_character_renders_visible_characters(self):
-        """Character boxes should render for visible glyphs and skip spaces."""
+    def test_text_box_character_renders_line_fragments(self):
+        """Character level should render boxes for wrapped line fragments."""
         overlay = TextOverlay(
-            content="A B",
+            content="AB C",
             position=(40, 60),
             anchor="top-left",
             alignment="left",
+            max_width=45,
             font_size=32,
             color="#000000",
             box={"level": "character", "color": "#0000ff", "padding": 4},

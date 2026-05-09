@@ -564,23 +564,19 @@ class TextRenderer:
             self._draw_text_box(draw, paragraph_bounds, radius, box_color)
             return
 
-        for i, line in enumerate(text_lines):
-            line_y = anchor_y + i * line_height
-            line_x = self._calculate_line_x(
-                anchor_x, line, font, text_config.alignment, text_block_width
-            )
-            self._render_character_boxes(
-                draw,
-                text_config,
-                font,
-                line,
-                line_x,
-                line_y,
-                line_height,
-                padding,
-                radius,
-                box_color,
-            )
+        self._render_line_fragment_boxes(
+            draw,
+            text_config,
+            text_lines,
+            font,
+            line_height,
+            anchor_x,
+            anchor_y,
+            text_block_width,
+            padding,
+            radius,
+            box_color,
+        )
 
     def _calculate_paragraph_box_bounds(
         self,
@@ -625,39 +621,36 @@ class TextRenderer:
             max_y + padding,
         )
 
-    def _render_character_boxes(
+    def _render_line_fragment_boxes(
         self,
         draw: ImageDraw.ImageDraw,
         text_config: TextOverlay,
+        text_lines: list[str],
         font: ImageFont.ImageFont,
-        line: str,
-        line_x: int,
-        line_y: int,
         line_height: int,
+        anchor_x: int,
+        anchor_y: int,
+        text_block_width: int,
         padding: int,
         radius: int,
         box_color: Tuple[int, int, int, int],
     ) -> None:
-        """Render a box behind each visible character in a line."""
-        for index, character in enumerate(line):
-            if character.isspace():
+        """Render a box behind each wrapped line fragment."""
+        for i, line in enumerate(text_lines):
+            if not line.strip():
                 continue
-
-            char_x = line_x + int(round(self._measure_text_width(font, line[:index])))
-            next_x = line_x + int(
-                round(self._measure_text_width(font, line[: index + 1]))
+            line_y = anchor_y + i * line_height
+            line_x = self._calculate_line_x(
+                anchor_x, line, font, text_config.alignment, text_block_width
             )
-            char_bounds = self._measure_text_bounds(font, character)
-            if char_bounds[2] <= char_bounds[0]:
-                char_bounds = (0, 0, max(1, next_x - char_x), line_height)
-
+            line_bounds = self._measure_text_bounds(font, line)
             self._draw_text_box(
                 draw,
                 (
-                    char_x + char_bounds[0] - padding,
-                    line_y + char_bounds[1] - padding,
-                    char_x + char_bounds[2] + padding,
-                    line_y + char_bounds[3] + padding,
+                    line_x + line_bounds[0] - padding,
+                    line_y + line_bounds[1] - padding,
+                    line_x + line_bounds[2] + padding,
+                    line_y + line_bounds[3] + padding,
                 ),
                 radius,
                 box_color,

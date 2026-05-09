@@ -160,7 +160,7 @@ class TextBoxConfig(BaseModel):
 
     level: Literal["paragraph", "character"] = Field(
         default="paragraph",
-        description="Whether to draw boxes per wrapped line or per character",
+        description="Whether to draw one paragraph box or boxes per line fragment",
     )
     type: Literal["rounded", "straight", "strait"] = Field(
         default="rounded",

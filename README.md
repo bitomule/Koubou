@@ -618,7 +618,7 @@ flattened over white.
 
   # Text Box Options (optional):
   box:
-    level: "paragraph" | "character" # Box around text block or visible characters
+    level: "paragraph" | "character" # Box around text block or line fragments
     type: "rounded" | "straight"     # "strait" is accepted as an alias
     color: string                    # Box fill color, supports alpha hex
     padding: int?                    # Padding in pixels (default: 8)
