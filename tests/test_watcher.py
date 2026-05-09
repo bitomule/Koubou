@@ -2,7 +2,7 @@
 
 import time
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -315,16 +315,23 @@ class TestLiveWatcher:
         callback = MagicMock()
         watcher.set_change_callback(callback)
 
-        # Start watcher
-        watcher.start()
-        assert watcher.get_status()["is_running"] is True
+        with patch("koubou.watcher.Observer") as observer_cls:
+            observer = MagicMock()
+            observer.is_alive.side_effect = [True, True, False]
+            observer_cls.return_value = observer
 
-        # Stop watcher
-        watcher.stop()
+            # Start watcher
+            watcher.start()
+            assert watcher.get_status()["is_running"] is True
 
-        # Brief wait for cleanup
-        time.sleep(0.1)
-        assert watcher.get_status()["is_running"] is False
+            # Stop watcher
+            watcher.stop()
+
+            assert watcher.get_status()["is_running"] is False
+            observer.schedule.assert_called()
+            observer.start.assert_called_once()
+            observer.stop.assert_called_once()
+            observer.join.assert_called_once_with(timeout=2.0)
 
     def test_double_start_warning(self, tmp_path, caplog):
         """Test warning when trying to start already running watcher."""
@@ -335,14 +342,20 @@ class TestLiveWatcher:
         callback = MagicMock()
         watcher.set_change_callback(callback)
 
-        # Start watcher
-        watcher.start()
+        with patch("koubou.watcher.Observer") as observer_cls:
+            observer = MagicMock()
+            observer.is_alive.side_effect = [True, True]
+            observer_cls.return_value = observer
 
-        # Try to start again
-        watcher.start()
+            # Start watcher
+            watcher.start()
 
-        # Should log warning
-        assert "already running" in caplog.text
+            # Try to start again
+            watcher.start()
 
-        # Cleanup
-        watcher.stop()
+            # Should log warning
+            assert "already running" in caplog.text
+
+            # Cleanup
+            watcher.stop()
+            observer_cls.assert_called_once()
