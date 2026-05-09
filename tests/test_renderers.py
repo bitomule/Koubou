@@ -249,13 +249,26 @@ class TestTextRenderer:
                 "type": "straight",
             },
         )
+        font = self.renderer._get_font(
+            overlay.font_family, overlay.font_size, overlay.font_weight
+        )
+        text_block_width = font.getbbox("AB")[2] - font.getbbox("AB")[0]
 
-        self.renderer.render(overlay, self.canvas)
+        self.renderer._render_text_boxes(
+            self.canvas,
+            overlay,
+            ["AB", "C"],
+            font,
+            line_height=48,
+            anchor_x=100,
+            anchor_y=60,
+            text_block_width=text_block_width,
+        )
 
         blue_pixels = [
             (x, y)
-            for y in range(40, 140)
-            for x in range(90, 160)
+            for y in range(self.canvas.height)
+            for x in range(self.canvas.width)
             if self.canvas.getpixel((x, y))[2] > 200
             and self.canvas.getpixel((x, y))[0] < 80
             and self.canvas.getpixel((x, y))[1] < 80
