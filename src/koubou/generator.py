@@ -128,6 +128,30 @@ def resolve_localized_asset(
         return asset
 
 
+def resolve_font_family(font_family: str, config_dir: Optional[Path] = None) -> str:
+    """Resolve project-local font paths while preserving system font names."""
+    if not font_family or not config_dir:
+        return font_family
+
+    font_path = Path(font_family)
+    if font_path.is_absolute():
+        return font_family
+
+    looks_like_path = (
+        "/" in font_family
+        or "\\" in font_family
+        or font_path.suffix.lower() in {".ttf", ".otf", ".ttc"}
+    )
+    if not looks_like_path:
+        return font_family
+
+    candidate = config_dir / font_path
+    if candidate.exists():
+        return str(candidate.resolve())
+
+    return font_family
+
+
 class ScreenshotGenerator:
     """Main class for generating screenshots with backgrounds, text, and frames."""
 
@@ -1395,7 +1419,10 @@ class ScreenshotGenerator:
                         position=position,
                         font_size=item.size or 24,
                         font_weight=getattr(item, "weight", "normal") or "normal",
-                        font_family=getattr(item, "font_family", "Arial") or "Arial",
+                        font_family=resolve_font_family(
+                            getattr(item, "font_family", "Arial") or "Arial",
+                            config_dir,
+                        ),
                         color=item.color,  # Don't default to black if gradient
                         # is provided
                         gradient=item.gradient,  # Pass gradient configuration
