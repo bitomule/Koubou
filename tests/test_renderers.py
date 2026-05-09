@@ -308,7 +308,7 @@ class TestTextRenderer:
 
         self.renderer.render(overlay, self.canvas)
 
-        assert self.canvas.getpixel((35, 55))[:3] == (255, 170, 0)
+        assert self.canvas.getpixel((35, 66))[:3] == (255, 170, 0)
 
     def test_text_box_with_stroke(self):
         """Text boxes should work with stroked text."""
@@ -326,7 +326,7 @@ class TestTextRenderer:
 
         self.renderer.render(overlay, self.canvas)
 
-        assert self.canvas.getpixel((35, 55))[:3] == (102, 51, 153)
+        assert self.canvas.getpixel((35, 66))[:3] == (102, 51, 153)
 
     def test_text_box_with_auto_sizing(self):
         """Text boxes should render after auto-sizing resolves final text layout."""

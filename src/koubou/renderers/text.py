@@ -557,14 +557,14 @@ class TextRenderer:
             )
 
             if text_config.box.level == "paragraph":
-                line_width = self._measure_text_width(font, line)
+                line_bounds = self._measure_text_bounds(font, line)
                 self._draw_text_box(
                     draw,
                     (
-                        line_x - padding,
-                        line_y - padding,
-                        line_x + line_width + padding,
-                        line_y + line_height + padding,
+                        line_x + line_bounds[0] - padding,
+                        line_y + line_bounds[1] - padding,
+                        line_x + line_bounds[2] + padding,
+                        line_y + line_bounds[3] + padding,
                     ),
                     radius,
                     box_color,
@@ -605,15 +605,17 @@ class TextRenderer:
             next_x = line_x + int(
                 round(self._measure_text_width(font, line[: index + 1]))
             )
-            char_width = max(1, next_x - char_x)
+            char_bounds = self._measure_text_bounds(font, character)
+            if char_bounds[2] <= char_bounds[0]:
+                char_bounds = (0, 0, max(1, next_x - char_x), line_height)
 
             self._draw_text_box(
                 draw,
                 (
-                    char_x - padding,
-                    line_y - padding,
-                    char_x + char_width + padding,
-                    line_y + line_height + padding,
+                    char_x + char_bounds[0] - padding,
+                    line_y + char_bounds[1] - padding,
+                    char_x + char_bounds[2] + padding,
+                    line_y + char_bounds[3] + padding,
                 ),
                 radius,
                 box_color,
@@ -648,6 +650,13 @@ class TextRenderer:
             return float(font.getlength(text))
         bbox = font.getbbox(text)
         return float(bbox[2] - bbox[0])
+
+    def _measure_text_bounds(
+        self, font: ImageFont.ImageFont, text: str
+    ) -> Tuple[int, int, int, int]:
+        """Measure text bounds relative to the draw origin."""
+        bbox = font.getbbox(text)
+        return (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))
 
     def _expand_bounds_for_box(
         self,
