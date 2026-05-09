@@ -232,6 +232,41 @@ class TestTextRenderer:
         gap_pixels = [self.canvas.getpixel((50, y)) for y in range(88, 98)]
         assert (255, 255, 255, 255) in gap_pixels
 
+    def test_text_box_character_respects_center_alignment(self):
+        """Character line fragment boxes should center shorter wrapped lines."""
+        overlay = TextOverlay(
+            content="AB C",
+            position=(100, 60),
+            anchor="top-left",
+            alignment="center",
+            max_width=45,
+            font_size=32,
+            color="#000000",
+            box={
+                "level": "character",
+                "color": "#0000ff",
+                "padding": 4,
+                "type": "straight",
+            },
+        )
+
+        self.renderer.render(overlay, self.canvas)
+
+        top_line_blue_x = [
+            x
+            for x in range(90, 160)
+            if self.canvas.getpixel((x, 72))[:3] == (0, 0, 255)
+        ]
+        bottom_line_blue_x = [
+            x
+            for x in range(90, 160)
+            if self.canvas.getpixel((x, 106))[:3] == (0, 0, 255)
+        ]
+
+        top_center = (min(top_line_blue_x) + max(top_line_blue_x)) / 2
+        bottom_center = (min(bottom_line_blue_x) + max(bottom_line_blue_x)) / 2
+        assert abs(top_center - bottom_center) <= 2
+
     def test_text_box_character_renders_line_fragments(self):
         """Character level should render boxes for wrapped line fragments."""
         overlay = TextOverlay(
