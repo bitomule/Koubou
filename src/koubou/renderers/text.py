@@ -550,38 +550,80 @@ class TextRenderer:
         padding = text_config.box.padding
         radius = self._resolve_box_radius(text_config)
 
+        if text_config.box.level == "paragraph":
+            paragraph_bounds = self._calculate_paragraph_box_bounds(
+                text_config,
+                text_lines,
+                font,
+                line_height,
+                anchor_x,
+                anchor_y,
+                text_block_width,
+                padding,
+            )
+            self._draw_text_box(draw, paragraph_bounds, radius, box_color)
+            return
+
         for i, line in enumerate(text_lines):
             line_y = anchor_y + i * line_height
             line_x = self._calculate_line_x(
                 anchor_x, line, font, text_config.alignment, text_block_width
             )
+            self._render_character_boxes(
+                draw,
+                text_config,
+                font,
+                line,
+                line_x,
+                line_y,
+                line_height,
+                padding,
+                radius,
+                box_color,
+            )
 
-            if text_config.box.level == "paragraph":
-                line_bounds = self._measure_text_bounds(font, line)
-                self._draw_text_box(
-                    draw,
-                    (
-                        line_x + line_bounds[0] - padding,
-                        line_y + line_bounds[1] - padding,
-                        line_x + line_bounds[2] + padding,
-                        line_y + line_bounds[3] + padding,
-                    ),
-                    radius,
-                    box_color,
-                )
-            else:
-                self._render_character_boxes(
-                    draw,
-                    text_config,
-                    font,
-                    line,
-                    line_x,
-                    line_y,
-                    line_height,
-                    padding,
-                    radius,
-                    box_color,
-                )
+    def _calculate_paragraph_box_bounds(
+        self,
+        text_config: TextOverlay,
+        text_lines: list[str],
+        font: ImageFont.ImageFont,
+        line_height: int,
+        anchor_x: int,
+        anchor_y: int,
+        text_block_width: int,
+        padding: int,
+    ) -> Tuple[int, int, int, int]:
+        """Calculate one box around the full wrapped text block."""
+        min_x: Optional[int] = None
+        min_y: Optional[int] = None
+        max_x: Optional[int] = None
+        max_y: Optional[int] = None
+
+        for i, line in enumerate(text_lines):
+            line_y = anchor_y + i * line_height
+            line_x = self._calculate_line_x(
+                anchor_x, line, font, text_config.alignment, text_block_width
+            )
+            line_bounds = self._measure_text_bounds(font, line)
+            left = line_x + line_bounds[0]
+            top = line_y + line_bounds[1]
+            right = line_x + line_bounds[2]
+            bottom = line_y + line_bounds[3]
+
+            min_x = left if min_x is None else min(min_x, left)
+            min_y = top if min_y is None else min(min_y, top)
+            max_x = right if max_x is None else max(max_x, right)
+            max_y = bottom if max_y is None else max(max_y, bottom)
+
+        if min_x is None or min_y is None or max_x is None or max_y is None:
+            return (anchor_x, anchor_y, anchor_x, anchor_y)
+
+        return (
+            min_x - padding,
+            min_y - padding,
+            max_x + padding,
+            max_y + padding,
+        )
 
     def _render_character_boxes(
         self,

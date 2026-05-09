@@ -315,7 +315,7 @@ Content items define the visual elements within each screenshot.
 
   # Text Box Options (optional):
   box:
-    level: "paragraph" | "character" # Box per wrapped line or visible character
+    level: "paragraph" | "character" # Box around text block or visible characters
     type: "rounded" | "straight"     # "strait" is accepted as an alias
     color: string                    # Box fill color, supports alpha hex
     padding: int?                    # Padding in pixels (default: 8)

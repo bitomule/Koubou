@@ -190,8 +190,8 @@ class TestTextRenderer:
 
         assert self.canvas.getpixel((35, 55)) == (255, 0, 0, 255)
 
-    def test_text_box_multiline_uses_line_widths(self):
-        """Paragraph boxes should follow each wrapped line's actual width."""
+    def test_text_box_multiline_paragraph_uses_block_bounds(self):
+        """Paragraph boxes should wrap the full text block."""
         overlay = TextOverlay(
             content="Hi longerword",
             position=(30, 30),
@@ -207,7 +207,29 @@ class TestTextRenderer:
 
         first_line_y = 28
         assert self.canvas.getpixel((32, first_line_y))[:3] == (0, 255, 0)
-        assert self.canvas.getpixel((95, first_line_y)) == (255, 255, 255, 255)
+        assert self.canvas.getpixel((95, first_line_y))[:3] == (0, 255, 0)
+
+    def test_text_box_character_keeps_spaces_unboxed(self):
+        """Character boxes should leave visible spaces without box fill."""
+        overlay = TextOverlay(
+            content="A  B",
+            position=(40, 60),
+            anchor="top-left",
+            alignment="left",
+            font_size=32,
+            color="#000000",
+            box={
+                "level": "character",
+                "color": "#0000ff",
+                "padding": 0,
+                "type": "straight",
+            },
+        )
+
+        self.renderer.render(overlay, self.canvas)
+
+        gap_pixels = [self.canvas.getpixel((x, 72)) for x in range(60, 78)]
+        assert (255, 255, 255, 255) in gap_pixels
 
     def test_text_box_character_renders_visible_characters(self):
         """Character boxes should render for visible glyphs and skip spaces."""
