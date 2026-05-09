@@ -339,6 +339,79 @@ class TestHtmlRenderer:
         assert layout["elements"][0]["role"] == "headline"
         assert layout["overlaps"] == []
 
+    def test_project_generate_with_template_custom_font_asset(
+        self, temp_dir, system_font_file
+    ):
+        """End-to-end: HTML templates should load custom fonts via assets."""
+        from koubou.generator import ScreenshotGenerator
+
+        font_dir = temp_dir / "assets" / "fonts"
+        font_dir.mkdir(parents=True)
+        font_path = font_dir / "BrandFont.ttf"
+        shutil.copyfile(system_font_file, font_path)
+
+        template = temp_dir / "hero.html"
+        template.write_text(
+            """<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    @font-face {
+      font-family: "Brand Display";
+      src: url("{{brand_font}}") format("truetype");
+      font-weight: 700;
+    }
+    body {
+      margin: 0;
+      background: #111827;
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+    }
+    h1 {
+      color: white;
+      font-family: "Brand Display", sans-serif;
+      font-size: 64px;
+    }
+  </style>
+</head>
+<body>
+  <h1 data-kou-id="headline" data-kou-role="headline">Custom Font</h1>
+</body>
+</html>""",
+            encoding="utf-8",
+        )
+
+        output_dir = temp_dir / "output"
+        config = ProjectConfig(
+            project=ProjectInfo(
+                name="TestHTMLFont",
+                output_dir=str(output_dir),
+                device="iPhone 16 Pro - Black Titanium - Portrait",
+                output_size=[400, 800],
+            ),
+            screenshots={
+                "hero": ScreenshotDefinition(
+                    template="hero.html",
+                    assets={"brand_font": "assets/fonts/BrandFont.ttf"},
+                    frame=False,
+                ),
+            },
+        )
+
+        generator = ScreenshotGenerator()
+        results = generator.generate_project(config, config_dir=temp_dir)
+
+        assert len(results) == 1
+        assert results[0].exists()
+
+        img = Image.open(results[0])
+        assert img.size == (400, 800)
+
+        layout = json.loads(results[0].with_suffix(".layout.json").read_text())
+        assert layout["elements"][0]["id"] == "headline"
+
     def test_render_staged_with_layout_returns_empty_manifest_without_annotations(
         self, temp_dir, renderer
     ):
@@ -579,3 +652,48 @@ class TestHtmlTemplateAssetLocalization:
         assert prepared.assets["app_screenshot.png"] == str(
             (raw_dir / "fallback.png").resolve()
         )
+
+    def test_prepare_html_screenshot_exposes_font_asset_to_template(
+        self, temp_dir, system_font_file
+    ):
+        from koubou.renderers.html_staging import stage_html_workspace
+
+        generator = self._make_generator(temp_dir)
+
+        font_dir = temp_dir / "assets" / "fonts"
+        font_dir.mkdir(parents=True)
+        font_path = font_dir / "BrandFont.ttf"
+        shutil.copyfile(system_font_file, font_path)
+
+        template = temp_dir / "hero.html"
+        template.write_text(
+            """<html><head><style>
+@font-face {
+  font-family: "Brand Display";
+  src: url("{{brand_font}}") format("truetype");
+}
+</style></head><body>Font asset</body></html>""",
+            encoding="utf-8",
+        )
+
+        screenshot = ScreenshotDefinition(
+            template="hero.html",
+            assets={"brand_font": "assets/fonts/BrandFont.ttf"},
+            frame=False,
+        )
+
+        prepared = generator.prepare_html_screenshot(screenshot, temp_dir)
+
+        assert prepared.variables["brand_font"] == "brand_font.ttf"
+        assert prepared.assets["brand_font.ttf"] == str(font_path.resolve())
+
+        workspace_dir = temp_dir / "workspace"
+        staged_index = stage_html_workspace(
+            template_path=prepared.template_path,
+            variables=prepared.variables,
+            destination_dir=workspace_dir,
+            assets=prepared.assets,
+        )
+
+        assert (workspace_dir / "brand_font.ttf").exists()
+        assert 'url("brand_font.ttf")' in staged_index.read_text(encoding="utf-8")

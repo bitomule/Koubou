@@ -11,6 +11,36 @@ from koubou.config import GradientConfig, ScreenshotConfig, TextOverlay
 
 
 @pytest.fixture
+def system_font_file():
+    """Find a real local font file for custom-font integration tests."""
+    preferred = [
+        Path("/System/Library/Fonts/Supplemental/Arial.ttf"),
+        Path("/System/Library/Fonts/SFNS.ttf"),
+        Path("/Library/Fonts/Arial.ttf"),
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+        Path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
+    ]
+    for path in preferred:
+        if path.exists():
+            return path
+
+    for root in [
+        Path("/System/Library/Fonts"),
+        Path("/Library/Fonts"),
+        Path("/usr/share/fonts"),
+    ]:
+        if not root.exists():
+            continue
+        for suffix in ("*.ttf", "*.otf", "*.ttc"):
+            try:
+                return next(root.rglob(suffix))
+            except StopIteration:
+                continue
+
+    pytest.skip("No local TrueType/OpenType font file available")
+
+
+@pytest.fixture
 def temp_dir():
     """Create a temporary directory for tests."""
     temp_dir = Path(tempfile.mkdtemp())

@@ -8,7 +8,7 @@ import pytest
 from PIL import Image
 
 from koubou.config import GradientConfig, ProjectConfig, ScreenshotConfig, TextOverlay
-from koubou.generator import ScreenshotGenerator
+from koubou.generator import ScreenshotGenerator, resolve_font_family
 
 
 class TestScreenshotGenerator:
@@ -643,6 +643,107 @@ class TestScreenshotGenerator:
             assert config.text_overlays[0].alignment == alignment
             assert config.text_overlays[0].anchor == expected_anchor
             assert config.text_overlays[0].position == (120, 80)
+
+    def test_resolve_font_family_resolves_project_local_font_path(self):
+        """Project-local font files should resolve relative to the YAML directory."""
+        font_path = self.temp_dir / "assets" / "BrandFont.ttf"
+        font_path.parent.mkdir()
+        font_path.write_bytes(b"test-font")
+
+        resolved = resolve_font_family("assets/BrandFont.ttf", self.temp_dir)
+
+        assert resolved == str(font_path.resolve())
+
+    def test_resolve_font_family_preserves_system_font_names(self):
+        """System font names should not be rewritten as paths."""
+        assert resolve_font_family("Helvetica Neue", self.temp_dir) == "Helvetica Neue"
+
+    def test_convert_to_screenshot_config_resolves_text_font_path(self):
+        """Content text font paths should be normalized before rendering."""
+        from koubou.config import ContentItem, ScreenshotDefinition
+
+        font_path = self.temp_dir / "assets" / "BrandFont.ttf"
+        font_path.parent.mkdir()
+        font_path.write_bytes(b"test-font")
+
+        screenshot_def = ScreenshotDefinition(
+            content=[
+                ContentItem(
+                    type="image",
+                    asset=str(self.source_image_path),
+                    position=("50%", "50%"),
+                ),
+                ContentItem(
+                    type="text",
+                    content="Custom font",
+                    position=("50%", "20%"),
+                    font_family="assets/BrandFont.ttf",
+                ),
+            ],
+            frame=False,
+        )
+
+        config = self.generator._convert_to_screenshot_config(
+            screenshot_def=screenshot_def,
+            device_frame=None,
+            default_background=None,
+            output_dir=str(self.temp_dir / "project_font_output"),
+            config_dir=self.temp_dir,
+            output_size=(1000, 800),
+        )
+
+        assert config is not None
+        assert config.text_overlays[0].font_family == str(font_path.resolve())
+
+    def test_project_generation_renders_yaml_text_with_project_local_font(
+        self, system_font_file
+    ):
+        """End-to-end YAML content generation should load a relative font file."""
+        from koubou.config import ContentItem, ProjectInfo, ScreenshotDefinition
+
+        font_dir = self.temp_dir / "assets" / "fonts"
+        font_dir.mkdir(parents=True)
+        font_path = font_dir / "BrandFont.ttf"
+        shutil.copyfile(system_font_file, font_path)
+
+        project_config = ProjectConfig(
+            project=ProjectInfo(
+                name="Custom Font YAML",
+                output_dir=str(self.temp_dir / "font_output"),
+                device="iPhone 15 Pro Portrait",
+                output_size=[400, 800],
+            ),
+            screenshots={
+                "custom_font": ScreenshotDefinition(
+                    content=[
+                        ContentItem(
+                            type="image",
+                            asset=str(self.source_image_path),
+                            position=("50%", "60%"),
+                            scale=0.5,
+                        ),
+                        ContentItem(
+                            type="text",
+                            content="Custom Font",
+                            position=("50%", "20%"),
+                            size=48,
+                            color="#ffffff",
+                            font_family="assets/fonts/BrandFont.ttf",
+                        ),
+                    ],
+                    frame=False,
+                )
+            },
+        )
+
+        results = self.generator.generate_project(
+            project_config, config_dir=self.temp_dir
+        )
+
+        assert len(results) == 1
+        assert results[0].exists()
+        generated = Image.open(results[0])
+        assert generated.size == (400, 800)
 
     def test_position_source_image_respects_left_alignment(self):
         """Image alignment should control horizontal placement for project assets."""
