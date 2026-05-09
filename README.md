@@ -176,6 +176,47 @@ Example:
 
 Use this file for objective layout facts only: element positions, occupied space, and real overlaps. Koubou does not interpret whether something is too small, too large, or aesthetically correct.
 
+## 🔤 Custom Fonts
+
+For standard YAML content screenshots, set `font_family` on a text item. The value can be either an installed system font name or a path to a `.ttf`, `.otf`, or `.ttc` file. Relative font paths are resolved from the YAML config file directory.
+
+```yaml
+screenshots:
+  welcome_screen:
+    content:
+      - type: "text"
+        content: "Welcome to Amazing App"
+        position: ["50%", "20%"]
+        size: 72
+        weight: "bold"
+        color: "#ffffff"
+        font_family: "assets/fonts/BrandDisplay-Bold.ttf"
+```
+
+For HTML template screenshots, use normal CSS font loading. Put the font next to the template, or expose it through `assets:`, then reference it with `@font-face`.
+
+```yaml
+screenshots:
+  hero:
+    template: "templates/hero.html"
+    assets:
+      brand_font: "assets/fonts/BrandDisplay-Bold.ttf"
+```
+
+```html
+<style>
+  @font-face {
+    font-family: "Brand Display";
+    src: url("{{brand_font}}") format("truetype");
+    font-weight: 700;
+  }
+
+  h1 {
+    font-family: "Brand Display", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+</style>
+```
+
 ## 🔄 Live Editing
 
 Real-time screenshot regeneration when your YAML configuration or assets change.

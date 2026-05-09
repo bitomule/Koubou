@@ -302,7 +302,7 @@ Content items define the visual elements within each screenshot.
   gradient: object?          # Text gradient (see Gradient Configuration below)
 
   weight: string?            # "normal" or "bold" (default: "normal")
-  font_family: string?       # Font family name (default: "Arial")
+  font_family: string?       # System font name or .ttf/.otf/.ttc path (default: "Arial")
   alignment: string?         # "left", "center", "right" (default: "center")
                              # Also defines how position.x is interpreted:
                              # left=edge, center=midpoint, right=edge
@@ -350,6 +350,10 @@ When `min_size`, `max_width`, and `max_height` are all set, Koubou automatically
   weight: "bold"
   font_family: "assets/MyFont.ttf"
 ```
+
+`font_family` can be an installed system font name, such as `"Helvetica Neue"`,
+or a `.ttf`, `.otf`, or `.ttc` font file. Relative font file paths are resolved
+from the YAML config file directory.
 
 **How it works:**
 1. Start at `size` (e.g., 120px)
