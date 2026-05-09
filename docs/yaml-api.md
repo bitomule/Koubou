@@ -312,6 +312,14 @@ Content items define the visual elements within each screenshot.
   stroke_color: string?      # Solid stroke color (hex format)
   # OR
   stroke_gradient: object?   # Gradient stroke (same structure as gradient)
+
+  # Text Box Options (optional):
+  box:
+    level: "paragraph" | "character" # Box per wrapped line or visible character
+    type: "rounded" | "straight"     # "strait" is accepted as an alias
+    color: string                    # Box fill color, supports alpha hex
+    padding: int?                    # Padding in pixels (default: 8)
+    corner_radius: int?              # Defaults to padding for rounded boxes
 ```
 
 #### Text Gradient Configuration

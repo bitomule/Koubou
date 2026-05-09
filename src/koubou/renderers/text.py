@@ -90,12 +90,29 @@ class TextRenderer:
             # Calculate text bounds for gradient generation
             total_height = len(text_lines) * line_height
             text_bounds = (anchor_x, anchor_y, text_block_width, total_height)
+            rotation_angle = getattr(text_config, "rotation", 0) or 0
+            needs_layer = text_config.box is not None or rotation_angle != 0
+            render_canvas = (
+                Image.new("RGBA", canvas.size, (0, 0, 0, 0)) if needs_layer else canvas
+            )
+
+            if text_config.box:
+                self._render_text_boxes(
+                    render_canvas,
+                    text_config,
+                    text_lines,
+                    font,
+                    line_height,
+                    anchor_x,
+                    anchor_y,
+                    text_block_width,
+                )
 
             # Choose rendering method based on configuration
             if text_config.gradient:
                 # Render with gradient
                 self._render_gradient_text(
-                    canvas,
+                    render_canvas,
                     text_config,
                     text_lines,
                     font,
@@ -108,7 +125,7 @@ class TextRenderer:
             else:
                 # Render with solid color
                 self._render_solid_text(
-                    canvas,
+                    render_canvas,
                     text_config,
                     text_lines,
                     font,
@@ -119,12 +136,16 @@ class TextRenderer:
                 )
 
             # Apply text rotation if specified (post-processing approach)
-            rotation_angle = getattr(text_config, "rotation", 0) or 0
             if rotation_angle != 0:
                 logger.info(f"🔄 Rotating text by {rotation_angle}°")
-                self._apply_text_rotation(
-                    canvas, text_config, text_bounds, rotation_angle
+                render_canvas = self._rotate_layer_region(
+                    render_canvas,
+                    self._expand_bounds_for_box(text_bounds, text_config),
+                    rotation_angle,
                 )
+
+            if needs_layer:
+                self._alpha_composite_in_place(canvas, render_canvas)
 
         except Exception as _e:
             raise TextRenderError(
@@ -508,6 +529,180 @@ class TextRenderer:
             return base_x + (alignment_width - text_width)
 
         return base_x
+
+    def _render_text_boxes(
+        self,
+        canvas: Image.Image,
+        text_config: TextOverlay,
+        text_lines: list[str],
+        font: ImageFont.ImageFont,
+        line_height: int,
+        anchor_x: int,
+        anchor_y: int,
+        text_block_width: int,
+    ) -> None:
+        """Render configured text boxes behind the text glyphs."""
+        if text_config.box is None:
+            return
+
+        draw = ImageDraw.Draw(canvas)
+        box_color = self._parse_color(text_config.box.color)
+        padding = text_config.box.padding
+        radius = self._resolve_box_radius(text_config)
+
+        for i, line in enumerate(text_lines):
+            line_y = anchor_y + i * line_height
+            line_x = self._calculate_line_x(
+                anchor_x, line, font, text_config.alignment, text_block_width
+            )
+
+            if text_config.box.level == "paragraph":
+                line_width = self._measure_text_width(font, line)
+                self._draw_text_box(
+                    draw,
+                    (
+                        line_x - padding,
+                        line_y - padding,
+                        line_x + line_width + padding,
+                        line_y + line_height + padding,
+                    ),
+                    radius,
+                    box_color,
+                )
+            else:
+                self._render_character_boxes(
+                    draw,
+                    text_config,
+                    font,
+                    line,
+                    line_x,
+                    line_y,
+                    line_height,
+                    padding,
+                    radius,
+                    box_color,
+                )
+
+    def _render_character_boxes(
+        self,
+        draw: ImageDraw.ImageDraw,
+        text_config: TextOverlay,
+        font: ImageFont.ImageFont,
+        line: str,
+        line_x: int,
+        line_y: int,
+        line_height: int,
+        padding: int,
+        radius: int,
+        box_color: Tuple[int, int, int, int],
+    ) -> None:
+        """Render a box behind each visible character in a line."""
+        for index, character in enumerate(line):
+            if character.isspace():
+                continue
+
+            char_x = line_x + int(round(self._measure_text_width(font, line[:index])))
+            next_x = line_x + int(
+                round(self._measure_text_width(font, line[: index + 1]))
+            )
+            char_width = max(1, next_x - char_x)
+
+            self._draw_text_box(
+                draw,
+                (
+                    char_x - padding,
+                    line_y - padding,
+                    char_x + char_width + padding,
+                    line_y + line_height + padding,
+                ),
+                radius,
+                box_color,
+            )
+
+    def _draw_text_box(
+        self,
+        draw: ImageDraw.ImageDraw,
+        bounds: Tuple[int, int, int, int],
+        radius: int,
+        fill: Tuple[int, int, int, int],
+    ) -> None:
+        """Draw a straight or rounded rectangle."""
+        if radius > 0:
+            draw.rounded_rectangle(bounds, radius=radius, fill=fill)
+        else:
+            draw.rectangle(bounds, fill=fill)
+
+    def _resolve_box_radius(self, text_config: TextOverlay) -> int:
+        """Resolve text box corner radius from configuration defaults."""
+        if text_config.box is None:
+            return 0
+        if text_config.box.type in {"straight", "strait"}:
+            return 0
+        if text_config.box.corner_radius is not None:
+            return text_config.box.corner_radius
+        return text_config.box.padding
+
+    def _measure_text_width(self, font: ImageFont.ImageFont, text: str) -> float:
+        """Measure text width with kerning-aware metrics when available."""
+        if hasattr(font, "getlength"):
+            return float(font.getlength(text))
+        bbox = font.getbbox(text)
+        return float(bbox[2] - bbox[0])
+
+    def _expand_bounds_for_box(
+        self,
+        text_bounds: Tuple[int, int, int, int],
+        text_config: TextOverlay,
+    ) -> Tuple[int, int, int, int]:
+        """Expand text bounds to include box padding and stroke area."""
+        x, y, width, height = text_bounds
+        padding = 0
+        if text_config.box:
+            padding = max(padding, text_config.box.padding)
+        if text_config.stroke_width:
+            padding = max(padding, text_config.stroke_width)
+        return (x - padding, y - padding, width + padding * 2, height + padding * 2)
+
+    def _rotate_layer_region(
+        self,
+        layer: Image.Image,
+        bounds: Tuple[int, int, int, int],
+        rotation_angle: float,
+    ) -> Image.Image:
+        """Rotate the rendered text layer around the center of its bounds."""
+        x, y, width, height = bounds
+        if width <= 0 or height <= 0:
+            return layer
+
+        padding = max(width, height) // 4
+        crop_bounds = (
+            max(0, x - padding),
+            max(0, y - padding),
+            min(layer.width, x + width + padding),
+            min(layer.height, y + height + padding),
+        )
+        region = layer.crop(crop_bounds)
+        rotated = region.rotate(
+            -rotation_angle,
+            resample=Image.Resampling.BICUBIC,
+            expand=True,
+        )
+
+        center_x = x + width // 2
+        center_y = y + height // 2
+        paste_x = center_x - rotated.width // 2
+        paste_y = center_y - rotated.height // 2
+
+        rotated_layer = Image.new("RGBA", layer.size, (0, 0, 0, 0))
+        rotated_layer.paste(rotated, (paste_x, paste_y), rotated)
+        return rotated_layer
+
+    def _alpha_composite_in_place(
+        self, canvas: Image.Image, layer: Image.Image
+    ) -> None:
+        """Alpha composite a full-size layer into canvas in place."""
+        composited = Image.alpha_composite(canvas, layer)
+        canvas.paste(composited, (0, 0))
 
     def _render_solid_text(
         self,

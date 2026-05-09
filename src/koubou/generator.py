@@ -1408,6 +1408,7 @@ class ScreenshotGenerator:
                         stroke_width=getattr(item, "stroke_width", None),
                         stroke_color=getattr(item, "stroke_color", None),
                         stroke_gradient=getattr(item, "stroke_gradient", None),
+                        box=getattr(item, "box", None),
                     )
                     text_overlays.append(text_overlay)
 

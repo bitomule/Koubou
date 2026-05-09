@@ -111,6 +111,32 @@ class TestScreenshotGenerator:
         output_image = Image.open(result_path)
         assert output_image.size == (400, 800)
 
+    def test_screenshot_with_text_box(self):
+        """Test generating screenshot with boxed text overlay."""
+        config = ScreenshotConfig(
+            name="Text Box Test",
+            source_image=str(self.source_image_path),
+            output_size=(400, 800),
+            output_path=str(self.temp_dir / "output_text_box.png"),
+            text_overlays=[
+                TextOverlay(
+                    content="Hello World",
+                    position=(50, 50),
+                    anchor="top-left",
+                    alignment="left",
+                    font_size=32,
+                    color="#ffffff",
+                    box={"color": "#ff3366", "padding": 8},
+                )
+            ],
+        )
+
+        result_path = self.generator.generate_screenshot(config)
+
+        assert result_path.exists()
+        output_image = Image.open(result_path)
+        assert output_image.size == (400, 800)
+
     def test_screenshot_with_device_frame(self):
         """Test generating screenshot with device frame."""
         config = ScreenshotConfig(
@@ -643,6 +669,84 @@ class TestScreenshotGenerator:
             assert config.text_overlays[0].alignment == alignment
             assert config.text_overlays[0].anchor == expected_anchor
             assert config.text_overlays[0].position == (120, 80)
+
+    def test_project_text_box_is_preserved_in_text_overlay(self):
+        """Project text items should pass box configuration to TextOverlay."""
+        from koubou.config import ContentItem, ScreenshotDefinition
+
+        screenshot_def = ScreenshotDefinition(
+            content=[
+                ContentItem(
+                    type="image",
+                    asset=str(self.source_image_path),
+                    position=("50%", "50%"),
+                ),
+                ContentItem(
+                    type="text",
+                    content="Boxed text",
+                    position=("120px", "80px"),
+                    box={
+                        "level": "character",
+                        "type": "straight",
+                        "color": "#ff3366",
+                        "padding": 4,
+                    },
+                ),
+            ],
+            frame=False,
+        )
+
+        config = self.generator._convert_to_screenshot_config(
+            screenshot_def=screenshot_def,
+            device_frame=None,
+            default_background=None,
+            output_dir=str(self.temp_dir / "project_text_box_output"),
+            output_size=(1000, 800),
+        )
+
+        assert config is not None
+        assert len(config.text_overlays) == 1
+        assert config.text_overlays[0].box is not None
+        assert config.text_overlays[0].box.level == "character"
+        assert config.text_overlays[0].box.type == "straight"
+        assert config.text_overlays[0].box.color == "#ff3366"
+
+    def test_project_generation_accepts_text_box(self):
+        """Project YAML-style config with boxed text should generate."""
+        from koubou.config import ContentItem, ProjectInfo, ScreenshotDefinition
+
+        project_config = ProjectConfig(
+            project=ProjectInfo(
+                name="Text Box Project",
+                output_dir=str(self.temp_dir / "project_text_box_generated"),
+                device="iPhone 15 Pro Portrait",
+            ),
+            screenshots={
+                "boxed_text": ScreenshotDefinition(
+                    content=[
+                        ContentItem(
+                            type="image",
+                            asset=str(self.source_image_path),
+                            position=("50%", "50%"),
+                        ),
+                        ContentItem(
+                            type="text",
+                            content="Boxed",
+                            position=("100px", "80px"),
+                            alignment="left",
+                            color="#ffffff",
+                            box={"color": "#ff3366", "padding": 8},
+                        ),
+                    ],
+                    frame=False,
+                )
+            },
+        )
+
+        results = self.generator.generate_project(project_config)
+
+        assert len(results) == 1
+        assert results[0].exists()
 
     def test_position_source_image_respects_left_alignment(self):
         """Image alignment should control horizontal placement for project assets."""

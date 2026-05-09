@@ -8,6 +8,7 @@ from koubou.config import (
     GradientConfig,
     ProjectConfig,
     ScreenshotConfig,
+    TextBoxConfig,
     TextOverlay,
 )
 
@@ -77,11 +78,62 @@ class TestTextOverlay:
         assert overlay.font_family == "Arial"
         assert overlay.color is None
         assert overlay.alignment == "center"
+        assert overlay.box is None
 
     def test_invalid_color(self):
         """Test invalid color format fails validation."""
         with pytest.raises(ValidationError, match="hex format"):
             TextOverlay(content="Test", position=(0, 0), color="blue")  # Invalid format
+
+    def test_text_overlay_accepts_box(self):
+        """Test text overlay with box configuration."""
+        overlay = TextOverlay(
+            content="Test",
+            position=(0, 0),
+            box={"color": "#ff3366"},
+        )
+
+        assert overlay.box is not None
+        assert overlay.box.level == "paragraph"
+        assert overlay.box.type == "rounded"
+        assert overlay.box.color == "#ff3366"
+        assert overlay.box.padding == 8
+        assert overlay.box.corner_radius is None
+
+
+class TestTextBoxConfig:
+    """Tests for TextBoxConfig model."""
+
+    def test_text_box_accepts_supported_values(self):
+        """Test supported text box levels and types."""
+        for level in ["paragraph", "character"]:
+            for box_type in ["rounded", "straight", "strait"]:
+                config = TextBoxConfig(
+                    level=level,
+                    type=box_type,
+                    color="#ff336680",
+                    padding=4,
+                    corner_radius=2,
+                )
+                assert config.level == level
+                assert config.type == box_type
+
+    def test_text_box_rejects_invalid_color(self):
+        """Test invalid box color format fails validation."""
+        with pytest.raises(ValidationError, match="hex format"):
+            TextBoxConfig(color="red")
+
+    def test_content_item_accepts_box(self):
+        """Test content item with box configuration."""
+        item = ContentItem(
+            type="text",
+            content="Hello",
+            box={"level": "character", "type": "straight", "color": "#000000"},
+        )
+
+        assert item.box is not None
+        assert item.box.level == "character"
+        assert item.box.type == "straight"
 
 
 class TestScreenshotConfig:
