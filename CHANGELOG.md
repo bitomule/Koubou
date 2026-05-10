@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.5] - 2026-05-10
+
+### Added
+- Text overlays in YAML/content mode now support optional `box` backgrounds with paragraph and character levels, rounded or straight corners, padding, alpha colors, wrapping, alignment, gradients, strokes, auto-sizing, and rotation.
+- Content-mode and HTML-template rendering now support custom font files referenced from project assets.
+
+### Fixed
+- Watcher tests now avoid starting real filesystem observer threads, making the CI suite terminate reliably.
+
 ## [0.19.4] - 2026-05-06
 
 ### Fixed
