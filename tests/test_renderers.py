@@ -174,6 +174,288 @@ class TestTextRenderer:
         with pytest.raises(TextRenderError, match="Invalid color format"):
             renderer._parse_color("invalid")
 
+    def test_text_box_paragraph_renders_behind_text(self):
+        """Paragraph boxes should paint the configured fill behind text."""
+        overlay = TextOverlay(
+            content="Boxed",
+            position=(40, 60),
+            anchor="top-left",
+            alignment="left",
+            font_size=32,
+            color="#000000",
+            box={"color": "#ff0000", "padding": 8, "type": "straight"},
+        )
+
+        self.renderer.render(overlay, self.canvas)
+
+        assert self.canvas.getpixel((35, 55)) == (255, 0, 0, 255)
+
+    def test_text_box_multiline_paragraph_uses_block_bounds(self):
+        """Paragraph boxes should wrap the full text block."""
+        overlay = TextOverlay(
+            content="Hi longerword",
+            position=(30, 30),
+            anchor="top-left",
+            alignment="left",
+            max_width=90,
+            font_size=24,
+            color="#000000",
+            box={"color": "#00ff00", "padding": 4, "type": "straight"},
+        )
+
+        self.renderer.render(overlay, self.canvas)
+
+        first_line_y = 28
+        assert self.canvas.getpixel((32, first_line_y))[:3] == (0, 255, 0)
+        assert self.canvas.getpixel((95, first_line_y))[:3] == (0, 255, 0)
+
+    def test_text_box_character_keeps_wrapped_lines_separate(self):
+        """Character level should not fill the vertical gap between wrapped lines."""
+        overlay = TextOverlay(
+            content="AB C",
+            position=(40, 60),
+            anchor="top-left",
+            alignment="left",
+            max_width=45,
+            font_size=32,
+            color="#000000",
+            box={
+                "level": "character",
+                "color": "#0000ff",
+                "padding": 4,
+                "type": "straight",
+            },
+        )
+
+        self.renderer.render(overlay, self.canvas)
+
+        gap_pixels = [self.canvas.getpixel((50, y)) for y in range(88, 98)]
+        assert (255, 255, 255, 255) in gap_pixels
+
+    def test_text_box_character_respects_center_alignment(self):
+        """Character line fragment boxes should center shorter wrapped lines."""
+        overlay = TextOverlay(
+            content="AB C",
+            position=(100, 60),
+            anchor="top-left",
+            alignment="center",
+            max_width=45,
+            font_size=32,
+            color="#000000",
+            box={
+                "level": "character",
+                "color": "#0000ff",
+                "padding": 4,
+                "type": "straight",
+            },
+        )
+        font = self.renderer._get_font(
+            overlay.font_family, overlay.font_size, overlay.font_weight
+        )
+        text_block_width = font.getbbox("AB")[2] - font.getbbox("AB")[0]
+
+        self.renderer._render_text_boxes(
+            self.canvas,
+            overlay,
+            ["AB", "C"],
+            font,
+            line_height=48,
+            anchor_x=100,
+            anchor_y=60,
+            text_block_width=text_block_width,
+        )
+
+        blue_pixels = [
+            (x, y)
+            for y in range(self.canvas.height)
+            for x in range(self.canvas.width)
+            if self.canvas.getpixel((x, y))[2] > 200
+            and self.canvas.getpixel((x, y))[0] < 80
+            and self.canvas.getpixel((x, y))[1] < 80
+        ]
+
+        assert blue_pixels
+        top_line_blue_x = [x for x, y in blue_pixels if y < 90]
+        bottom_line_blue_x = [x for x, y in blue_pixels if y >= 90]
+        assert top_line_blue_x
+        assert bottom_line_blue_x
+
+        top_center = (min(top_line_blue_x) + max(top_line_blue_x)) / 2
+        bottom_center = (min(bottom_line_blue_x) + max(bottom_line_blue_x)) / 2
+        assert abs(top_center - bottom_center) <= 2
+
+    def test_text_box_character_renders_line_fragments(self):
+        """Character level should render boxes for wrapped line fragments."""
+        overlay = TextOverlay(
+            content="AB C",
+            position=(40, 60),
+            anchor="top-left",
+            alignment="left",
+            max_width=45,
+            font_size=32,
+            color="#000000",
+            box={"level": "character", "color": "#0000ff", "padding": 4},
+        )
+
+        self.renderer.render(overlay, self.canvas)
+
+        blue_pixels = [
+            pixel
+            for pixel in self.canvas.getdata()
+            if pixel[2] == 255 and pixel[0] == 0 and pixel[1] == 0
+        ]
+        assert len(blue_pixels) > 50
+
+    def test_text_box_accepts_rounded_straight_and_strait(self):
+        """All supported box types should render without errors."""
+        for box_type in ["rounded", "straight", "strait"]:
+            canvas = Image.new("RGBA", (400, 300), (255, 255, 255, 255))
+            overlay = TextOverlay(
+                content="Boxed",
+                position=(40, 60),
+                anchor="top-left",
+                alignment="left",
+                color="#000000",
+                box={"type": box_type, "color": "#ff00ff"},
+            )
+
+            self.renderer.render(overlay, canvas)
+
+            assert canvas.getbbox() is not None
+
+    def test_text_box_alpha_composites_over_canvas(self):
+        """Alpha box colors should composite over the existing canvas."""
+        overlay = TextOverlay(
+            content="Alpha",
+            position=(40, 60),
+            anchor="top-left",
+            alignment="left",
+            font_size=32,
+            color="#000000",
+            box={"color": "#ff000080", "padding": 8, "type": "straight"},
+        )
+
+        self.renderer.render(overlay, self.canvas)
+
+        pixel = self.canvas.getpixel((35, 55))
+        assert pixel[0] == 255
+        assert 120 <= pixel[1] <= 130
+        assert 120 <= pixel[2] <= 130
+        assert pixel[3] == 255
+
+    def test_text_box_respects_alignment(self):
+        """Box placement should follow the same alignment as the text."""
+        cases = [
+            ("left", "center-left", (100, 60)),
+            ("center", "center", (200, 60)),
+            ("right", "center-right", (300, 60)),
+        ]
+
+        for alignment, anchor, position in cases:
+            canvas = Image.new("RGBA", (400, 300), (255, 255, 255, 255))
+            overlay = TextOverlay(
+                content="Wide",
+                position=position,
+                anchor=anchor,
+                alignment=alignment,
+                max_width=100,
+                font_size=24,
+                color="#000000",
+                box={"color": "#00ffff", "padding": 6, "type": "straight"},
+            )
+
+            self.renderer.render(overlay, canvas)
+
+            cyan_pixels = [
+                (x, y)
+                for y in range(canvas.height)
+                for x in range(canvas.width)
+                if canvas.getpixel((x, y))[1] > 200
+                and canvas.getpixel((x, y))[2] > 200
+                and canvas.getpixel((x, y))[0] < 80
+            ]
+            assert cyan_pixels
+            left = min(x for x, _ in cyan_pixels)
+            right = max(x for x, _ in cyan_pixels)
+            assert left <= position[0] <= right
+
+    def test_text_box_with_gradient_text(self):
+        """Text boxes should work with gradient text fills."""
+        overlay = TextOverlay(
+            content="Gradient",
+            position=(40, 60),
+            anchor="top-left",
+            alignment="left",
+            font_size=32,
+            gradient=GradientConfig(
+                type="linear", colors=["#000000", "#333333"], direction=0
+            ),
+            box={"color": "#ffaa00", "padding": 8},
+        )
+
+        self.renderer.render(overlay, self.canvas)
+
+        assert self.canvas.getpixel((35, 66))[:3] == (255, 170, 0)
+
+    def test_text_box_with_stroke(self):
+        """Text boxes should work with stroked text."""
+        overlay = TextOverlay(
+            content="Stroke",
+            position=(40, 60),
+            anchor="top-left",
+            alignment="left",
+            font_size=32,
+            color="#ffffff",
+            stroke_width=2,
+            stroke_color="#000000",
+            box={"color": "#663399", "padding": 8},
+        )
+
+        self.renderer.render(overlay, self.canvas)
+
+        assert self.canvas.getpixel((35, 66))[:3] == (102, 51, 153)
+
+    def test_text_box_with_auto_sizing(self):
+        """Text boxes should render after auto-sizing resolves final text layout."""
+        overlay = TextOverlay(
+            content="This text shrinks to fit the configured box",
+            position=(40, 60),
+            anchor="top-left",
+            alignment="left",
+            font_size=40,
+            min_font_size=12,
+            max_width=160,
+            max_height=70,
+            color="#000000",
+            box={"color": "#008000", "padding": 4},
+        )
+
+        self.renderer.render(overlay, self.canvas)
+
+        assert self.canvas.getpixel((38, 58))[:3] == (0, 128, 0)
+
+    def test_text_box_rotates_with_text(self):
+        """The box and text should render together when rotated."""
+        overlay = TextOverlay(
+            content="Rotate",
+            position=(160, 130),
+            anchor="center",
+            alignment="center",
+            font_size=36,
+            color="#000000",
+            rotation=25,
+            box={"color": "#ff0000", "padding": 8},
+        )
+
+        self.renderer.render(overlay, self.canvas)
+
+        red_pixels = [
+            pixel
+            for pixel in self.canvas.getdata()
+            if pixel[0] == 255 and pixel[1] == 0 and pixel[2] == 0
+        ]
+        assert len(red_pixels) > 50
+
 
 class TestDeviceFrameRenderer:
     """Tests for DeviceFrameRenderer."""

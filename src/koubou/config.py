@@ -155,6 +155,45 @@ class GradientConfig(BaseModel):
         return v
 
 
+class TextBoxConfig(BaseModel):
+    """Background box configuration for text overlays."""
+
+    level: Literal["paragraph", "character"] = Field(
+        default="paragraph",
+        description="Whether to draw one paragraph box or boxes per line fragment",
+    )
+    type: Literal["rounded", "straight", "strait"] = Field(
+        default="rounded",
+        description="Box corner style. 'strait' is accepted as an alias.",
+    )
+    color: str = Field(..., description="Box fill color in hex format")
+    padding: int = Field(default=8, description="Box padding in pixels")
+    corner_radius: Optional[int] = Field(
+        default=None,
+        description="Corner radius in pixels. Defaults to padding for rounded boxes.",
+    )
+
+    @field_validator("color")
+    @classmethod
+    def validate_color(cls, v: str) -> str:
+        validate_hex_color(v, "Box color")
+        return v
+
+    @field_validator("padding")
+    @classmethod
+    def validate_padding(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError("Box padding must be >= 0")
+        return v
+
+    @field_validator("corner_radius")
+    @classmethod
+    def validate_corner_radius(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 0:
+            raise ValueError("Box corner_radius must be >= 0")
+        return v
+
+
 class TextOverlay(BaseModel):
     """Configuration for text overlays on screenshots."""
 
@@ -204,6 +243,9 @@ class TextOverlay(BaseModel):
     stroke_color: Optional[str] = Field(default=None, description="Solid stroke color")
     stroke_gradient: Optional[GradientConfig] = Field(
         default=None, description="Stroke gradient configuration"
+    )
+    box: Optional[TextBoxConfig] = Field(
+        default=None, description="Optional background box behind text"
     )
     rotation: Optional[float] = Field(
         default=0, description="Rotation angle in degrees (clockwise)"
@@ -365,6 +407,9 @@ class ContentItem(BaseModel):
     stroke_color: Optional[str] = Field(default=None, description="Solid stroke color")
     stroke_gradient: Optional[GradientConfig] = Field(
         default=None, description="Stroke gradient"
+    )
+    box: Optional[TextBoxConfig] = Field(
+        default=None, description="Optional background box behind text"
     )
 
     scale: Optional[float] = Field(default=1.0, description="Image scale factor")

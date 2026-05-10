@@ -657,6 +657,14 @@ flattened over white.
   # OR
   stroke_gradient:           # Gradient stroke (same structure as gradient)
 
+  # Text Box Options (optional):
+  box:
+    level: "paragraph" | "character" # Box around text block or line fragments
+    type: "rounded" | "straight"     # "strait" is accepted as an alias
+    color: string                    # Box fill color, supports alpha hex
+    padding: int?                    # Padding in pixels (default: 8)
+    corner_radius: int?              # Defaults to padding for rounded boxes
+
 # Image Content Item
 - type: "image"
   asset: string              # Path to image file
