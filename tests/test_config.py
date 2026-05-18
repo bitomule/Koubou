@@ -259,6 +259,33 @@ class TestContentItemAlignment:
             )
 
 
+class TestContentItemLocalizedAssets:
+    """Tests for ContentItem localized asset validation."""
+
+    def test_asset_mapping_accepts_region_language_codes(self):
+        item = ContentItem(
+            type="image",
+            asset={
+                "en-US": "screenshots/en/iphone/01.png",
+                "es-ES": "screenshots/es/iphone/01.png",
+                "fr": "screenshots/fr/iphone/01.png",
+                "default": "screenshots/iphone/01.png",
+            },
+            position=("50%", "50%"),
+        )
+
+        assert isinstance(item.asset, dict)
+        assert item.asset["en-US"] == "screenshots/en/iphone/01.png"
+
+    def test_asset_mapping_rejects_invalid_language_code(self):
+        with pytest.raises(ValidationError, match="Invalid language code"):
+            ContentItem(
+                type="image",
+                asset={"english": "screenshots/en/iphone/01.png"},
+                position=("50%", "50%"),
+            )
+
+
 class TestContentItemHighlight:
     """Tests for ContentItem with type='highlight'."""
 

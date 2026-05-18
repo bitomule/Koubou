@@ -948,6 +948,35 @@ class TestResolveLocalizedAsset:
         result = resolve_localized_asset(asset, "es", "en")
         assert result == "path/to/es.png"
 
+    def test_dict_format_region_language_fallback(self):
+        """Test dict format falls back from region code to language code."""
+        from koubou.generator import resolve_localized_asset
+
+        asset = {
+            "en": "path/to/en.png",
+            "es": "path/to/es.png",
+            "default": "path/to/default.png",
+        }
+
+        result = resolve_localized_asset(asset, "es-ES", "en-US")
+        assert result == "path/to/es.png"
+
+        result = resolve_localized_asset(asset, "fr-FR", "en-US")
+        assert result == "path/to/default.png"
+
+    def test_dict_format_region_exact_match_wins(self):
+        """Test dict format prefers exact region match before language fallback."""
+        from koubou.generator import resolve_localized_asset
+
+        asset = {
+            "en": "path/to/en.png",
+            "en-US": "path/to/en-us.png",
+            "es": "path/to/es.png",
+        }
+
+        result = resolve_localized_asset(asset, "en-US", "en-US")
+        assert result == "path/to/en-us.png"
+
     def test_dict_format_default_fallback(self):
         """Test dict format falls back to default when language not found."""
         from koubou.generator import resolve_localized_asset
@@ -979,6 +1008,28 @@ class TestResolveLocalizedAsset:
         # Should find screenshots/es/hero.png
         result = resolve_localized_asset(asset, "es", "en", self.temp_dir)
         assert result == "screenshots/es/hero.png"
+
+    def test_string_format_region_language_fallback(self):
+        """Test string format falls back from region code to language directory."""
+        from koubou.generator import resolve_localized_asset
+
+        asset = "screenshots/hero.png"
+
+        result = resolve_localized_asset(asset, "es-ES", "en-US", self.temp_dir)
+        assert result == "screenshots/es/hero.png"
+
+    def test_string_format_root_language_subdirectory_fallback(self):
+        """Test string format supports screenshots/{lang}/iphone/file.png."""
+        from koubou.generator import resolve_localized_asset
+
+        iphone_dir = self.screenshots_dir / "es" / "iphone"
+        iphone_dir.mkdir(parents=True)
+        Image.new("RGB", (100, 100), (255, 255, 0)).save(iphone_dir / "hero.png")
+
+        asset = "screenshots/iphone/hero.png"
+
+        result = resolve_localized_asset(asset, "es-ES", "en-US", self.temp_dir)
+        assert result == "screenshots/es/iphone/hero.png"
 
     def test_string_format_base_lang_fallback(self):
         """Test string format falls back to base_language when lang not found."""
