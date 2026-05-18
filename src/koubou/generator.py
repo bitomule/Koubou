@@ -90,11 +90,24 @@ def resolve_localized_asset(
     if not asset:
         return ""
 
+    def language_candidates(*codes: str) -> List[str]:
+        candidates: List[str] = []
+        for code in codes:
+            if not code:
+                continue
+            normalized = code.strip()
+            short = normalized.split("-", 1)[0].split("_", 1)[0]
+            for candidate in (normalized, short):
+                if candidate and candidate not in candidates:
+                    candidates.append(candidate)
+        return candidates
+
     # Case 1: Dict format - Explicit per-language mapping
     if isinstance(asset, dict):
-        # Try exact language match
-        if language in asset:
-            return asset[language]
+        # Try exact language match, then language-only fallbacks like en-US -> en
+        for candidate in language_candidates(language):
+            if candidate in asset:
+                return asset[candidate]
         # Try default fallback
         if "default" in asset:
             return asset["default"]
@@ -113,16 +126,21 @@ def resolve_localized_asset(
                 return (config_dir / p).exists()
             return p.exists()
 
-        # Try {lang}/ convention
-        lang_path = asset_path.parent / language / asset_path.name
-        if path_exists(lang_path):
-            return str(lang_path)
+        # Try {lang}/ convention, including language-only fallback en-US -> en
+        for candidate in language_candidates(language, base_language):
+            localized_path = asset_path.parent / candidate / asset_path.name
+            if path_exists(localized_path):
+                return str(localized_path)
 
-        # Try {base_lang}/ convention (if different from current lang)
-        if base_language != language:
-            base_lang_path = asset_path.parent / base_language / asset_path.name
-            if path_exists(base_lang_path):
-                return str(base_lang_path)
+        # Also support a language directory directly under the asset root:
+        # screenshots/iphone/01.png -> screenshots/{lang}/iphone/01.png
+        if not asset_path.is_absolute() and len(asset_path.parts) > 2:
+            asset_root = Path(asset_path.parts[0])
+            asset_rest = Path(*asset_path.parts[1:])
+            for candidate in language_candidates(language, base_language):
+                localized_path = asset_root / candidate / asset_rest
+                if path_exists(localized_path):
+                    return str(localized_path)
 
         # Fallback to direct path
         return asset

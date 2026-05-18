@@ -52,6 +52,7 @@ def resolve_output_size(size: Union[str, Tuple[int, int]]) -> Tuple[int, int]:
 
 # Hex color validation pattern: #RGB, #RRGGBB, or #RRGGBBAA
 HEX_COLOR_PATTERN = re.compile(r"^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$")
+LANGUAGE_CODE_PATTERN = re.compile(r"^[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*$")
 
 
 def validate_hex_color(color: str, field_name: str = "Color") -> None:
@@ -651,12 +652,13 @@ class ContentItem(BaseModel):
             if not v:
                 raise ValueError("Asset dict cannot be empty")
 
-            # Validate keys are valid language codes (2-3 letters or 'default')
+            # Validate keys are valid language codes or 'default'
             for key in v.keys():
-                if key != "default" and not (2 <= len(key) <= 3 and key.isalpha()):
+                if key != "default" and not LANGUAGE_CODE_PATTERN.match(key):
                     raise ValueError(
                         f"Invalid language code '{key}'. "
-                        "Use 2-3 letter codes (e.g., 'en', 'es', 'pt') or 'default'"
+                        "Use language codes (e.g., 'en', 'es', 'en-US') "
+                        "or 'default'"
                     )
 
             # Validate all values are non-empty strings
