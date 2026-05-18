@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.6] - 2026-05-18
+
+### Fixed
+- Localized assets now resolve region-coded languages such as `en-US` and `es-ES` to language-only asset keys and folders such as `en` and `es`.
+- Explicit localized asset maps now accept BCP-47 style keys such as `en-US`.
+- Convention-based asset lookup now supports nested layouts such as `screenshots/{lang}/iphone/01.png`.
+
 ## [0.19.5] - 2026-05-10
 
 ### Added
