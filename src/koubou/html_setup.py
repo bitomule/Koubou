@@ -37,8 +37,7 @@ def browser_setup_message(details: Optional[str] = None) -> str:
 
     message = (
         "HTML rendering is not set up yet. "
-        f"Run `{HTML_SETUP_COMMAND}` to install Playwright Chromium, "
-        "or install Google Chrome."
+        f"Run `{HTML_SETUP_COMMAND}` to install Playwright Chromium."
     )
     if details:
         return f"{message}\nDetails: {details}"
@@ -82,7 +81,6 @@ def check_html_environment() -> HtmlEnvironmentStatus:
         )
 
     playwright = sync_playwright().start()
-    chrome_error: Optional[Exception] = None
     chromium_error: Optional[Exception] = None
 
     try:
@@ -99,31 +97,12 @@ def check_html_environment() -> HtmlEnvironmentStatus:
         except Exception as exc:
             chromium_error = exc
 
-        try:
-            browser = playwright.chromium.launch(channel="chrome")
-            browser.close()
-            return HtmlEnvironmentStatus(
-                playwright_available=True,
-                system_chrome_available=True,
-                chromium_available=False,
-                ready=True,
-                browser_name="system Chrome",
-            )
-        except Exception as exc:
-            chrome_error = exc
-
-        detail_parts = []
-        if chrome_error:
-            detail_parts.append(f"Chrome: {chrome_error}")
-        if chromium_error:
-            detail_parts.append(f"Chromium: {chromium_error}")
-
         return HtmlEnvironmentStatus(
             playwright_available=True,
             system_chrome_available=False,
             chromium_available=False,
             ready=False,
-            details=" | ".join(detail_parts) if detail_parts else None,
+            details=f"Chromium: {chromium_error}" if chromium_error else None,
         )
     finally:
         playwright.stop()

@@ -28,7 +28,7 @@ def test_browser_setup_message_mentions_kou_setup_html():
     message = browser_setup_message()
 
     assert "kou setup-html" in message
-    assert "Google Chrome" in message
+    assert "Playwright Chromium" in message
 
 
 def test_setup_html_environment_installs_chromium(monkeypatch):

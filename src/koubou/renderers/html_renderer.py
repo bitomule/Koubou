@@ -161,17 +161,13 @@ class HtmlRenderer:
         sync_playwright = import_sync_playwright()
         self._playwright = sync_playwright().start()
 
-        # Prefer Playwright Chromium for automation stability, then fall back
-        # to system Chrome when the managed browser is unavailable.
         try:
             self._browser = self._playwright.chromium.launch()
             logger.info("Using Playwright Chromium for HTML rendering")
-        except Exception:
-            try:
-                self._browser = self._playwright.chromium.launch(channel="chrome")
-                logger.info("Using system Chrome for HTML rendering")
-            except Exception as e:
-                raise RuntimeError(browser_setup_message(str(e)))
+        except Exception as e:
+            self._playwright.stop()
+            self._playwright = None
+            raise RuntimeError(browser_setup_message(str(e)))
 
     def render(
         self,
@@ -384,14 +380,9 @@ class HtmlRenderer:
             browser = await playwright.chromium.launch()
             logger.info("Using Playwright Chromium for HTML rendering")
             return playwright, browser
-        except Exception:
-            try:
-                browser = await playwright.chromium.launch(channel="chrome")
-                logger.info("Using system Chrome for HTML rendering")
-                return playwright, browser
-            except Exception as e:
-                await playwright.stop()
-                raise RuntimeError(browser_setup_message(str(e)))
+        except Exception as e:
+            await playwright.stop()
+            raise RuntimeError(browser_setup_message(str(e)))
 
     @staticmethod
     async def _render_staged_with_layout_async(
