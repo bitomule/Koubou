@@ -3,6 +3,7 @@
 import io
 import json
 import logging
+import shutil
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import deque
@@ -64,6 +65,24 @@ class GenerationTask:
     @property
     def is_html(self) -> bool:
         return self.screenshot_config is None
+
+
+@dataclass
+class PreparedHtmlGenerationTask:
+    """Prepared HTML task staged on disk for batch rendering."""
+
+    task: GenerationTask
+    workspace_dir: Path
+    output_path: Path
+    layout_path: Path
+    cleanup_paths: List[Path]
+
+    def cleanup(self) -> None:
+        for path in self.cleanup_paths:
+            if path.is_dir():
+                shutil.rmtree(path, ignore_errors=True)
+            else:
+                path.unlink(missing_ok=True)
 
 
 def resolve_localized_asset(
@@ -475,6 +494,118 @@ class ScreenshotGenerator:
         """Resolve the sidecar layout JSON path for an HTML screenshot."""
         return output_path.with_suffix(".layout.json")
 
+    def _save_html_render_result(
+        self, render_result: Any, output_path: Path, layout_path: Path
+    ) -> Path:
+        """Persist rendered HTML PNG bytes and sidecar layout JSON."""
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        img = Image.open(io.BytesIO(render_result.png_bytes))
+        rgb_img = Image.new("RGB", img.size, (255, 255, 255))
+        rgb_img.paste(img, mask=img if img.mode == "RGBA" else None)
+
+        if output_path.suffix.lower() == ".jpg":
+            rgb_img.save(output_path, "JPEG", quality=95)
+        else:
+            rgb_img.save(output_path, "PNG")
+
+        layout_path.write_text(
+            json.dumps(render_result.layout, separators=(",", ":")),
+            encoding="utf-8",
+        )
+
+        logger.info(f"Generated HTML screenshot: {output_path}")
+        return output_path
+
+    def _prepare_html_generation_task(
+        self, task: GenerationTask
+    ) -> PreparedHtmlGenerationTask:
+        """Stage one HTML task on disk so it can be rendered by the batch renderer."""
+        workspace_dir = Path(tempfile.mkdtemp(prefix="koubou_html_batch_"))
+        prepared = self.prepare_html_screenshot(
+            task.screenshot_def,
+            task.config_dir,
+            device_frame_name=task.device_frame_name,
+            language=task.language,
+            base_language=task.base_language,
+            xcstrings_manager=task.xcstrings_manager,
+            assets_output_dir=workspace_dir,
+        )
+
+        try:
+            stage_html_workspace(
+                template_path=prepared.template_path,
+                variables=prepared.variables,
+                destination_dir=workspace_dir,
+                assets=prepared.assets,
+            )
+        except Exception:
+            prepared.cleanup()
+            shutil.rmtree(workspace_dir, ignore_errors=True)
+            raise
+
+        output_path = self._resolve_output_path(
+            task.output_dir, task.screenshot_id, task.config_dir
+        )
+        layout_path = self._resolve_layout_output_path(output_path)
+        cleanup_paths = list(prepared.cleanup_paths)
+        cleanup_paths.append(workspace_dir)
+        return PreparedHtmlGenerationTask(
+            task=task,
+            workspace_dir=workspace_dir,
+            output_path=output_path,
+            layout_path=layout_path,
+            cleanup_paths=cleanup_paths,
+        )
+
+    def _execute_html_generation_tasks(
+        self, tasks: List[GenerationTask], parallel_workers: int
+    ) -> Dict[int, Path]:
+        """Render HTML tasks with a shared browser and isolated contexts."""
+        if not tasks:
+            return {}
+
+        from .renderers.html_renderer import HtmlBatchRenderTask, HtmlRenderer
+
+        prepared_tasks: List[PreparedHtmlGenerationTask] = []
+        try:
+            for task in tasks:
+                prepared_tasks.append(self._prepare_html_generation_task(task))
+
+            render_tasks = [
+                HtmlBatchRenderTask(
+                    workspace_dir=prepared_task.workspace_dir,
+                    size=prepared_task.task.output_size,
+                )
+                for prepared_task in prepared_tasks
+            ]
+            outcomes = HtmlRenderer.render_staged_batch_with_layout(
+                render_tasks, max_concurrency=parallel_workers
+            )
+
+            completed: Dict[int, Path] = {}
+            for prepared_task, outcome in zip(prepared_tasks, outcomes):
+                if outcome.error is not None:
+                    logger.error(
+                        f"Failed to generate {prepared_task.task.screenshot_id} for "
+                        f"{prepared_task.task.device_frame_name}/"
+                        f"{prepared_task.task.language}: {outcome.error}"
+                    )
+                    continue
+                assert outcome.result is not None
+                completed[prepared_task.task.order_index] = (
+                    self._save_html_render_result(
+                        outcome.result,
+                        prepared_task.output_path,
+                        prepared_task.layout_path,
+                    )
+                )
+
+            return completed
+        finally:
+            for prepared_task in prepared_tasks:
+                prepared_task.cleanup()
+
     def _generate_html_screenshot(
         self,
         screenshot_def: Any,
@@ -514,24 +645,7 @@ class ScreenshotGenerator:
 
         output_path = self._resolve_output_path(output_dir, screenshot_id, config_dir)
         layout_path = self._resolve_layout_output_path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        img = Image.open(io.BytesIO(render_result.png_bytes))
-        rgb_img = Image.new("RGB", img.size, (255, 255, 255))
-        rgb_img.paste(img, mask=img if img.mode == "RGBA" else None)
-
-        if output_path.suffix.lower() == ".jpg":
-            rgb_img.save(output_path, "JPEG", quality=95)
-        else:
-            rgb_img.save(output_path, "PNG")
-
-        layout_path.write_text(
-            json.dumps(render_result.layout, separators=(",", ":")),
-            encoding="utf-8",
-        )
-
-        logger.info(f"Generated HTML screenshot: {output_path}")
-        return output_path
+        return self._save_html_render_result(render_result, output_path, layout_path)
 
     def generate_screenshot(self, config: ScreenshotConfig) -> Path:
         """Generate a single screenshot based on configuration.
@@ -1254,8 +1368,8 @@ class ScreenshotGenerator:
         )
         if html_tasks:
             logger.info(
-                "🛡️ HTML screenshots will render sequentially with a shared "
-                "browser to avoid Chrome/Playwright crashes"
+                "🌐 HTML screenshots will render with a shared browser and "
+                "isolated contexts"
             )
 
         completed: Dict[int, Path] = {}
@@ -1275,16 +1389,7 @@ class ScreenshotGenerator:
                             f"{task.device_frame_name}/{task.language}: {_e}"
                         )
 
-        for task in html_tasks:
-            try:
-                completed[task.order_index] = self._run_generation_task(
-                    task, generator=self
-                )
-            except Exception as _e:
-                logger.error(
-                    f"Failed to generate {task.screenshot_id} for "
-                    f"{task.device_frame_name}/{task.language}: {_e}"
-                )
+        completed.update(self._execute_html_generation_tasks(html_tasks, worker_count))
 
         return [completed[index] for index in sorted(completed)]
 

@@ -1,5 +1,6 @@
 """Tests for the main ScreenshotGenerator class."""
 
+import json
 import shutil
 import tempfile
 import threading
@@ -1451,8 +1452,14 @@ class TestZoomIntegration:
         for result_path in results:
             assert result_path.exists()
 
-    def test_parallel_execution_serializes_html_tasks(self, monkeypatch):
-        """HTML tasks should not run concurrently even when parallel mode is enabled."""
+    def test_parallel_execution_batches_html_tasks(self, monkeypatch):
+        """HTML tasks should use the batched shared-browser renderer path."""
+        from koubou.generator import PreparedHtmlGenerationTask
+        from koubou.renderers.html_renderer import (
+            HtmlBatchRenderOutcome,
+            HtmlRenderResult,
+        )
+
         tasks = [
             GenerationTask(
                 order_index=0,
@@ -1508,34 +1515,75 @@ class TestZoomIntegration:
             ),
         ]
 
-        state = {"active_html": 0, "peak_html": 0}
-        html_generators = []
-        lock = threading.Lock()
-
         def fake_run_generation_task(task, generator=None):
             output_path = self.temp_dir / f"{task.screenshot_id}.png"
-            if task.is_html:
-                with lock:
-                    state["active_html"] += 1
-                    state["peak_html"] = max(state["peak_html"], state["active_html"])
-                    html_generators.append(id(generator))
-                try:
-                    time.sleep(0.02)
-                finally:
-                    with lock:
-                        state["active_html"] -= 1
-            else:
+            if not task.is_html:
                 time.sleep(0.02)
+                output_path.write_text(task.screenshot_id, encoding="utf-8")
+                return output_path
 
-            output_path.write_text(task.screenshot_id, encoding="utf-8")
+            raise AssertionError("HTML tasks should not use _run_generation_task")
+
+        prepared_html_tasks = []
+
+        def fake_prepare_html_generation_task(task):
+            workspace_dir = self.temp_dir / f"{task.screenshot_id}_workspace"
+            workspace_dir.mkdir()
+            output_path = self.temp_dir / f"{task.screenshot_id}.png"
+            layout_path = self.temp_dir / f"{task.screenshot_id}.layout.json"
+            prepared = PreparedHtmlGenerationTask(
+                task=task,
+                workspace_dir=workspace_dir,
+                output_path=output_path,
+                layout_path=layout_path,
+                cleanup_paths=[workspace_dir],
+            )
+            prepared_html_tasks.append(prepared)
+            return prepared
+
+        batch_calls = {}
+
+        def fake_render_staged_batch_with_layout(render_tasks, max_concurrency):
+            batch_calls["task_count"] = len(render_tasks)
+            batch_calls["max_concurrency"] = max_concurrency
+            return [
+                HtmlBatchRenderOutcome(
+                    result=HtmlRenderResult(
+                        png_bytes=b"fake",
+                        layout={"id": prepared.task.screenshot_id},
+                    )
+                )
+                for prepared in prepared_html_tasks
+            ]
+
+        def fake_save_html_render_result(render_result, output_path, layout_path):
+            output_path.write_text(render_result.layout["id"], encoding="utf-8")
+            layout_path.write_text(json.dumps(render_result.layout), encoding="utf-8")
             return output_path
 
         monkeypatch.setattr(
             self.generator, "_run_generation_task", fake_run_generation_task
         )
+        monkeypatch.setattr(
+            self.generator,
+            "_prepare_html_generation_task",
+            fake_prepare_html_generation_task,
+        )
+        monkeypatch.setattr(
+            "koubou.renderers.html_renderer.HtmlRenderer.render_staged_batch_with_layout",
+            fake_render_staged_batch_with_layout,
+        )
+        monkeypatch.setattr(
+            self.generator, "_save_html_render_result", fake_save_html_render_result
+        )
 
         results = self.generator._execute_generation_tasks(tasks, parallel_workers=4)
 
         assert len(results) == 4
-        assert state["peak_html"] == 1
-        assert html_generators == [id(self.generator), id(self.generator)]
+        assert batch_calls == {"task_count": 2, "max_concurrency": 4}
+        assert [path.name for path in results] == [
+            "content_a.png",
+            "html_a.png",
+            "content_b.png",
+            "html_b.png",
+        ]

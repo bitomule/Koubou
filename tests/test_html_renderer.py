@@ -1,5 +1,6 @@
 """Tests for HTML template rendering."""
 
+import asyncio
 import importlib
 import io
 import json
@@ -185,6 +186,72 @@ class TestLayoutManifestHelpers:
             ],
             "overlaps": [],
         }
+
+
+class TestHtmlBatchRenderer:
+    """Unit tests for batched HTML rendering orchestration."""
+
+    def test_batch_renderer_limits_async_concurrency(self, monkeypatch, temp_dir):
+        from koubou.renderers.html_renderer import HtmlBatchRenderTask, HtmlRenderer
+
+        state = {"active": 0, "peak": 0}
+        lock = asyncio.Lock()
+
+        async def fake_launch_async_browser():
+            class FakeBrowser:
+                async def close(self):
+                    return None
+
+            class FakePlaywright:
+                async def stop(self):
+                    return None
+
+            return FakePlaywright(), FakeBrowser()
+
+        async def fake_render(browser, workspace_dir, size):
+            async with lock:
+                state["active"] += 1
+                state["peak"] = max(state["peak"], state["active"])
+            try:
+                await asyncio.sleep(0.01)
+                from koubou.renderers.html_renderer import HtmlRenderResult
+
+                return HtmlRenderResult(
+                    png_bytes=workspace_dir.name.encode("utf-8"),
+                    layout={"workspace": workspace_dir.name, "size": size},
+                )
+            finally:
+                async with lock:
+                    state["active"] -= 1
+
+        monkeypatch.setattr(
+            HtmlRenderer, "_launch_async_browser", fake_launch_async_browser
+        )
+        monkeypatch.setattr(
+            HtmlRenderer, "_render_staged_with_layout_async", fake_render
+        )
+
+        tasks = []
+        for index in range(4):
+            workspace_dir = temp_dir / f"workspace_{index}"
+            workspace_dir.mkdir()
+            tasks.append(
+                HtmlBatchRenderTask(workspace_dir=workspace_dir, size=(400, 800))
+            )
+
+        outcomes = HtmlRenderer.render_staged_batch_with_layout(
+            tasks, max_concurrency=2
+        )
+
+        assert len(outcomes) == 4
+        assert all(outcome.error is None for outcome in outcomes)
+        assert [outcome.result.layout["workspace"] for outcome in outcomes] == [
+            "workspace_0",
+            "workspace_1",
+            "workspace_2",
+            "workspace_3",
+        ]
+        assert state["peak"] == 2
 
 
 @requires_playwright

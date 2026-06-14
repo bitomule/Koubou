@@ -46,12 +46,23 @@ def browser_setup_message(details: Optional[str] = None) -> str:
 
 
 def import_sync_playwright():
-    """Import Playwright lazily so non-HTML workflows stay lightweight."""
+    """Import Playwright sync API lazily so non-HTML workflows stay lightweight."""
 
     try:
         from playwright.sync_api import sync_playwright
 
         return sync_playwright
+    except ImportError as exc:
+        raise RuntimeError(missing_playwright_message()) from exc
+
+
+def import_async_playwright():
+    """Import Playwright async API lazily so non-HTML workflows stay lightweight."""
+
+    try:
+        from playwright.async_api import async_playwright
+
+        return async_playwright
     except ImportError as exc:
         raise RuntimeError(missing_playwright_message()) from exc
 

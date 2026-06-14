@@ -1,5 +1,6 @@
 """HTML template renderer using Playwright headless browser."""
 
+import asyncio
 import logging
 import shutil
 import tempfile
@@ -9,6 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from ..html_setup import (
     browser_setup_message,
+    import_async_playwright,
     import_sync_playwright,
 )
 from .html_staging import stage_html_workspace
@@ -22,6 +24,22 @@ class HtmlRenderResult:
 
     png_bytes: bytes
     layout: Dict[str, Any]
+
+
+@dataclass
+class HtmlBatchRenderTask:
+    """A pre-staged HTML workspace to render."""
+
+    workspace_dir: Path
+    size: Tuple[int, int]
+
+
+@dataclass
+class HtmlBatchRenderOutcome:
+    """Batch render result for one HTML workspace."""
+
+    result: Optional[HtmlRenderResult] = None
+    error: Optional[Exception] = None
 
 
 def _round_ratio(value: float) -> float:
@@ -223,11 +241,11 @@ class HtmlRenderer:
         self._ensure_browser()
         assert self._browser is not None
 
-        width, height = size
-        page = self._browser.new_page(
-            viewport={"width": width, "height": height},
+        context = self._browser.new_context(
+            viewport={"width": size[0], "height": size[1]},
             device_scale_factor=1,
         )
+        page = context.new_page()
         try:
             page.goto(
                 f"file://{workspace_dir / 'index.html'}", wait_until="networkidle"
@@ -345,7 +363,7 @@ class HtmlRenderer:
             layout = _build_layout_manifest(raw_elements, size)
             return HtmlRenderResult(png_bytes=png_bytes, layout=layout)
         finally:
-            page.close()
+            context.close()
 
     def close(self):
         if self._browser:
@@ -354,3 +372,192 @@ class HtmlRenderer:
         if self._playwright:
             self._playwright.stop()
             self._playwright = None
+
+    @staticmethod
+    async def _launch_async_browser():
+        """Launch a single async browser instance for batch rendering."""
+        async_playwright = import_async_playwright()
+        playwright = await async_playwright().start()
+
+        try:
+            browser = await playwright.chromium.launch(channel="chrome")
+            logger.info("Using system Chrome for HTML rendering")
+            return playwright, browser
+        except Exception:
+            try:
+                browser = await playwright.chromium.launch()
+                logger.info("Using Playwright Chromium for HTML rendering")
+                return playwright, browser
+            except Exception as e:
+                await playwright.stop()
+                raise RuntimeError(browser_setup_message(str(e)))
+
+    @staticmethod
+    async def _render_staged_with_layout_async(
+        browser, workspace_dir: Path, size: Tuple[int, int]
+    ) -> HtmlRenderResult:
+        """Render a staged HTML workspace with a fresh isolated browser context."""
+        width, height = size
+        context = await browser.new_context(
+            viewport={"width": width, "height": height},
+            device_scale_factor=1,
+        )
+        page = await context.new_page()
+
+        try:
+            await page.goto(
+                f"file://{workspace_dir / 'index.html'}", wait_until="networkidle"
+            )
+            raw_elements = await page.evaluate(
+                """async () => {
+                    if (document.readyState !== "complete") {
+                        await new Promise((resolve) => {
+                            window.addEventListener("load", resolve, { once: true });
+                        });
+                    }
+
+                    const stylesheetLinks = Array.from(
+                        document.querySelectorAll('link[rel="stylesheet"]')
+                    );
+                    await Promise.all(
+                        stylesheetLinks.map(async (link) => {
+                            if (link.sheet) {
+                                return;
+                            }
+
+                            await new Promise((resolve) => {
+                                link.addEventListener("load", resolve, { once: true });
+                                link.addEventListener("error", resolve, { once: true });
+                            });
+                        })
+                    );
+
+                    if (document.fonts && document.fonts.ready) {
+                        try {
+                            await document.fonts.ready;
+                        } catch (error) {
+                            // Ignore font readiness errors and fall back
+                            // to the current layout.
+                        }
+                    }
+
+                    const images = Array.from(document.images);
+                    await Promise.all(
+                        images.map(async (image) => {
+                            if (!image.complete) {
+                                await new Promise((resolve, reject) => {
+                                    image.addEventListener(
+                                        "load",
+                                        resolve,
+                                        { once: true }
+                                    );
+                                    image.addEventListener(
+                                        "error",
+                                        reject,
+                                        { once: true }
+                                    );
+                                }).catch(() => undefined);
+                            }
+
+                            if (typeof image.decode === "function") {
+                                try {
+                                    await image.decode();
+                                } catch (error) {
+                                    // Ignore decode failures and use the
+                                    // current layout.
+                                }
+                            }
+                        })
+                    );
+
+                    await new Promise((resolve) =>
+                        requestAnimationFrame(() => resolve())
+                    );
+
+                    return Array.from(document.querySelectorAll("[data-kou-id]"))
+                        .map((node) => {
+                            const rect = node.getBoundingClientRect();
+                            const style = window.getComputedStyle(node);
+                            const element = {
+                                id: node.getAttribute("data-kou-id"),
+                                left: rect.left,
+                                top: rect.top,
+                                right: rect.right,
+                                bottom: rect.bottom,
+                            };
+
+                            const role = node.getAttribute("data-kou-role");
+                            if (role) {
+                                element.role = role;
+                            }
+
+                            const text = (node.innerText || "")
+                                .replace(/\\s+/g, " ")
+                                .trim();
+                            if (text) {
+                                element.text = text;
+                            }
+
+                            if (node.tagName.toLowerCase() === "img") {
+                                const src = node.getAttribute("src");
+                                if (src) {
+                                    element.src = src;
+                                }
+                            }
+
+                            if (style.zIndex && style.zIndex !== "auto") {
+                                const parsedZIndex = Number(style.zIndex);
+                                if (Number.isFinite(parsedZIndex)) {
+                                    element.zIndex = parsedZIndex;
+                                }
+                            }
+
+                            return element;
+                        })
+                        .filter((element) => Boolean(element.id));
+                }"""
+            )
+            png_bytes = await page.screenshot(type="png", full_page=False)
+            layout = _build_layout_manifest(raw_elements, size)
+            return HtmlRenderResult(png_bytes=png_bytes, layout=layout)
+        finally:
+            await context.close()
+
+    @classmethod
+    async def _render_staged_batch_async(
+        cls, tasks: List[HtmlBatchRenderTask], max_concurrency: int
+    ) -> List[HtmlBatchRenderOutcome]:
+        """Render a batch of staged HTML workspaces with one shared browser."""
+        if not tasks:
+            return []
+
+        worker_count = max(1, min(max_concurrency, len(tasks)))
+        playwright, browser = await cls._launch_async_browser()
+        semaphore = asyncio.Semaphore(worker_count)
+        results: List[Optional[HtmlBatchRenderOutcome]] = [None] * len(tasks)
+
+        async def run_task(index: int, task: HtmlBatchRenderTask) -> None:
+            async with semaphore:
+                try:
+                    render_result = await cls._render_staged_with_layout_async(
+                        browser, task.workspace_dir, task.size
+                    )
+                    results[index] = HtmlBatchRenderOutcome(result=render_result)
+                except Exception as exc:
+                    results[index] = HtmlBatchRenderOutcome(error=exc)
+
+        try:
+            await asyncio.gather(
+                *(run_task(index, task) for index, task in enumerate(tasks))
+            )
+            return [result for result in results if result is not None]
+        finally:
+            await browser.close()
+            await playwright.stop()
+
+    @classmethod
+    def render_staged_batch_with_layout(
+        cls, tasks: List[HtmlBatchRenderTask], max_concurrency: int
+    ) -> List[HtmlBatchRenderOutcome]:
+        """Synchronously render a batch of staged HTML workspaces."""
+        return asyncio.run(cls._render_staged_batch_async(tasks, max_concurrency))
