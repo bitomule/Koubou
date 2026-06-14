@@ -21,8 +21,6 @@ from .exceptions import KoubouError
 from .generator import ScreenshotGenerator
 from .html_preview import HtmlPreviewServer
 from .html_setup import (
-    check_html_environment,
-    format_html_environment_error,
     setup_html_environment,
 )
 from .live_generator import LiveScreenshotGenerator
@@ -105,7 +103,7 @@ def _create_config_file_with_mode(
         )
     console.print("\nEdit the configuration file and run:", style="blue")
     if normalized_mode == "html":
-        console.print(f"   kou generate {output_file} --setup-html", style="cyan")
+        console.print(f"   kou generate {output_file}", style="cyan")
     else:
         console.print(f"   kou generate {output_file}", style="cyan")
 
@@ -546,21 +544,15 @@ def _prepare_html_environment(
     verbose: bool,
     output_console: Console,
 ) -> None:
-    if setup_requested:
-        status = setup_html_environment(verbose=verbose)
-        if status.did_install_browser:
-            output_console.print(
-                f"HTML ready: installed {status.browser_name}", style="green"
-            )
-        else:
-            output_console.print(
-                f"HTML ready: using {status.browser_name}", style="green"
-            )
+    status = setup_html_environment(verbose=verbose)
+    if status.did_install_browser:
+        output_console.print(
+            f"HTML ready: installed {status.browser_name}", style="green"
+        )
         return
 
-    status = check_html_environment()
-    if not status.ready:
-        raise KoubouError(format_html_environment_error(status))
+    if setup_requested:
+        output_console.print(f"HTML ready: using {status.browser_name}", style="green")
 
 
 def _parse_output_size_option(value: str) -> Tuple[int, int]:
@@ -712,7 +704,7 @@ def generate(
     setup_html: bool = typer.Option(
         False,
         "--setup-html",
-        help="Prepare HTML rendering before generating HTML template screenshots",
+        help="Prepare HTML rendering before generating. Usually automatic for HTML templates.",
     ),
     verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
 ):
@@ -1183,7 +1175,7 @@ def live(
     setup_html: bool = typer.Option(
         False,
         "--setup-html",
-        help="Prepare HTML rendering before starting live mode",
+        help="Prepare HTML rendering before starting live mode. Usually automatic for HTML templates.",
     ),
 ):
     """Live editing mode - regenerate screenshots when config or assets change"""

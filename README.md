@@ -13,7 +13,7 @@
 
 - **🔄 Live Editing** - Real-time screenshot regeneration when config or assets change
 - **🖥️ Live Preview Dashboard** - Auto-open a local dashboard for screenshot previews with hot reload
-- **🧩 HTML/CSS Templates** - Render polished marketing layouts with Chrome or Playwright Chromium
+- **🧩 HTML/CSS Templates** - Render polished marketing layouts with Playwright Chromium
 - **🌍 Multi-Language Localization** - Generate localized screenshots using familiar xcstrings format from Xcode
 - **🖼️ Localized Assets** - Automatic language-specific asset resolution with convention-based and explicit mapping
 - **🎨 100+ Device Frames** - iPhone 16 Pro, iPad Air M2, MacBook Pro, Apple Watch Ultra, and more
@@ -47,7 +47,7 @@ brew install bitomule/tap/koubou
 kou setup-html
 ```
 
-If Google Chrome is already installed, HTML template rendering usually works without any extra setup. `kou setup-html` installs Playwright Chromium only when it is needed.
+Koubou uses Playwright Chromium for all HTML rendering. `kou generate` and `kou live` install it automatically on first use for HTML projects, and `kou setup-html` is available when you want to preflight the environment explicitly.
 
 **Python Developers**
 ```bash
@@ -91,9 +91,6 @@ kou --create-config my-html-screenshots.yaml --mode html
 # Generate screenshots
 kou generate my-screenshots.yaml
 
-# Prepare HTML rendering if your project uses HTML templates
-kou setup-html
-
 # Inspect real frame geometry before designing HTML layouts
 kou inspect-frame "iPhone 16 Pro - Black Titanium - Portrait" --output-size iPhone6_9
 
@@ -104,7 +101,7 @@ kou live my-screenshots.yaml
 kou install-skills
 ```
 
-`kou --create-config` also creates sample PNG assets in a sibling `screenshots/` directory, so the generated YAML can be rendered immediately. In `--mode html`, it also creates sample templates in `templates/` and the generated project is ready to run with `kou generate ... --setup-html`.
+`kou --create-config` also creates sample PNG assets in a sibling `screenshots/` directory, so the generated YAML can be rendered immediately. In `--mode html`, it also creates sample templates in `templates/` and the generated project is ready to run with `kou generate ...`.
 
 ## 🧩 HTML Templates
 
@@ -122,9 +119,9 @@ screenshots:
 
 - `variables:` are localizable `{{key}}` substitutions
 - `assets:` are file-path substitutions exposed to the template as `{{key}}`
-- `kou generate config.yaml --setup-html` prepares HTML rendering and generates in one run
+- `kou generate config.yaml` prepares Playwright Chromium automatically when HTML templates are present
 - `kou generate config.yaml --parallel-workers 4` renders multiple screenshots concurrently
-- `kou live config.yaml --setup-html` does the same before starting live mode
+- `kou live config.yaml` does the same before starting live mode
 - `kou inspect-frame "<device>" --output-size <size> --output json` exposes frame and screen geometry for layout decisions
 
 ### Compact Layout JSON
@@ -475,8 +472,8 @@ kou generate config.yaml --output json
 # Override the worker count for this run
 kou generate config.yaml --parallel-workers 4
 
-# Prepare HTML rendering and generate in one run
-kou generate config.yaml --setup-html
+# Generate HTML screenshots and auto-install Playwright Chromium on first run
+kou generate config.yaml
 
 # Enable verbose logging
 kou generate config.yaml --verbose
@@ -527,8 +524,8 @@ kou inspect-frame "iPhone 16 Pro - Black Titanium - Portrait" --output-size 1200
 # Start live editing with default settings
 kou live config.yaml
 
-# Prepare HTML rendering before starting live mode
-kou live config.yaml --setup-html
+# Start live mode and auto-install Playwright Chromium on first run
+kou live config.yaml
 
 # Adjust debounce delay (default: 0.5s)
 kou live config.yaml --debounce 1.0
