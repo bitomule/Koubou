@@ -37,8 +37,7 @@ def browser_setup_message(details: Optional[str] = None) -> str:
 
     message = (
         "HTML rendering is not set up yet. "
-        f"Run `{HTML_SETUP_COMMAND}` to install Playwright Chromium, "
-        "or install Google Chrome."
+        f"Run `{HTML_SETUP_COMMAND}` to install Playwright Chromium."
     )
     if details:
         return f"{message}\nDetails: {details}"
@@ -46,12 +45,23 @@ def browser_setup_message(details: Optional[str] = None) -> str:
 
 
 def import_sync_playwright():
-    """Import Playwright lazily so non-HTML workflows stay lightweight."""
+    """Import Playwright sync API lazily so non-HTML workflows stay lightweight."""
 
     try:
         from playwright.sync_api import sync_playwright
 
         return sync_playwright
+    except ImportError as exc:
+        raise RuntimeError(missing_playwright_message()) from exc
+
+
+def import_async_playwright():
+    """Import Playwright async API lazily so non-HTML workflows stay lightweight."""
+
+    try:
+        from playwright.async_api import async_playwright
+
+        return async_playwright
     except ImportError as exc:
         raise RuntimeError(missing_playwright_message()) from exc
 
@@ -71,23 +81,9 @@ def check_html_environment() -> HtmlEnvironmentStatus:
         )
 
     playwright = sync_playwright().start()
-    chrome_error: Optional[Exception] = None
     chromium_error: Optional[Exception] = None
 
     try:
-        try:
-            browser = playwright.chromium.launch(channel="chrome")
-            browser.close()
-            return HtmlEnvironmentStatus(
-                playwright_available=True,
-                system_chrome_available=True,
-                chromium_available=False,
-                ready=True,
-                browser_name="system Chrome",
-            )
-        except Exception as exc:
-            chrome_error = exc
-
         try:
             browser = playwright.chromium.launch()
             browser.close()
@@ -101,18 +97,12 @@ def check_html_environment() -> HtmlEnvironmentStatus:
         except Exception as exc:
             chromium_error = exc
 
-        detail_parts = []
-        if chrome_error:
-            detail_parts.append(f"Chrome: {chrome_error}")
-        if chromium_error:
-            detail_parts.append(f"Chromium: {chromium_error}")
-
         return HtmlEnvironmentStatus(
             playwright_available=True,
             system_chrome_available=False,
             chromium_available=False,
             ready=False,
-            details=" | ".join(detail_parts) if detail_parts else None,
+            details=f"Chromium: {chromium_error}" if chromium_error else None,
         )
     finally:
         playwright.stop()

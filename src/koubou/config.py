@@ -789,6 +789,14 @@ class ProjectInfo(BaseModel):
     name: str = Field(..., description="Project name")
     output_dir: str = Field(default="output", description="Output directory")
     device: str = Field(..., description="Target device frame")
+    parallel_workers: int = Field(
+        default=1,
+        ge=1,
+        description=(
+            "Number of screenshots to render concurrently. "
+            "Use 1 to keep sequential rendering."
+        ),
+    )
     output_size: Tuple[int, int] = Field(
         default=(1320, 2868),  # Default to iPhone6_9 dimensions
         description=(

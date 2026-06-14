@@ -3,11 +3,13 @@
 import io
 import json
 import logging
+import shutil
 import tempfile
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 from PIL import Image
 
@@ -42,6 +44,45 @@ class PreparedHtmlScreenshot:
     def cleanup(self) -> None:
         for path in self.cleanup_paths:
             path.unlink(missing_ok=True)
+
+
+@dataclass
+class GenerationTask:
+    """Prepared screenshot generation work item."""
+
+    order_index: int
+    screenshot_id: str
+    language: str
+    output_dir: str
+    output_size: Tuple[int, int]
+    config_dir: Optional[Path]
+    device_frame_name: Optional[str]
+    screenshot_def: Any
+    screenshot_config: Optional[ScreenshotConfig] = None
+    base_language: Optional[str] = None
+    xcstrings_manager: Optional[Any] = None
+
+    @property
+    def is_html(self) -> bool:
+        return self.screenshot_config is None
+
+
+@dataclass
+class PreparedHtmlGenerationTask:
+    """Prepared HTML task staged on disk for batch rendering."""
+
+    task: GenerationTask
+    workspace_dir: Path
+    output_path: Path
+    layout_path: Path
+    cleanup_paths: List[Path]
+
+    def cleanup(self) -> None:
+        for path in self.cleanup_paths:
+            if path.is_dir():
+                shutil.rmtree(path, ignore_errors=True)
+            else:
+                path.unlink(missing_ok=True)
 
 
 def resolve_localized_asset(
@@ -453,6 +494,118 @@ class ScreenshotGenerator:
         """Resolve the sidecar layout JSON path for an HTML screenshot."""
         return output_path.with_suffix(".layout.json")
 
+    def _save_html_render_result(
+        self, render_result: Any, output_path: Path, layout_path: Path
+    ) -> Path:
+        """Persist rendered HTML PNG bytes and sidecar layout JSON."""
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        img = Image.open(io.BytesIO(render_result.png_bytes))
+        rgb_img = Image.new("RGB", img.size, (255, 255, 255))
+        rgb_img.paste(img, mask=img if img.mode == "RGBA" else None)
+
+        if output_path.suffix.lower() == ".jpg":
+            rgb_img.save(output_path, "JPEG", quality=95)
+        else:
+            rgb_img.save(output_path, "PNG")
+
+        layout_path.write_text(
+            json.dumps(render_result.layout, separators=(",", ":")),
+            encoding="utf-8",
+        )
+
+        logger.info(f"Generated HTML screenshot: {output_path}")
+        return output_path
+
+    def _prepare_html_generation_task(
+        self, task: GenerationTask
+    ) -> PreparedHtmlGenerationTask:
+        """Stage one HTML task on disk so it can be rendered by the batch renderer."""
+        workspace_dir = Path(tempfile.mkdtemp(prefix="koubou_html_batch_"))
+        prepared = self.prepare_html_screenshot(
+            task.screenshot_def,
+            task.config_dir,
+            device_frame_name=task.device_frame_name,
+            language=task.language,
+            base_language=task.base_language,
+            xcstrings_manager=task.xcstrings_manager,
+            assets_output_dir=workspace_dir,
+        )
+
+        try:
+            stage_html_workspace(
+                template_path=prepared.template_path,
+                variables=prepared.variables,
+                destination_dir=workspace_dir,
+                assets=prepared.assets,
+            )
+        except Exception:
+            prepared.cleanup()
+            shutil.rmtree(workspace_dir, ignore_errors=True)
+            raise
+
+        output_path = self._resolve_output_path(
+            task.output_dir, task.screenshot_id, task.config_dir
+        )
+        layout_path = self._resolve_layout_output_path(output_path)
+        cleanup_paths = list(prepared.cleanup_paths)
+        cleanup_paths.append(workspace_dir)
+        return PreparedHtmlGenerationTask(
+            task=task,
+            workspace_dir=workspace_dir,
+            output_path=output_path,
+            layout_path=layout_path,
+            cleanup_paths=cleanup_paths,
+        )
+
+    def _execute_html_generation_tasks(
+        self, tasks: List[GenerationTask], parallel_workers: int
+    ) -> Dict[int, Path]:
+        """Render HTML tasks with a shared browser and isolated contexts."""
+        if not tasks:
+            return {}
+
+        from .renderers.html_renderer import HtmlBatchRenderTask, HtmlRenderer
+
+        prepared_tasks: List[PreparedHtmlGenerationTask] = []
+        try:
+            for task in tasks:
+                prepared_tasks.append(self._prepare_html_generation_task(task))
+
+            render_tasks = [
+                HtmlBatchRenderTask(
+                    workspace_dir=prepared_task.workspace_dir,
+                    size=prepared_task.task.output_size,
+                )
+                for prepared_task in prepared_tasks
+            ]
+            outcomes = HtmlRenderer.render_staged_batch_with_layout(
+                render_tasks, max_concurrency=parallel_workers
+            )
+
+            completed: Dict[int, Path] = {}
+            for prepared_task, outcome in zip(prepared_tasks, outcomes):
+                if outcome.error is not None:
+                    logger.error(
+                        f"Failed to generate {prepared_task.task.screenshot_id} for "
+                        f"{prepared_task.task.device_frame_name}/"
+                        f"{prepared_task.task.language}: {outcome.error}"
+                    )
+                    continue
+                assert outcome.result is not None
+                completed[prepared_task.task.order_index] = (
+                    self._save_html_render_result(
+                        outcome.result,
+                        prepared_task.output_path,
+                        prepared_task.layout_path,
+                    )
+                )
+
+            return completed
+        finally:
+            for prepared_task in prepared_tasks:
+                prepared_task.cleanup()
+
     def _generate_html_screenshot(
         self,
         screenshot_def: Any,
@@ -492,24 +645,7 @@ class ScreenshotGenerator:
 
         output_path = self._resolve_output_path(output_dir, screenshot_id, config_dir)
         layout_path = self._resolve_layout_output_path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        img = Image.open(io.BytesIO(render_result.png_bytes))
-        rgb_img = Image.new("RGB", img.size, (255, 255, 255))
-        rgb_img.paste(img, mask=img if img.mode == "RGBA" else None)
-
-        if output_path.suffix.lower() == ".jpg":
-            rgb_img.save(output_path, "JPEG", quality=95)
-        else:
-            rgb_img.save(output_path, "PNG")
-
-        layout_path.write_text(
-            json.dumps(render_result.layout, separators=(",", ":")),
-            encoding="utf-8",
-        )
-
-        logger.info(f"Generated HTML screenshot: {output_path}")
-        return output_path
+        return self._save_html_render_result(render_result, output_path, layout_path)
 
     def generate_screenshot(self, config: ScreenshotConfig) -> Path:
         """Generate a single screenshot based on configuration.
@@ -1065,6 +1201,198 @@ class ScreenshotGenerator:
         # Use unified generation approach (handles both single and multi-language)
         return self._generate_localized_project(project_config, config_dir)
 
+    def _build_generation_tasks(
+        self,
+        project_config: ProjectConfig,
+        *,
+        config_dir: Path,
+        localization_config: Optional[Any],
+        xcstrings_manager: Optional[Any],
+        content_resolver: Optional[Any],
+        default_background: Optional[GradientConfig],
+        device: str,
+        output_size: Tuple[int, int],
+        languages: List[str],
+    ) -> List[GenerationTask]:
+        """Build ordered generation tasks for a project."""
+        from copy import deepcopy
+
+        tasks: List[GenerationTask] = []
+        for language in languages:
+            logger.info(
+                f"🌐 Generating screenshots for device: {device}, "
+                f"language: {language}"
+            )
+
+            for i, (screenshot_id, screenshot_def) in enumerate(
+                project_config.screenshots.items(), 1
+            ):
+                logger.info(
+                    f"[{device}] [{language}] "
+                    f"[{i}/{len(project_config.screenshots)}] {screenshot_id}"
+                )
+
+                if localization_config:
+                    device_output_dir = str(
+                        Path(project_config.project.output_dir)
+                        / language
+                        / device.replace(" ", "_")
+                    )
+                else:
+                    device_output_dir = str(
+                        Path(project_config.project.output_dir)
+                        / device.replace(" ", "_")
+                    )
+
+                base_language = (
+                    localization_config.base_language if localization_config else None
+                )
+
+                if screenshot_def.template:
+                    tasks.append(
+                        GenerationTask(
+                            order_index=len(tasks),
+                            screenshot_id=screenshot_id,
+                            language=language,
+                            output_dir=device_output_dir,
+                            output_size=output_size,
+                            config_dir=config_dir,
+                            device_frame_name=device,
+                            screenshot_def=screenshot_def,
+                            base_language=base_language,
+                            xcstrings_manager=xcstrings_manager,
+                        )
+                    )
+                    continue
+
+                if localization_config and screenshot_def.content:
+                    assert content_resolver is not None
+                    localized_content = content_resolver.localize_content_items(
+                        screenshot_def.content, language
+                    )
+                    processed_screenshot_def = deepcopy(screenshot_def)
+                    processed_screenshot_def.content = localized_content
+                else:
+                    processed_screenshot_def = screenshot_def
+
+                temp_config = self._convert_to_screenshot_config(
+                    processed_screenshot_def,
+                    device,
+                    default_background,
+                    device_output_dir,
+                    config_dir,
+                    screenshot_id,
+                    output_size=output_size,
+                    language=language,
+                    base_language=base_language,
+                )
+                if not temp_config:
+                    logger.warning(
+                        f"Skipping {screenshot_id} for {device}/{language}: "
+                        f"no source image found"
+                    )
+                    continue
+
+                tasks.append(
+                    GenerationTask(
+                        order_index=len(tasks),
+                        screenshot_id=screenshot_id,
+                        language=language,
+                        output_dir=device_output_dir,
+                        output_size=output_size,
+                        config_dir=config_dir,
+                        device_frame_name=device,
+                        screenshot_def=processed_screenshot_def,
+                        screenshot_config=temp_config,
+                        base_language=base_language,
+                    )
+                )
+
+        return tasks
+
+    def _run_generation_task(
+        self, task: GenerationTask, generator: Optional["ScreenshotGenerator"] = None
+    ) -> Path:
+        """Execute a prepared generation task."""
+        task_generator = generator or ScreenshotGenerator(
+            frame_directory=str(self.frame_directory)
+        )
+
+        try:
+            if task.is_html:
+                return task_generator._generate_html_screenshot(
+                    screenshot_def=task.screenshot_def,
+                    screenshot_id=task.screenshot_id,
+                    output_dir=task.output_dir,
+                    output_size=task.output_size,
+                    config_dir=task.config_dir,
+                    device_frame_name=task.device_frame_name,
+                    language=task.language,
+                    base_language=task.base_language,
+                    xcstrings_manager=task.xcstrings_manager,
+                )
+
+            assert task.screenshot_config is not None
+            return task_generator.generate_screenshot(task.screenshot_config)
+        finally:
+            if generator is None and task_generator._html_renderer:
+                task_generator._html_renderer.close()
+                task_generator._html_renderer = None
+
+    def _execute_generation_tasks(
+        self, tasks: List[GenerationTask], parallel_workers: int
+    ) -> List[Path]:
+        """Run generation tasks sequentially or in parallel while preserving order."""
+        if not tasks:
+            return []
+
+        worker_count = max(1, min(parallel_workers, len(tasks)))
+        if worker_count == 1:
+            results: List[Path] = []
+            for task in tasks:
+                try:
+                    results.append(self._run_generation_task(task, generator=self))
+                except Exception as _e:
+                    logger.error(
+                        f"Failed to generate {task.screenshot_id} for "
+                        f"{task.device_frame_name}/{task.language}: {_e}"
+                    )
+            return results
+
+        html_tasks = [task for task in tasks if task.is_html]
+        content_tasks = [task for task in tasks if not task.is_html]
+
+        logger.info(
+            f"⚡ Parallel rendering enabled with {worker_count} workers "
+            f"for {len(tasks)} screenshot task(s)"
+        )
+        if html_tasks:
+            logger.info(
+                "🌐 HTML screenshots will render with a shared browser and "
+                "isolated contexts"
+            )
+
+        completed: Dict[int, Path] = {}
+        if content_tasks:
+            with ThreadPoolExecutor(max_workers=worker_count) as executor:
+                future_to_task = {
+                    executor.submit(self._run_generation_task, task): task
+                    for task in content_tasks
+                }
+                for future in as_completed(future_to_task):
+                    task = future_to_task[future]
+                    try:
+                        completed[task.order_index] = future.result()
+                    except Exception as _e:
+                        logger.error(
+                            f"Failed to generate {task.screenshot_id} for "
+                            f"{task.device_frame_name}/{task.language}: {_e}"
+                        )
+
+        completed.update(self._execute_html_generation_tasks(html_tasks, worker_count))
+
+        return [completed[index] for index in sorted(completed)]
+
     def _generate_localized_project(
         self, project_config: ProjectConfig, config_dir: Optional[Path] = None
     ) -> List[Path]:
@@ -1084,6 +1412,9 @@ class ScreenshotGenerator:
         # Initialize localization components only if needed
         if not config_dir:
             config_dir = Path.cwd()
+
+        xcstrings_manager = None
+        content_resolver = None
 
         if localization_config:
             xcstrings_manager = XCStringsManager(localization_config, config_dir)
@@ -1122,101 +1453,22 @@ class ScreenshotGenerator:
         ] = project_config.project.output_size  # type: ignore[assignment]
         logger.info(f"📱 Processing device: {device}")
         logger.info(f"📐 Output size: {output_size}")
+        logger.info(f"🧵 Parallel workers: {project_config.project.parallel_workers}")
 
-        all_results = []
-
-        # Generate screenshots for each language
-        for language in languages:
-            logger.info(
-                f"🌐 Generating screenshots for device: {device}, "
-                f"language: {language}"
-            )
-
-            for i, (screenshot_id, screenshot_def) in enumerate(
-                project_config.screenshots.items(), 1
-            ):
-                logger.info(
-                    f"[{device}] [{language}] "
-                    f"[{i}/{len(project_config.screenshots)}] {screenshot_id}"
-                )
-                try:
-                    # Generate device and language-specific output directory
-                    if localization_config:
-                        device_output_dir = str(
-                            Path(project_config.project.output_dir)
-                            / language
-                            / device.replace(" ", "_")
-                        )
-                    else:
-                        device_output_dir = str(
-                            Path(project_config.project.output_dir)
-                            / device.replace(" ", "_")
-                        )
-
-                    # HTML template mode: bypass PIL pipeline entirely
-                    if screenshot_def.template:
-                        xcm = xcstrings_manager if localization_config else None
-                        output_path = self._generate_html_screenshot(
-                            screenshot_def=screenshot_def,
-                            screenshot_id=screenshot_id,
-                            output_dir=device_output_dir,
-                            output_size=output_size,
-                            config_dir=config_dir,
-                            device_frame_name=device,
-                            language=language,
-                            base_language=(
-                                localization_config.base_language
-                                if localization_config
-                                else None
-                            ),
-                            xcstrings_manager=xcm,
-                        )
-                        all_results.append(output_path)
-                        continue
-
-                    # Content mode: standard PIL pipeline
-                    if localization_config and screenshot_def.content:
-                        localized_content = content_resolver.localize_content_items(
-                            screenshot_def.content, language
-                        )
-                        from copy import deepcopy
-
-                        processed_screenshot_def = deepcopy(screenshot_def)
-                        processed_screenshot_def.content = localized_content
-                    else:
-                        processed_screenshot_def = screenshot_def
-
-                    base_lang = (
-                        localization_config.base_language
-                        if localization_config
-                        else None
-                    )
-                    temp_config = self._convert_to_screenshot_config(
-                        processed_screenshot_def,
-                        device,
-                        default_background,
-                        device_output_dir,
-                        config_dir,
-                        screenshot_id,
-                        output_size=output_size,
-                        language=language,
-                        base_language=base_lang,
-                    )
-                    if temp_config:
-                        output_path = self.generate_screenshot(temp_config)
-                        all_results.append(output_path)
-                    else:
-                        logger.warning(
-                            f"Skipping {screenshot_id} for {device}/{language}: "
-                            f"no source image found"
-                        )
-                except Exception as _e:
-                    logger.error(
-                        f"Failed to generate {screenshot_id} for "
-                        f"{device}/{language}: {_e}"
-                    )
-                    # Continue with next screenshot instead of failing project
-                    continue
+        tasks = self._build_generation_tasks(
+            project_config,
+            config_dir=config_dir,
+            localization_config=localization_config,
+            xcstrings_manager=xcstrings_manager,
+            content_resolver=content_resolver,
+            default_background=default_background,
+            device=device,
+            output_size=output_size,
+            languages=languages,
+        )
+        all_results = self._execute_generation_tasks(
+            tasks, project_config.project.parallel_workers
+        )
 
         # Clean up HTML renderer if used
         if self._html_renderer:
@@ -1428,7 +1680,13 @@ class ScreenshotGenerator:
             if item.type == "text":
                 # Convert to TextOverlay
                 if item.content:
-                    alignment = getattr(item, "alignment", "center") or "center"
+                    raw_alignment = getattr(item, "alignment", "center") or "center"
+                    if raw_alignment == "left":
+                        alignment: Literal["left", "center", "right"] = "left"
+                    elif raw_alignment == "right":
+                        alignment = "right"
+                    else:
+                        alignment = "center"
                     position = self._convert_position(
                         item.position, (canvas_width, canvas_height)
                     )
@@ -1526,7 +1784,9 @@ class ScreenshotGenerator:
         return config
 
     @staticmethod
-    def _text_anchor_from_alignment(alignment: str) -> str:
+    def _text_anchor_from_alignment(
+        alignment: Literal["left", "center", "right"],
+    ) -> Literal["center-left", "center", "center-right"]:
         """Map project text alignment to the corresponding horizontal anchor.
 
         Project YAML exposes only left/center/right alignment. We keep the

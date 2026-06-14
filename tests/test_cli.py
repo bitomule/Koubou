@@ -139,7 +139,7 @@ class TestCLI:
 
     @requires_html_runtime
     def test_create_config_html_mode_generates_successfully(self):
-        """HTML sample config should render successfully with setup-html."""
+        """HTML sample config should render successfully without extra setup flags."""
         config_path = self.temp_dir / "sample_html_config.yaml"
 
         create_result = self.runner.invoke(
@@ -155,9 +155,7 @@ class TestCLI:
         )
         assert create_result.exit_code == 0
 
-        generate_result = self.runner.invoke(
-            app, ["generate", str(config_path), "--setup-html"]
-        )
+        generate_result = self.runner.invoke(app, ["generate", str(config_path)])
 
         assert generate_result.exit_code == 0
         output_files = list(
@@ -427,6 +425,91 @@ class TestCLI:
             }
         ]
 
+    def test_generate_html_auto_prepares_runtime(self, monkeypatch):
+        """HTML generation should prepare Playwright automatically."""
+        template_path = self.temp_dir / "hero.html"
+        template_path.write_text("<html><body>{{headline}}</body></html>")
+
+        config_data = {
+            "project": {
+                "name": "HTML CLI Auto Setup Test",
+                "output_dir": str(self.temp_dir / "output"),
+                "device": "iPhone 16 Pro - Black Titanium - Portrait",
+                "output_size": "iPhone6_9",
+            },
+            "screenshots": {
+                "hero": {
+                    "template": str(template_path),
+                    "variables": {"headline": "Hello"},
+                }
+            },
+        }
+        config_path = self.temp_dir / "html_auto_config.yaml"
+        with open(config_path, "w") as f:
+            yaml.dump(config_data, f)
+
+        setup_calls = []
+
+        def fake_prepare_html_environment(*, setup_requested, verbose, output_console):
+            setup_calls.append(
+                {
+                    "setup_requested": setup_requested,
+                    "verbose": verbose,
+                    "console_type": type(output_console).__name__,
+                }
+            )
+
+        class FakeGenerator:
+            def generate_project(self, project_config, config_dir):
+                return [Path(project_config.project.output_dir) / "hero.png"]
+
+        monkeypatch.setattr(
+            "koubou.cli._prepare_html_environment", fake_prepare_html_environment
+        )
+        monkeypatch.setattr("koubou.cli.ScreenshotGenerator", FakeGenerator)
+
+        result = self.runner.invoke(app, ["generate", str(config_path)])
+
+        assert result.exit_code == 0
+        assert setup_calls == [
+            {
+                "setup_requested": False,
+                "verbose": False,
+                "console_type": "Console",
+            }
+        ]
+
+    def test_generate_parallel_workers_override(self, monkeypatch):
+        """CLI flag should override project.parallel_workers before generation."""
+        config_data = {
+            "project": {
+                "name": "Parallel CLI Test",
+                "output_dir": str(self.temp_dir / "output"),
+                "device": "iPhone 15 Pro Portrait",
+            },
+            "screenshots": {},
+        }
+        config_path = self.temp_dir / "parallel_config.yaml"
+        with open(config_path, "w") as f:
+            yaml.dump(config_data, f)
+
+        captured = {}
+
+        class FakeGenerator:
+            def generate_project(self, project_config, config_dir):
+                captured["parallel_workers"] = project_config.project.parallel_workers
+                return []
+
+        monkeypatch.setattr("koubou.cli.ScreenshotGenerator", FakeGenerator)
+
+        result = self.runner.invoke(
+            app,
+            ["generate", str(config_path), "--parallel-workers", "4"],
+        )
+
+        assert result.exit_code == 0
+        assert captured["parallel_workers"] == 4
+
     def test_generate_json_includes_layout_path_for_html(self, monkeypatch):
         """HTML JSON output should expose the sidecar layout path."""
         template_path = self.temp_dir / "hero.html"
@@ -495,8 +578,8 @@ class TestCLI:
             }
         ]
 
-    def test_generate_html_without_setup_shows_actionable_error(self, monkeypatch):
-        """Test generate shows kou setup-html guidance when HTML is not ready."""
+    def test_generate_html_auto_setup_shows_actionable_error(self, monkeypatch):
+        """Test generate still shows setup guidance when automatic setup fails."""
         template_path = self.temp_dir / "hero.html"
         template_path.write_text("<html><body>{{headline}}</body></html>")
 
@@ -688,6 +771,165 @@ class TestCLI:
         assert setup_calls == [
             {
                 "setup_requested": True,
+                "verbose": False,
+                "console_type": "Console",
+            }
+        ]
+        assert len(preview_servers) == 1
+
+    def test_live_html_auto_prepares_runtime(self, monkeypatch):
+        """Live HTML mode should prepare Playwright automatically."""
+        template_path = self.temp_dir / "hero.html"
+        template_path.write_text("<html><body>{{headline}}</body></html>")
+
+        config_data = {
+            "project": {
+                "name": "HTML Live Auto Setup Test",
+                "output_dir": str(self.temp_dir / "output"),
+                "device": "iPhone 16 Pro - Black Titanium - Portrait",
+                "output_size": "iPhone6_9",
+            },
+            "screenshots": {
+                "hero": {
+                    "template": str(template_path),
+                    "variables": {"headline": "Hello"},
+                }
+            },
+        }
+        config_path = self.temp_dir / "live_html_auto_config.yaml"
+        with open(config_path, "w") as f:
+            yaml.dump(config_data, f)
+
+        setup_calls = []
+
+        def fake_prepare_html_environment(*, setup_requested, verbose, output_console):
+            setup_calls.append(
+                {
+                    "setup_requested": setup_requested,
+                    "verbose": verbose,
+                    "console_type": type(output_console).__name__,
+                }
+            )
+
+        class FakeResult:
+            has_errors = False
+            success_count = 1
+            error_count = 0
+            config_errors = []
+            failed_screenshots = {}
+            updated_preview_screenshots = []
+            preview_errors = {}
+            preview_full_reload = False
+
+        class FakeLiveGenerator:
+            def __init__(self, config_file):
+                self.config_file = config_file
+                self.preview_workspace = object()
+
+            def initial_generation(self):
+                return FakeResult()
+
+            def get_asset_paths(self):
+                return set()
+
+            def get_dependency_summary(self):
+                return {"total_dependencies": 0}
+
+            def has_preview_screenshots(self):
+                return True
+
+            def sync_preview_workspace(self, screenshot_ids=None):
+                return {}
+
+            def get_preview_slides(self):
+                return []
+
+            def close(self):
+                return None
+
+        class FakeWatcher:
+            def __init__(self, config_file, debounce_delay):
+                self.config_file = config_file
+                self.debounce_delay = debounce_delay
+
+            def set_change_callback(self, callback):
+                self.callback = callback
+
+            def add_asset_paths(self, asset_paths):
+                self.asset_paths = asset_paths
+
+            def start(self):
+                return None
+
+            def stop(self):
+                return None
+
+            def get_watched_files(self):
+                return set()
+
+        class FakeLive:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        def fake_signal(signum, handler):
+            handler(signum, None)
+            return None
+
+        preview_servers = []
+
+        class FakePreviewServer:
+            def __init__(self, workspace):
+                self.workspace = workspace
+                self.url = "http://127.0.0.1:9999/"
+                preview_servers.append(self)
+
+            def set_slides(self, slides):
+                self.slides = slides
+
+            def start(self):
+                return None
+
+            def open_browser(self):
+                return True
+
+            def publish_slide_error(self, screenshot_id, error):
+                return None
+
+            def publish_reload_slides(self, screenshot_ids):
+                return None
+
+            def publish_full_reload(self):
+                return None
+
+            def stop(self):
+                return None
+
+        monkeypatch.setattr(
+            "koubou.cli._prepare_html_environment", fake_prepare_html_environment
+        )
+        monkeypatch.setattr("koubou.cli.LiveScreenshotGenerator", FakeLiveGenerator)
+        monkeypatch.setattr("koubou.cli.HtmlPreviewServer", FakePreviewServer)
+        monkeypatch.setattr("koubou.cli.LiveWatcher", FakeWatcher)
+        monkeypatch.setattr("koubou.cli.Live", FakeLive)
+        monkeypatch.setattr("koubou.cli.signal.signal", fake_signal)
+        monkeypatch.setattr(
+            "koubou.cli._create_live_status_display",
+            lambda: type("StatusDisplay", (), {"renderable": None})(),
+        )
+        monkeypatch.setattr("koubou.cli._update_live_status", lambda *args: None)
+
+        result = self.runner.invoke(app, ["live", str(config_path)])
+
+        assert result.exit_code == 0
+        assert setup_calls == [
+            {
+                "setup_requested": False,
                 "verbose": False,
                 "console_type": "Console",
             }
