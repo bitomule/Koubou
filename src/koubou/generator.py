@@ -1245,25 +1245,46 @@ class ScreenshotGenerator:
                     )
             return results
 
+        html_tasks = [task for task in tasks if task.is_html]
+        content_tasks = [task for task in tasks if not task.is_html]
+
         logger.info(
             f"⚡ Parallel rendering enabled with {worker_count} workers "
             f"for {len(tasks)} screenshot task(s)"
         )
+        if html_tasks:
+            logger.info(
+                "🛡️ HTML screenshots will render sequentially with a shared "
+                "browser to avoid Chrome/Playwright crashes"
+            )
 
         completed: Dict[int, Path] = {}
-        with ThreadPoolExecutor(max_workers=worker_count) as executor:
-            future_to_task = {
-                executor.submit(self._run_generation_task, task): task for task in tasks
-            }
-            for future in as_completed(future_to_task):
-                task = future_to_task[future]
-                try:
-                    completed[task.order_index] = future.result()
-                except Exception as _e:
-                    logger.error(
-                        f"Failed to generate {task.screenshot_id} for "
-                        f"{task.device_frame_name}/{task.language}: {_e}"
-                    )
+        if content_tasks:
+            with ThreadPoolExecutor(max_workers=worker_count) as executor:
+                future_to_task = {
+                    executor.submit(self._run_generation_task, task): task
+                    for task in content_tasks
+                }
+                for future in as_completed(future_to_task):
+                    task = future_to_task[future]
+                    try:
+                        completed[task.order_index] = future.result()
+                    except Exception as _e:
+                        logger.error(
+                            f"Failed to generate {task.screenshot_id} for "
+                            f"{task.device_frame_name}/{task.language}: {_e}"
+                        )
+
+        for task in html_tasks:
+            try:
+                completed[task.order_index] = self._run_generation_task(
+                    task, generator=self
+                )
+            except Exception as _e:
+                logger.error(
+                    f"Failed to generate {task.screenshot_id} for "
+                    f"{task.device_frame_name}/{task.language}: {_e}"
+                )
 
         return [completed[index] for index in sorted(completed)]
 

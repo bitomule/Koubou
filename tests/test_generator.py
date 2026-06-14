@@ -1450,3 +1450,92 @@ class TestZoomIntegration:
         assert [path.name for path in results] == ["screenshot1.png", "screenshot2.png"]
         for result_path in results:
             assert result_path.exists()
+
+    def test_parallel_execution_serializes_html_tasks(self, monkeypatch):
+        """HTML tasks should not run concurrently even when parallel mode is enabled."""
+        tasks = [
+            GenerationTask(
+                order_index=0,
+                screenshot_id="content_a",
+                language="en",
+                output_dir=str(self.temp_dir),
+                output_size=(400, 800),
+                config_dir=self.temp_dir,
+                device_frame_name="Test Frame",
+                screenshot_def=None,
+                screenshot_config=ScreenshotConfig(
+                    name="Content A",
+                    source_image=str(self.source_image_path),
+                    output_size=(400, 800),
+                    output_path=str(self.temp_dir / "content_a.png"),
+                ),
+            ),
+            GenerationTask(
+                order_index=1,
+                screenshot_id="html_a",
+                language="en",
+                output_dir=str(self.temp_dir),
+                output_size=(400, 800),
+                config_dir=self.temp_dir,
+                device_frame_name="Test Frame",
+                screenshot_def=object(),
+            ),
+            GenerationTask(
+                order_index=2,
+                screenshot_id="content_b",
+                language="en",
+                output_dir=str(self.temp_dir),
+                output_size=(400, 800),
+                config_dir=self.temp_dir,
+                device_frame_name="Test Frame",
+                screenshot_def=None,
+                screenshot_config=ScreenshotConfig(
+                    name="Content B",
+                    source_image=str(self.source_image_path),
+                    output_size=(400, 800),
+                    output_path=str(self.temp_dir / "content_b.png"),
+                ),
+            ),
+            GenerationTask(
+                order_index=3,
+                screenshot_id="html_b",
+                language="en",
+                output_dir=str(self.temp_dir),
+                output_size=(400, 800),
+                config_dir=self.temp_dir,
+                device_frame_name="Test Frame",
+                screenshot_def=object(),
+            ),
+        ]
+
+        state = {"active_html": 0, "peak_html": 0}
+        html_generators = []
+        lock = threading.Lock()
+
+        def fake_run_generation_task(task, generator=None):
+            output_path = self.temp_dir / f"{task.screenshot_id}.png"
+            if task.is_html:
+                with lock:
+                    state["active_html"] += 1
+                    state["peak_html"] = max(state["peak_html"], state["active_html"])
+                    html_generators.append(id(generator))
+                try:
+                    time.sleep(0.02)
+                finally:
+                    with lock:
+                        state["active_html"] -= 1
+            else:
+                time.sleep(0.02)
+
+            output_path.write_text(task.screenshot_id, encoding="utf-8")
+            return output_path
+
+        monkeypatch.setattr(
+            self.generator, "_run_generation_task", fake_run_generation_task
+        )
+
+        results = self.generator._execute_generation_tasks(tasks, parallel_workers=4)
+
+        assert len(results) == 4
+        assert state["peak_html"] == 1
+        assert html_generators == [id(self.generator), id(self.generator)]
