@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-06-14
+
+### Added
+- Configurable parallel screenshot rendering via `project.parallel_workers` and the `kou generate --parallel-workers` CLI override.
+- Parallel HTML rendering with a shared Playwright Chromium browser and isolated browser contexts per screenshot.
+
+### Changed
+- HTML projects now auto-install and prepare Playwright Chromium on first `kou generate` or `kou live` run, while `kou setup-html` remains available as an explicit preflight command.
+- HTML template sample projects and README examples now use the automatic Playwright setup flow by default.
+
+### Fixed
+- Removed the fallback to system Chrome for HTML rendering to avoid native browser launch crashes during automated rendering.
+- HTML parallel rendering now uses the same managed Playwright runtime in both serial and concurrent execution paths.
+
+### Testing
+- CI green on lint, build, security scan, and test matrix for Python 3.9, 3.10, 3.11, and 3.12.
+
 ## [0.19.6] - 2026-05-18
 
 ### Fixed
