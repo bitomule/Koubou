@@ -87,19 +87,6 @@ def check_html_environment() -> HtmlEnvironmentStatus:
 
     try:
         try:
-            browser = playwright.chromium.launch(channel="chrome")
-            browser.close()
-            return HtmlEnvironmentStatus(
-                playwright_available=True,
-                system_chrome_available=True,
-                chromium_available=False,
-                ready=True,
-                browser_name="system Chrome",
-            )
-        except Exception as exc:
-            chrome_error = exc
-
-        try:
             browser = playwright.chromium.launch()
             browser.close()
             return HtmlEnvironmentStatus(
@@ -111,6 +98,19 @@ def check_html_environment() -> HtmlEnvironmentStatus:
             )
         except Exception as exc:
             chromium_error = exc
+
+        try:
+            browser = playwright.chromium.launch(channel="chrome")
+            browser.close()
+            return HtmlEnvironmentStatus(
+                playwright_available=True,
+                system_chrome_available=True,
+                chromium_available=False,
+                ready=True,
+                browser_name="system Chrome",
+            )
+        except Exception as exc:
+            chrome_error = exc
 
         detail_parts = []
         if chrome_error:
