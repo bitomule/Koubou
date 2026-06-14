@@ -1570,7 +1570,10 @@ class TestZoomIntegration:
             fake_prepare_html_generation_task,
         )
         monkeypatch.setattr(
-            "koubou.renderers.html_renderer.HtmlRenderer.render_staged_batch_with_layout",
+            (
+                "koubou.renderers.html_renderer."
+                "HtmlRenderer.render_staged_batch_with_layout"
+            ),
             fake_render_staged_batch_with_layout,
         )
         monkeypatch.setattr(

@@ -5,11 +5,11 @@ import json
 import logging
 import shutil
 import tempfile
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 from PIL import Image
 
@@ -1680,7 +1680,13 @@ class ScreenshotGenerator:
             if item.type == "text":
                 # Convert to TextOverlay
                 if item.content:
-                    alignment = getattr(item, "alignment", "center") or "center"
+                    raw_alignment = getattr(item, "alignment", "center") or "center"
+                    if raw_alignment == "left":
+                        alignment: Literal["left", "center", "right"] = "left"
+                    elif raw_alignment == "right":
+                        alignment = "right"
+                    else:
+                        alignment = "center"
                     position = self._convert_position(
                         item.position, (canvas_width, canvas_height)
                     )
@@ -1778,7 +1784,9 @@ class ScreenshotGenerator:
         return config
 
     @staticmethod
-    def _text_anchor_from_alignment(alignment: str) -> str:
+    def _text_anchor_from_alignment(
+        alignment: Literal["left", "center", "right"],
+    ) -> Literal["center-left", "center", "center-right"]:
         """Map project text alignment to the corresponding horizontal anchor.
 
         Project YAML exposes only left/center/right alignment. We keep the

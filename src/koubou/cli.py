@@ -704,7 +704,10 @@ def generate(
     setup_html: bool = typer.Option(
         False,
         "--setup-html",
-        help="Prepare HTML rendering before generating. Usually automatic for HTML templates.",
+        help=(
+            "Prepare HTML rendering before generating. "
+            "Usually automatic for HTML templates."
+        ),
     ),
     verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
 ):
@@ -851,11 +854,14 @@ def install_skills(
         None,
         "--agent",
         "-a",
-        help="Target a specific agent (e.g. claude-code, cursor). Installs to all detected agents by default.",
+        help=(
+            "Target a specific agent (e.g. claude-code, cursor). "
+            "Installs to all detected agents by default."
+        ),
     ),
     verbose: bool = typer.Option(False, "--verbose", help="Enable verbose logging"),
 ):
-    """Install the Koubou skill pack for AI coding agents (Claude Code, Cursor, Windsurf, and more)."""
+    """Install the Koubou skill pack for AI coding agents."""
 
     setup_logging(verbose)
 
@@ -1175,7 +1181,10 @@ def live(
     setup_html: bool = typer.Option(
         False,
         "--setup-html",
-        help="Prepare HTML rendering before starting live mode. Usually automatic for HTML templates.",
+        help=(
+            "Prepare HTML rendering before starting live mode. "
+            "Usually automatic for HTML templates."
+        ),
     ),
 ):
     """Live editing mode - regenerate screenshots when config or assets change"""
