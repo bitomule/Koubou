@@ -703,6 +703,12 @@ def generate(
     output: str = typer.Option(
         "table", "--output", help="Output format: table or json"
     ),
+    parallel_workers: int = typer.Option(
+        None,
+        "--parallel-workers",
+        min=1,
+        help="Override the number of screenshots rendered concurrently",
+    ),
     setup_html: bool = typer.Option(
         False,
         "--setup-html",
@@ -726,6 +732,10 @@ def generate(
 
         with open(config_file) as f:
             config_data = yaml.safe_load(f)
+
+        if parallel_workers is not None:
+            config_data.setdefault("project", {})
+            config_data["project"]["parallel_workers"] = parallel_workers
 
         try:
             project_config = ProjectConfig(**config_data)

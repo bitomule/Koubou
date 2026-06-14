@@ -2,13 +2,15 @@
 
 import shutil
 import tempfile
+import threading
+import time
 from pathlib import Path
 
 import pytest
 from PIL import Image
 
 from koubou.config import GradientConfig, ProjectConfig, ScreenshotConfig, TextOverlay
-from koubou.generator import ScreenshotGenerator, resolve_font_family
+from koubou.generator import GenerationTask, ScreenshotGenerator, resolve_font_family
 
 
 class TestScreenshotGenerator:
@@ -1274,3 +1276,177 @@ class TestZoomIntegration:
 
         output_image = Image.open(results[0])
         assert output_image.mode == "RGB"
+
+    def test_parallel_execution_preserves_result_order(self, monkeypatch):
+        """Parallel generation should still return paths in task order."""
+        tasks = [
+            GenerationTask(
+                order_index=index,
+                screenshot_id=f"screenshot_{index}",
+                language="en",
+                output_dir=str(self.temp_dir),
+                output_size=(400, 800),
+                config_dir=self.temp_dir,
+                device_frame_name="Test Frame",
+                screenshot_def=None,
+                screenshot_config=ScreenshotConfig(
+                    name=f"Shot {index}",
+                    source_image=str(self.source_image_path),
+                    output_size=(400, 800),
+                    output_path=str(self.temp_dir / f"shot_{index}.png"),
+                ),
+            )
+            for index in range(3)
+        ]
+
+        def fake_run_generation_task(task, generator=None):
+            time.sleep({0: 0.08, 1: 0.01, 2: 0.04}[task.order_index])
+            output_path = Path(task.screenshot_config.output_path)
+            output_path.write_text(task.screenshot_id, encoding="utf-8")
+            return output_path
+
+        monkeypatch.setattr(
+            self.generator, "_run_generation_task", fake_run_generation_task
+        )
+
+        results = self.generator._execute_generation_tasks(tasks, parallel_workers=3)
+
+        assert [path.name for path in results] == [
+            "shot_0.png",
+            "shot_1.png",
+            "shot_2.png",
+        ]
+
+    def test_parallel_execution_continues_after_failure(self, monkeypatch, caplog):
+        """A failed parallel task should not stop the rest of the batch."""
+        tasks = [
+            GenerationTask(
+                order_index=index,
+                screenshot_id=f"screenshot_{index}",
+                language="en",
+                output_dir=str(self.temp_dir),
+                output_size=(400, 800),
+                config_dir=self.temp_dir,
+                device_frame_name="Test Frame",
+                screenshot_def=None,
+                screenshot_config=ScreenshotConfig(
+                    name=f"Shot {index}",
+                    source_image=str(self.source_image_path),
+                    output_size=(400, 800),
+                    output_path=str(self.temp_dir / f"failure_{index}.png"),
+                ),
+            )
+            for index in range(3)
+        ]
+
+        def fake_run_generation_task(task, generator=None):
+            if task.order_index == 1:
+                raise RuntimeError("boom")
+            output_path = Path(task.screenshot_config.output_path)
+            output_path.write_text(task.screenshot_id, encoding="utf-8")
+            return output_path
+
+        monkeypatch.setattr(
+            self.generator, "_run_generation_task", fake_run_generation_task
+        )
+
+        with caplog.at_level("ERROR"):
+            results = self.generator._execute_generation_tasks(
+                tasks, parallel_workers=3
+            )
+
+        assert [path.name for path in results] == ["failure_0.png", "failure_2.png"]
+        assert "Failed to generate screenshot_1" in caplog.text
+
+    def test_parallel_execution_uses_multiple_workers(self, monkeypatch):
+        """Parallel execution should run more than one task at a time."""
+        tasks = [
+            GenerationTask(
+                order_index=index,
+                screenshot_id=f"screenshot_{index}",
+                language="en",
+                output_dir=str(self.temp_dir),
+                output_size=(400, 800),
+                config_dir=self.temp_dir,
+                device_frame_name="Test Frame",
+                screenshot_def=None,
+                screenshot_config=ScreenshotConfig(
+                    name=f"Shot {index}",
+                    source_image=str(self.source_image_path),
+                    output_size=(400, 800),
+                    output_path=str(self.temp_dir / f"parallel_{index}.png"),
+                ),
+            )
+            for index in range(4)
+        ]
+        state = {"active": 0, "peak": 0}
+        lock = threading.Lock()
+
+        def fake_run_generation_task(task, generator=None):
+            with lock:
+                state["active"] += 1
+                state["peak"] = max(state["peak"], state["active"])
+            try:
+                time.sleep(0.03)
+                output_path = Path(task.screenshot_config.output_path)
+                output_path.write_text(task.screenshot_id, encoding="utf-8")
+                return output_path
+            finally:
+                with lock:
+                    state["active"] -= 1
+
+        monkeypatch.setattr(
+            self.generator, "_run_generation_task", fake_run_generation_task
+        )
+
+        results = self.generator._execute_generation_tasks(tasks, parallel_workers=4)
+
+        assert len(results) == 4
+        assert state["peak"] >= 2
+
+    def test_project_generation_parallel_workers_renders_end_to_end(self):
+        """Project generation should render successfully with parallel workers."""
+        from koubou.config import ContentItem, ProjectInfo, ScreenshotDefinition
+
+        project_config = ProjectConfig(
+            project=ProjectInfo(
+                name="Parallel Project",
+                output_dir=str(self.temp_dir / "parallel_output"),
+                device="iPhone 15 Pro Portrait",
+                parallel_workers=2,
+            ),
+            screenshots={
+                "screenshot1": ScreenshotDefinition(
+                    content=[
+                        ContentItem(
+                            type="image",
+                            asset=str(self.source_image_path),
+                            position=("50%", "50%"),
+                        )
+                    ],
+                    frame=False,
+                ),
+                "screenshot2": ScreenshotDefinition(
+                    content=[
+                        ContentItem(
+                            type="image",
+                            asset=str(self.source_image_path),
+                            position=("50%", "50%"),
+                        ),
+                        ContentItem(
+                            type="text",
+                            content="Parallel",
+                            position=("50%", "20%"),
+                        ),
+                    ],
+                    frame=False,
+                ),
+            },
+        )
+
+        results = self.generator.generate_project(project_config)
+
+        assert len(results) == 2
+        assert [path.name for path in results] == ["screenshot1.png", "screenshot2.png"]
+        for result_path in results:
+            assert result_path.exists()

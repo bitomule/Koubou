@@ -7,6 +7,7 @@ from koubou.config import (
     ContentItem,
     GradientConfig,
     ProjectConfig,
+    ProjectInfo,
     ScreenshotConfig,
     TextBoxConfig,
     TextOverlay,
@@ -256,6 +257,23 @@ class TestContentItemAlignment:
                 asset="image.png",
                 position=("50%", "50%"),
                 alignment="centre",
+            )
+
+
+class TestProjectInfo:
+    """Tests for project-level configuration."""
+
+    def test_parallel_workers_defaults_to_sequential(self):
+        project = ProjectInfo(name="Test", output_dir="output", device="iPhone 15 Pro")
+        assert project.parallel_workers == 1
+
+    def test_parallel_workers_rejects_zero(self):
+        with pytest.raises(ValidationError, match="greater than or equal to 1"):
+            ProjectInfo(
+                name="Test",
+                output_dir="output",
+                device="iPhone 15 Pro",
+                parallel_workers=0,
             )
 
 

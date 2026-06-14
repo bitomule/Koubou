@@ -123,6 +123,7 @@ screenshots:
 - `variables:` are localizable `{{key}}` substitutions
 - `assets:` are file-path substitutions exposed to the template as `{{key}}`
 - `kou generate config.yaml --setup-html` prepares HTML rendering and generates in one run
+- `kou generate config.yaml --parallel-workers 4` renders multiple screenshots concurrently
 - `kou live config.yaml --setup-html` does the same before starting live mode
 - `kou inspect-frame "<device>" --output-size <size> --output json` exposes frame and screen geometry for layout decisions
 
@@ -260,6 +261,7 @@ project:
   output_dir: "Screenshots/Generated"
   device: "iPhone 15 Pro Portrait"
   output_size: "iPhone6_9"
+  parallel_workers: 4  # Optional - render up to 4 screenshots concurrently
 
 localization:
   base_language: "en"
@@ -470,6 +472,9 @@ See the YAML API Reference below for all available options including gradients, 
 # Emit machine-readable results
 kou generate config.yaml --output json
 
+# Override the worker count for this run
+kou generate config.yaml --parallel-workers 4
+
 # Prepare HTML rendering and generate in one run
 kou generate config.yaml --setup-html
 
@@ -478,6 +483,7 @@ kou generate config.yaml --verbose
 ```
 
 For HTML screenshots, `--output json` includes `layout_path` alongside the PNG path so tooling can open the measured layout sidecar directly.
+Set `project.parallel_workers` in YAML when you want the same concurrency level to apply to every run.
 
 #### HTML Setup
 ```bash

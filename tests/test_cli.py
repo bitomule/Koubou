@@ -427,6 +427,37 @@ class TestCLI:
             }
         ]
 
+    def test_generate_parallel_workers_override(self, monkeypatch):
+        """CLI flag should override project.parallel_workers before generation."""
+        config_data = {
+            "project": {
+                "name": "Parallel CLI Test",
+                "output_dir": str(self.temp_dir / "output"),
+                "device": "iPhone 15 Pro Portrait",
+            },
+            "screenshots": {},
+        }
+        config_path = self.temp_dir / "parallel_config.yaml"
+        with open(config_path, "w") as f:
+            yaml.dump(config_data, f)
+
+        captured = {}
+
+        class FakeGenerator:
+            def generate_project(self, project_config, config_dir):
+                captured["parallel_workers"] = project_config.project.parallel_workers
+                return []
+
+        monkeypatch.setattr("koubou.cli.ScreenshotGenerator", FakeGenerator)
+
+        result = self.runner.invoke(
+            app,
+            ["generate", str(config_path), "--parallel-workers", "4"],
+        )
+
+        assert result.exit_code == 0
+        assert captured["parallel_workers"] == 4
+
     def test_generate_json_includes_layout_path_for_html(self, monkeypatch):
         """HTML JSON output should expose the sidecar layout path."""
         template_path = self.temp_dir / "hero.html"
