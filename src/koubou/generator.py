@@ -1201,6 +1201,16 @@ class ScreenshotGenerator:
         # Use unified generation approach (handles both single and multi-language)
         return self._generate_localized_project(project_config, config_dir)
 
+    @staticmethod
+    def _all_screenshot_variants(project_config: ProjectConfig) -> List[Any]:
+        return [
+            screenshot_def
+            for display in project_config.project.resolved_displays()
+            for screenshot_def in project_config.screenshots_for_display(
+                display.name
+            ).values()
+        ]
+
     def _build_generation_tasks(
         self,
         project_config: ProjectConfig,
@@ -1213,9 +1223,13 @@ class ScreenshotGenerator:
         device: str,
         output_size: Tuple[int, int],
         languages: List[str],
+        screenshots: Optional[Dict[str, Any]] = None,
     ) -> List[GenerationTask]:
         """Build ordered generation tasks for a project."""
         from copy import deepcopy
+
+        if screenshots is None:
+            screenshots = project_config.screenshots
 
         tasks: List[GenerationTask] = []
         for language in languages:
@@ -1224,12 +1238,10 @@ class ScreenshotGenerator:
                 f"language: {language}"
             )
 
-            for i, (screenshot_id, screenshot_def) in enumerate(
-                project_config.screenshots.items(), 1
-            ):
+            for i, (screenshot_id, screenshot_def) in enumerate(screenshots.items(), 1):
                 logger.info(
                     f"[{device}] [{language}] "
-                    f"[{i}/{len(project_config.screenshots)}] {screenshot_id}"
+                    f"[{i}/{len(screenshots)}] {screenshot_id}"
                 )
 
                 if localization_config:
@@ -1422,7 +1434,7 @@ class ScreenshotGenerator:
 
             # Extract all text keys from all screenshots
             all_text_keys = set()
-            for screenshot_def in project_config.screenshots.values():
+            for screenshot_def in self._all_screenshot_variants(project_config):
                 if screenshot_def.content:
                     text_keys = content_resolver.extract_text_keys_from_content(
                         screenshot_def.content
@@ -1445,27 +1457,32 @@ class ScreenshotGenerator:
         defaults = project_config.defaults or {}
         default_background = defaults.get("background")
 
-        # Get device and output_size from project config
-        device = project_config.project.device
-        # output_size is validated and always a tuple at runtime
-        output_size: Tuple[
-            int, int
-        ] = project_config.project.output_size  # type: ignore[assignment]
-        logger.info(f"📱 Processing device: {device}")
-        logger.info(f"📐 Output size: {output_size}")
+        displays = project_config.project.resolved_displays()
         logger.info(f"🧵 Parallel workers: {project_config.project.parallel_workers}")
 
-        tasks = self._build_generation_tasks(
-            project_config,
-            config_dir=config_dir,
-            localization_config=localization_config,
-            xcstrings_manager=xcstrings_manager,
-            content_resolver=content_resolver,
-            default_background=default_background,
-            device=device,
-            output_size=output_size,
-            languages=languages,
-        )
+        tasks: List[GenerationTask] = []
+        for display in displays:
+            label = f" ({display.name} display)" if display.name else ""
+            logger.info(f"📱 Processing device: {display.device}{label}")
+            logger.info(f"📐 Output size: {display.output_size}")
+            tasks.extend(
+                self._build_generation_tasks(
+                    project_config,
+                    config_dir=config_dir,
+                    localization_config=localization_config,
+                    xcstrings_manager=xcstrings_manager,
+                    content_resolver=content_resolver,
+                    default_background=default_background,
+                    device=display.device,
+                    output_size=display.output_size,
+                    languages=languages,
+                    screenshots=project_config.screenshots_for_display(display.name),
+                )
+            )
+        for index, task in enumerate(tasks):
+            task.order_index = index
+        device = ", ".join(display.device for display in displays)
+
         all_results = self._execute_generation_tasks(
             tasks, project_config.project.parallel_workers
         )

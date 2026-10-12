@@ -82,7 +82,7 @@
         },
         "Black Titanium": {
           "Portrait": {
-            "y": "80", 
+            "y": "80",
             "x": "80",
             "name": "iPhone 15 Pro - Black Titanium - Portrait",
             "appstore_device_type": "IPHONE_69"
@@ -91,7 +91,7 @@
         "Blue Titanium": {
           "Portrait": {
             "y": "80",
-            "x": "80", 
+            "x": "80",
             "name": "iPhone 15 Pro - Blue Titanium - Portrait",
             "appstore_device_type": "IPHONE_69"
           }
@@ -117,7 +117,7 @@
         "Black Titanium": {
           "Portrait": {
             "y": "80",
-            "x": "80", 
+            "x": "80",
             "name": "iPhone 15 Pro Max - Black Titanium - Portrait",
             "appstore_device_type": "IPHONE_69"
           }
@@ -503,6 +503,122 @@
           "name": "iPhone 11 Portrait"
         }
       }
+    },
+    "Duo": {
+      "Night Sky": {
+        "Inner Open Landscape": {
+          "screen_bounds": {
+            "x": 120,
+            "y": 120,
+            "width": 2853,
+            "height": 2007
+          },
+          "display": "inner",
+          "name": "iPhone Duo - Night Sky - Inner Open Landscape",
+          "appstore_device_type": "IPHONE_DUO"
+        },
+        "Inner Open Portrait": {
+          "screen_bounds": {
+            "x": 120,
+            "y": 120,
+            "width": 2007,
+            "height": 2853
+          },
+          "display": "inner",
+          "name": "iPhone Duo - Night Sky - Inner Open Portrait",
+          "appstore_device_type": "IPHONE_DUO"
+        },
+        "Outer Closed Landscape": {
+          "screen_bounds": {
+            "x": 80,
+            "y": 88,
+            "width": 2034,
+            "height": 1398
+          },
+          "display": "outer",
+          "name": "iPhone Duo - Night Sky - Outer Closed Landscape",
+          "appstore_device_type": "IPHONE_DUO"
+        },
+        "Outer Closed Portrait": {
+          "screen_bounds": {
+            "x": 88,
+            "y": 80,
+            "width": 1398,
+            "height": 2034
+          },
+          "display": "outer",
+          "name": "iPhone Duo - Night Sky - Outer Closed Portrait",
+          "appstore_device_type": "IPHONE_DUO"
+        },
+        "Outer Open": {
+          "screen_bounds": {
+            "x": 1570,
+            "y": 80,
+            "width": 1398,
+            "height": 2034
+          },
+          "display": "outer",
+          "name": "iPhone Duo - Night Sky - Outer Open",
+          "appstore_device_type": "IPHONE_DUO"
+        }
+      },
+      "Star White": {
+        "Inner Open Landscape": {
+          "screen_bounds": {
+            "x": 120,
+            "y": 120,
+            "width": 2853,
+            "height": 2007
+          },
+          "display": "inner",
+          "name": "iPhone Duo - Star White - Inner Open Landscape",
+          "appstore_device_type": "IPHONE_DUO"
+        },
+        "Inner Open Portrait": {
+          "screen_bounds": {
+            "x": 120,
+            "y": 120,
+            "width": 2007,
+            "height": 2853
+          },
+          "display": "inner",
+          "name": "iPhone Duo - Star White - Inner Open Portrait",
+          "appstore_device_type": "IPHONE_DUO"
+        },
+        "Outer Closed Landscape": {
+          "screen_bounds": {
+            "x": 80,
+            "y": 88,
+            "width": 2034,
+            "height": 1398
+          },
+          "display": "outer",
+          "name": "iPhone Duo - Star White - Outer Closed Landscape",
+          "appstore_device_type": "IPHONE_DUO"
+        },
+        "Outer Closed Portrait": {
+          "screen_bounds": {
+            "x": 88,
+            "y": 80,
+            "width": 1398,
+            "height": 2034
+          },
+          "display": "outer",
+          "name": "iPhone Duo - Star White - Outer Closed Portrait",
+          "appstore_device_type": "IPHONE_DUO"
+        },
+        "Outer Open": {
+          "screen_bounds": {
+            "x": 1570,
+            "y": 80,
+            "width": 1398,
+            "height": 2034
+          },
+          "display": "outer",
+          "name": "iPhone Duo - Star White - Outer Open",
+          "appstore_device_type": "IPHONE_DUO"
+        }
+      }
     }
   },
   "iPad": {
@@ -649,5 +765,5 @@
       "name": "Apple TV - 4K"
     }
   },
-  "version": "2.5"
+  "version": "2.6"
 }

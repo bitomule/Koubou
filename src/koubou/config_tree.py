@@ -120,6 +120,9 @@ class ConfigTree:
         global_prefixes = [
             "project.name",
             "project.output_dir",
+            "project.device",
+            "project.output_size",
+            "project.displays",
             "devices",  # Device changes affect all screenshots
         ]
         return any(path.startswith(prefix) for prefix in global_prefixes)

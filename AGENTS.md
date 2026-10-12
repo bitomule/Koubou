@@ -90,13 +90,13 @@ Koubou does not handle uploads. Use [App Store Connect CLI](https://github.com/r
 brew install appstoreconnect-cli
 asc auth login
 
-asc assets screenshots upload \
+asc screenshots upload \
   --version-localization "LOC_ID" \
   --path "./output/en/iPhone_16_Pro_.../" \
   --device-type "IPHONE_69"
 ```
 
-The output directory structure maps directly to individual `asc` upload calls per device type and language.
+The output directory structure maps directly to individual `asc` upload calls per device type and language. iPhone Duo configs use `project.displays` and produce one folder per display; both folders go into the same set with `--device-type IPHONE_DUO`.
 
 ## Release Process
 

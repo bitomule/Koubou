@@ -31,6 +31,36 @@ project:
 
 `output_size` accepts named sizes or custom `[width, height]` arrays. See sizes table below.
 
+### Two displays (iPhone Duo)
+
+iPhone Duo screenshots come in two sizes, outer and inner. Replace `device`/`output_size` with `displays`; each screenshot renders once per display, and `displays:` on a screenshot overrides it for one display (`template`, `content`, `background`, `frame` replace; `variables`, `assets` merge):
+
+```yaml
+project:
+  name: "App Name - iPhone Duo"
+  output_dir: "output"
+  displays:
+    outer:
+      device: "iPhone Duo - Night Sky - Outer Closed Portrait"
+      output_size: "iPhoneDuo_Outer"        # 1398x2034
+    inner:
+      device: "iPhone Duo - Night Sky - Inner Open Portrait"
+      output_size: "iPhoneDuo_Inner"        # 2007x2853
+
+screenshots:
+  01_hero:
+    template: "templates/hero.html"
+    assets:
+      app_screenshot: "raw/outer/01_home.png"
+    displays:
+      inner:
+        template: "templates/hero-inner.html"
+        assets:
+          app_screenshot: "raw/inner/01_home.png"
+```
+
+Output: `output/{lang}/iPhone_Duo_-_Night_Sky_-_Outer_Closed_Portrait/01_hero.png` and the same under the inner frame's folder. The inner canvas is close to square (ratio 1.42), so a template tuned for a 2.17 iPhone canvas usually needs its own inner layout. Inspect each display separately with `kou inspect-frame`.
+
 Design implication:
 - The skill should read `project.device` and `project.output_size` before writing templates. Typography scale, layout density, and device crop should adapt to this canvas instead of using one fixed CSS recipe.
 - The skill should run `kou inspect-frame "<device>" --output-size <size> --output json` and use the returned geometry instead of estimating screen area and margins by eye.
@@ -240,6 +270,10 @@ screenshots:
 | iPhone (standard) | `iPhone 16 Pro - Black Titanium - Portrait` | `iPhone6_9` |
 | iPhone (max) | `iPhone 16 Pro Max - Black Titanium - Portrait` | `iPhone6_9` |
 | iPad | `iPad Pro 13 - M4 - Space Gray - Portrait` | `iPadPro13` |
+| iPhone Duo outer | `iPhone Duo - Night Sky - Outer Closed Portrait` | `iPhoneDuo_Outer` |
+| iPhone Duo inner | `iPhone Duo - Night Sky - Inner Open Portrait` | `iPhoneDuo_Inner` |
+
+iPhone Duo poses (Night Sky or Star White): `Outer Closed Portrait`, `Outer Closed Landscape`, `Outer Open` (back of the open device, outer display on the right; use a landscape canvas), `Inner Open Portrait`, `Inner Open Landscape`.
 
 ### Finding device names
 
@@ -261,6 +295,8 @@ Device names must match exactly as shown by `kou list-frames`.
 | `iPhone6_7` | 1290x2796 | iPhone 15/14/13/12 Pro Max, Plus (6.7") |
 | `iPhone6_5` | 1242x2688 | iPhone 11 Pro Max, XS Max (6.5") |
 | `iPhone6_1` | 1179x2556 | iPhone 16/15/14/13 Pro, 12 Pro, 11, XR (6.1") |
+| `iPhoneDuo_Outer` | 1398x2034 | iPhone Duo outer display (`_Landscape`: 2034x1398) |
+| `iPhoneDuo_Inner` | 2007x2853 | iPhone Duo inner display (`_Landscape`: 2853x2007) |
 | `iPhone5_5` | 1242x2208 | iPhone 8 Plus, 7 Plus, 6s Plus (5.5") |
 | `iPadPro13` | 2064x2752 | iPad Pro 13 M4, iPad Air 13 M2 |
 | `iPadPro12_9` | 2048x2732 | iPad Pro 12.9" (3rd gen and later) |

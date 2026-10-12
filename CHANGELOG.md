@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-10-12
+
+### Added
+- iPhone Duo device frames from Apple Design Resources: Night Sky and Star White, in five poses (outer closed portrait/landscape, outer open, inner open portrait/landscape), calibrated with `screen_bounds` and tagged `appstore_device_type: IPHONE_DUO`.
+- iPhone Duo App Store sizes: `iPhoneDuo_Outer` (1398×2034), `iPhoneDuo_Outer_Landscape`, `iPhoneDuo_Inner` (2007×2853) and `iPhoneDuo_Inner_Landscape`.
+- `project.displays`: one config renders several displays of a device, each with its own frame and output size. Screenshots can override `template`, `content`, `background`, `frame`, `variables` and `assets` per display.
+- `kou live` shows one preview slide per display; `kou generate --output json` names display results `<display>/<screenshot>`.
+- `kou inspect-frame` reports `duo_outer_portrait` and `duo_inner_portrait` canvas classes.
+
+### Changed
+- Changing `project.device`, `project.output_size` or `project.displays` in live mode regenerates every screenshot.
+- README upload instructions use the current `asc screenshots upload` command.
+
 ## [0.20.0] - 2026-06-14
 
 ### Added

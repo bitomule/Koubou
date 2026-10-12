@@ -1,5 +1,21 @@
 {
   "iPhone": {
+    "iPhone Duo Outer Portrait": {
+      "width": 1398,
+      "height": 2034
+    },
+    "iPhone Duo Outer Landscape": {
+      "width": 2034,
+      "height": 1398
+    },
+    "iPhone Duo Inner Portrait": {
+      "width": 2007,
+      "height": 2853
+    },
+    "iPhone Duo Inner Landscape": {
+      "width": 2853,
+      "height": 2007
+    },
     "iPhone 17 Portrait": {
       "width": 1206,
       "height": 2622

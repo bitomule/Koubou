@@ -381,6 +381,8 @@ kou list-sizes
 - `iPhone6_9` - iPhone 16 Pro Max, 15 Pro Max (1320×2868)
 - `iPhone6_7` - iPhone 15/14/13/12 Pro Max, Plus (1290×2796)
 - `iPhone6_1` - iPhone 16/15/14/13 Pro (1179×2556)
+- `iPhoneDuo_Outer` / `iPhoneDuo_Outer_Landscape` - iPhone Duo outer display (1398×2034 / 2034×1398)
+- `iPhoneDuo_Inner` / `iPhoneDuo_Inner_Landscape` - iPhone Duo inner display (2007×2853 / 2853×2007)
 - `iPadPro12_9` - iPad Pro 12.9" (2048×2732)
 - `iPadPro11` - iPad Pro 11, iPad Air 11 M2 (1668×2388)
 - `AppDesktop_2880` - Mac App Store desktop (2880×1800)
@@ -405,6 +407,42 @@ To generate screenshots for different sizes, create separate YAML files:
 - `iphone-6-9.yaml` - All iPhone 6.9" screenshots
 - `iphone-6-7.yaml` - All iPhone 6.7" screenshots
 - `ipad-pro.yaml` - All iPad Pro screenshots
+
+### iPhone Duo: One Device, Two Displays
+
+iPhone Duo has an outer display (1398×2034) and an inner display (2007×2853), and App Store Connect takes screenshots of both. Declare both under `project.displays` instead of `device`/`output_size`. Every screenshot renders once per display, and `displays:` on a screenshot changes what the inner (or outer) version shows:
+
+```yaml
+project:
+  name: "My App - iPhone Duo"
+  output_dir: "Screenshots/Generated"
+  displays:
+    outer:
+      device: "iPhone Duo - Night Sky - Outer Closed Portrait"
+      output_size: "iPhoneDuo_Outer"
+    inner:
+      device: "iPhone Duo - Night Sky - Inner Open Portrait"
+      output_size: "iPhoneDuo_Inner"
+
+screenshots:
+  01_hero:
+    template: "templates/hero.html"
+    variables:
+      headline: "Clean up your library"
+    assets:
+      app_screenshot: "raw/outer/01_home.png"
+    displays:
+      inner:
+        template: "templates/hero-inner.html"   # optional: a layout for the near-square screen
+        assets:
+          app_screenshot: "raw/inner/01_home.png"
+```
+
+- A display override can set `template`, `content`, `background`, `frame`, `variables` and `assets`. `variables` and `assets` are merged into the base screenshot; the other fields replace it.
+- Output goes to one folder per display, named after its frame: `{output_dir}/{language}/iPhone_Duo_-_Night_Sky_-_Outer_Closed_Portrait/01_hero.png` and the same for the inner frame.
+- `kou generate --output json` names results `outer/01_hero`, `inner/01_hero`; `kou live` shows one preview slide per display.
+- Frames come in Night Sky and Star White, in five poses: `Outer Closed Portrait`, `Outer Closed Landscape`, `Outer Open` (the open device seen from the back, outer display on the right), `Inner Open Portrait` and `Inner Open Landscape`. Apple's inner bezels draw no crease at the fold, so the inner screen is one continuous area.
+- `displays` works for any device, not only iPhone Duo. Each display needs its own frame name, since output folders are named after it.
 
 ---
 
@@ -547,14 +585,14 @@ kou --create-config config-html.yaml --mode html --name "My HTML Screenshots"
 
 #### Upload to App Store Connect
 
-For uploading screenshots, we recommend [App Store Connect CLI](https://github.com/rudrankriyam/App-Store-Connect-CLI):
+For uploading screenshots, we recommend [App Store Connect CLI](https://github.com/rorkai/App-Store-Connect-CLI):
 
 ```bash
-brew install appstoreconnect-cli
+brew install asc
 asc auth login
 
 # Upload per device type and language
-asc assets screenshots upload \
+asc screenshots upload \
   --version-localization "LOC_ID" \
   --path "./output/en/iPhone_16_Pro_.../" \
   --device-type "IPHONE_69"
@@ -562,11 +600,24 @@ asc assets screenshots upload \
 
 Koubou outputs screenshots organized by `{language}/{device}/`, mapping directly to individual `asc` upload calls.
 
+iPhone Duo has a single App Store Connect screenshot set, `APP_IPHONE_DUO`, which accepts both the outer and the inner sizes. Upload each display folder into it with `--device-type IPHONE_DUO` (needs `asc` 5.12.0 or later):
+
+```bash
+asc screenshots upload --version-localization "LOC_ID" \
+  --path "./output/en/iPhone_Duo_-_Night_Sky_-_Outer_Closed_Portrait/" --device-type "IPHONE_DUO"
+asc screenshots upload --version-localization "LOC_ID" \
+  --path "./output/en/iPhone_Duo_-_Night_Sky_-_Inner_Open_Portrait/" --device-type "IPHONE_DUO"
+```
+
+The Duo frames carry `appstore_device_type: IPHONE_DUO` in `Frames.json`.
+
 ## 🎨 Device Frames
 
 Koubou includes 100+ professionally crafted device frames:
 
 ### iPhone Frames
+- iPhone Duo (Night Sky, Star White; outer closed, outer open, inner open)
+- iPhone 17, 17 Pro/Max, iPhone Air
 - iPhone 16 Pro (Black, Desert, Natural, White Titanium)
 - iPhone 16 (Black, Pink, Teal, Ultramarine, White)
 - iPhone 15 Pro/Max (All titanium colors)
@@ -591,6 +642,10 @@ project:
   output_dir: string         # Output directory (default: "output")
   device: string             # Target device frame (default: "iPhone 15 Pro Portrait")
   output_size: string | [int, int]  # Named size ("iPhone6_9") or custom [width, height] (default: "iPhone6_9")
+  displays:                  # Instead of device/output_size: one entry per display
+    <name>:
+      device: string         # Device frame for this display
+      output_size: string | [int, int]
 
 defaults:                    # Default settings applied to all screenshots
   background:                # Default background configuration
@@ -616,6 +671,10 @@ screenshots:
         asset: string | dict? # Image path (string) or localized mapping (dict)
         scale: float?        # Scale factor (default: 1.0)
         frame: bool?         # Apply device frame (default: false)
+    displays:                # Optional per-display overrides (needs project.displays)
+      <name>:
+        template | content | background | frame   # replace the base value
+        variables | assets                          # merged into the base value
 ```
 
 ### Background Configuration
