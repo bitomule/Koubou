@@ -31,6 +31,15 @@ def renderer():
     return DeviceFrameRenderer(FRAMES_DIR)
 
 
+@pytest.fixture
+def project_dir(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "koubou.frame_manager.ensure_frames", lambda verbose=False: FRAMES_DIR
+    )
+    monkeypatch.chdir(tmp_path)
+    return tmp_path
+
+
 def _project(tmp_path: Path, **overrides) -> dict:
     data = {
         "project": {
@@ -255,9 +264,9 @@ def _write_content_project(tmp_path: Path) -> Path:
     return config_file
 
 
-def test_generate_renders_both_displays(tmp_path, monkeypatch):
+def test_generate_renders_both_displays(project_dir):
+    tmp_path = project_dir
     config_file = _write_content_project(tmp_path)
-    monkeypatch.chdir(tmp_path)
 
     result = CliRunner().invoke(app, ["generate", str(config_file), "--output", "json"])
 
@@ -272,9 +281,9 @@ def test_generate_renders_both_displays(tmp_path, monkeypatch):
     assert outer.getpixel((699, 1100))[:3] == (51, 102, 204)
 
 
-def test_live_preview_has_a_slide_per_display(tmp_path, monkeypatch):
+def test_live_preview_has_a_slide_per_display(project_dir):
+    tmp_path = project_dir
     config_file = _write_content_project(tmp_path)
-    monkeypatch.chdir(tmp_path)
     live = LiveScreenshotGenerator(config_file)
     live.current_config = live.load_config()
     try:
