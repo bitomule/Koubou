@@ -3,12 +3,12 @@
 import logging
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import yaml  # type: ignore[import-untyped]
 from rich.console import Console
 
-from .config import ProjectConfig, resolve_output_size
+from .config import ProjectConfig, ResolvedDisplay, ScreenshotDefinition
 from .config_tree import ConfigDiffer
 from .dependency_analyzer import DependencyAnalyzer
 from .exceptions import ConfigurationError, KoubouError
@@ -241,13 +241,16 @@ class LiveScreenshotGenerator:
                     )
                     result.regenerated_screenshots.append(screenshot_id)
                     result.generated_file_count += generated_count
-                    result.updated_preview_screenshots.append(screenshot_id)
+                    result.updated_preview_screenshots.extend(
+                        self.preview_slide_ids_for(screenshot_id)
+                    )
                     logger.info(
                         f"✅ Regenerated: {screenshot_id} ({generated_count} files)"
                     )
                 except Exception as e:
                     result.failed_screenshots[screenshot_id] = str(e)
-                    result.preview_errors[screenshot_id] = str(e)
+                    for slide_id in self.preview_slide_ids_for(screenshot_id):
+                        result.preview_errors[slide_id] = str(e)
                     logger.error(f"❌ Failed to regenerate {screenshot_id}: {e}")
         else:
             logger.info("No screenshots affected by changes")
@@ -393,27 +396,51 @@ class LiveScreenshotGenerator:
     def has_preview_screenshots(self) -> bool:
         return bool(self.get_preview_screenshot_ids())
 
-    def get_preview_screenshot_ids(self) -> List[str]:
+    def _preview_entries(
+        self,
+    ) -> List[Tuple[str, str, ResolvedDisplay, ScreenshotDefinition]]:
         if not self.current_config:
             return []
-        return list(self.current_config.screenshots.keys())
+        entries = []
+        for display in self.current_config.project.resolved_displays():
+            screenshots = self.current_config.screenshots_for_display(display.name)
+            for screenshot_id, screenshot_def in screenshots.items():
+                slide_id = (
+                    f"{screenshot_id}@{display.name}" if display.name else screenshot_id
+                )
+                entries.append((slide_id, screenshot_id, display, screenshot_def))
+        return entries
+
+    def preview_slide_ids_for(self, screenshot_id: str) -> List[str]:
+        return [
+            slide_id
+            for slide_id, entry_screenshot_id, _, _ in self._preview_entries()
+            if entry_screenshot_id == screenshot_id
+        ]
+
+    def get_preview_screenshot_ids(self) -> List[str]:
+        return [slide_id for slide_id, _, _, _ in self._preview_entries()]
 
     def get_preview_slides(self) -> List[HtmlPreviewSlide]:
-        if not self.current_config:
-            return []
-
-        width, height = resolve_output_size(self.current_config.project.output_size)
-        aspect_ratio = width / height
-        return [
-            HtmlPreviewSlide(
-                screenshot_id=screenshot_id,
-                title=screenshot_id,
-                aspect_ratio=aspect_ratio,
-                kind="html" if screenshot_def.template else "image",
-                path=self._preview_slide_path(screenshot_id, screenshot_def),
+        slides = []
+        for slide_id, screenshot_id, display, screenshot_def in self._preview_entries():
+            width, height = display.output_size
+            slides.append(
+                HtmlPreviewSlide(
+                    screenshot_id=slide_id,
+                    title=(
+                        f"{screenshot_id} · {display.name}"
+                        if display.name
+                        else screenshot_id
+                    ),
+                    aspect_ratio=width / height,
+                    kind="html" if screenshot_def.template else "image",
+                    path=self._preview_slide_path(
+                        slide_id, screenshot_id, screenshot_def, display
+                    ),
+                )
             )
-            for screenshot_id, screenshot_def in self.current_config.screenshots.items()
-        ]
+        return slides
 
     def sync_preview_workspace(
         self,
@@ -430,12 +457,10 @@ class LiveScreenshotGenerator:
                 self.current_config.localization, self.config_dir
             )
 
-        target_ids = screenshot_ids or set(self.get_preview_screenshot_ids())
         errors: Dict[str, str] = {}
 
-        for screenshot_id in target_ids:
-            screenshot_def = self.current_config.screenshots.get(screenshot_id)
-            if not screenshot_def:
+        for slide_id, screenshot_id, display, screenshot_def in self._preview_entries():
+            if screenshot_ids is not None and slide_id not in screenshot_ids:
                 continue
 
             try:
@@ -444,12 +469,13 @@ class LiveScreenshotGenerator:
                     stage_dir: Path,
                     sid: str = screenshot_id,
                     defn: Any = screenshot_def,
+                    target: ResolvedDisplay = display,
                 ) -> None:
                     if defn.template:
                         self._build_html_preview_slide(
                             stage_dir=stage_dir,
-                            screenshot_id=sid,
                             screenshot_def=defn,
+                            display=target,
                             language=language,
                             xcstrings_manager=xcstrings_manager,
                         )
@@ -458,15 +484,16 @@ class LiveScreenshotGenerator:
                             stage_dir=stage_dir,
                             screenshot_id=sid,
                             screenshot_def=defn,
+                            display=target,
                             language=language,
                         )
 
                 self.preview_workspace.stage_slide(
-                    screenshot_id=screenshot_id,
+                    screenshot_id=slide_id,
                     builder=build_stage,
                 )
             except Exception as exc:
-                errors[screenshot_id] = str(exc)
+                errors[slide_id] = str(exc)
 
         self.preview_workspace.remove_stale_slides(self.get_preview_screenshot_ids())
         return errors
@@ -478,8 +505,8 @@ class LiveScreenshotGenerator:
         self,
         *,
         stage_dir: Path,
-        screenshot_id: str,
         screenshot_def: Any,
+        display: ResolvedDisplay,
         language: str,
         xcstrings_manager: Optional[XCStringsManager],
     ) -> None:
@@ -487,7 +514,7 @@ class LiveScreenshotGenerator:
         prepared = self.generator.prepare_html_screenshot(
             screenshot_def,
             self.config_dir,
-            device_frame_name=self.current_config.project.device,
+            device_frame_name=display.device,
             language=language,
             base_language=(
                 self.current_config.localization.base_language
@@ -513,11 +540,13 @@ class LiveScreenshotGenerator:
         stage_dir: Path,
         screenshot_id: str,
         screenshot_def: Any,
+        display: ResolvedDisplay,
         language: str,
     ) -> None:
         output_path = self._resolve_preview_output_path(
             screenshot_id=screenshot_id,
             screenshot_def=screenshot_def,
+            display=display,
             language=language,
         )
         if not output_path.exists():
@@ -531,36 +560,42 @@ class LiveScreenshotGenerator:
             return self.current_config.localization.base_language
         return "en"
 
-    def _preview_slide_path(self, screenshot_id: str, screenshot_def: Any) -> str:
+    def _preview_slide_path(
+        self,
+        slide_id: str,
+        screenshot_id: str,
+        screenshot_def: Any,
+        display: ResolvedDisplay,
+    ) -> str:
         if screenshot_def.template:
-            return f"/slides/{screenshot_id}/"
+            return f"/slides/{slide_id}/"
 
         output_path = self._resolve_preview_output_path(
             screenshot_id=screenshot_id,
             screenshot_def=screenshot_def,
+            display=display,
             language=self._get_preview_language(),
         )
-        return f"/slides/{screenshot_id}/preview{output_path.suffix.lower() or '.png'}"
+        return f"/slides/{slide_id}/preview{output_path.suffix.lower() or '.png'}"
 
     def _resolve_preview_output_path(
         self,
         *,
         screenshot_id: str,
         screenshot_def: Any,
+        display: ResolvedDisplay,
         language: str,
     ) -> Path:
         assert self.current_config is not None
 
+        device_dir = display.device.replace(" ", "_")
         if self.current_config.localization:
             device_output_dir = str(
-                Path(self.current_config.project.output_dir)
-                / language
-                / self.current_config.project.device.replace(" ", "_")
+                Path(self.current_config.project.output_dir) / language / device_dir
             )
         else:
             device_output_dir = str(
-                Path(self.current_config.project.output_dir)
-                / self.current_config.project.device.replace(" ", "_")
+                Path(self.current_config.project.output_dir) / device_dir
             )
 
         if screenshot_def.template:
@@ -577,12 +612,12 @@ class LiveScreenshotGenerator:
         )
         temp_config = self.generator._convert_to_screenshot_config(
             screenshot_def,
-            self.current_config.project.device,
+            display.device,
             default_background,
             device_output_dir,
             self.config_dir,
             screenshot_id,
-            output_size=self.current_config.project.output_size,
+            output_size=display.output_size,
             language=language,
             base_language=(
                 self.current_config.localization.base_language

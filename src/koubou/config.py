@@ -671,6 +671,27 @@ class ContentItem(BaseModel):
         return v
 
 
+class ScreenshotDisplayOverride(BaseModel):
+    """Fields a screenshot can change for one display."""
+
+    model_config = {"extra": "forbid"}
+
+    background: Optional[GradientConfig] = None
+    content: Optional[List[ContentItem]] = None
+    template: Optional[str] = None
+    variables: Dict[str, str] = Field(default_factory=dict)
+    assets: Dict[str, LocalizedAsset] = Field(default_factory=dict)
+    frame: Optional[bool] = None
+
+    @model_validator(mode="after")
+    def validate_single_source(self):
+        if self.template is not None and self.content is not None:
+            raise ValueError(
+                "Cannot specify both 'template' and 'content'. Choose one."
+            )
+        return self
+
+
 class ScreenshotDefinition(BaseModel):
     """Screenshot definition with content items or HTML template."""
 
@@ -705,6 +726,36 @@ class ScreenshotDefinition(BaseModel):
             "False=no frame)"
         ),
     )
+    displays: Dict[str, ScreenshotDisplayOverride] = Field(
+        default_factory=dict,
+        description=(
+            "Per-display overrides keyed by project display name. Variables and "
+            "assets are merged; other fields replace the base value."
+        ),
+    )
+
+    def for_display(self, display: Optional[str]) -> "ScreenshotDefinition":
+        """Return this screenshot with one display's overrides applied."""
+        override = self.displays.get(display) if display else None
+        if override is None:
+            return self.model_copy(update={"displays": {}})
+
+        update: Dict[str, object] = {"displays": {}}
+        if override.template is not None:
+            update["template"] = override.template
+            update["content"] = None
+        if override.content is not None:
+            update["content"] = override.content
+            update["template"] = None
+        if override.background is not None:
+            update["background"] = override.background
+        if override.frame is not None:
+            update["frame"] = override.frame
+        if override.variables:
+            update["variables"] = {**self.variables, **override.variables}
+        if override.assets:
+            update["assets"] = {**self.assets, **override.assets}
+        return self.model_copy(update=update)
 
     @model_validator(mode="after")
     def validate_content_or_template(self):
@@ -783,12 +834,64 @@ class LocalizationConfig(BaseModel):
         return v
 
 
+def coerce_output_size(v: object) -> Tuple[int, int]:
+    """Resolve an output_size given as a named size, list or tuple."""
+    if isinstance(v, list) and len(v) == 2:
+        try:
+            v = (int(v[0]), int(v[1]))
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Invalid output_size list: {v}") from e
+
+    if isinstance(v, str) or (isinstance(v, tuple) and len(v) == 2):
+        width, height = resolve_output_size(v)  # type: ignore[arg-type]
+    else:
+        raise ValueError(
+            f"output_size must be a string (named size) or "
+            f"tuple/list of 2 integers, got: {v}"
+        )
+
+    if width > 10000 or height > 10000:
+        raise ValueError("Output size too large (max 10000x10000)")
+    return (width, height)
+
+
+class DisplayTarget(BaseModel):
+    """One display of a device, rendered as its own folder of screenshots."""
+
+    device: str = Field(..., description="Device frame for this display")
+    output_size: Tuple[int, int] = Field(
+        ..., description="Named App Store size or [width, height] for this display"
+    )
+
+    @field_validator("output_size", mode="before")
+    @classmethod
+    def resolve_display_output_size(cls, v: object) -> Tuple[int, int]:
+        return coerce_output_size(v)
+
+
+class ResolvedDisplay(BaseModel):
+    """A display to render: a named project display or the project device."""
+
+    name: Optional[str]
+    device: str
+    output_size: Tuple[int, int]
+
+
 class ProjectInfo(BaseModel):
     """Project information."""
 
     name: str = Field(..., description="Project name")
     output_dir: str = Field(default="output", description="Output directory")
-    device: str = Field(..., description="Target device frame")
+    device: Optional[str] = Field(
+        default=None, description="Target device frame (omit when using displays)"
+    )
+    displays: Dict[str, DisplayTarget] = Field(
+        default_factory=dict,
+        description=(
+            "Named displays of one device, each with its own frame and output "
+            "size (e.g. iPhone Duo outer and inner)"
+        ),
+    )
     parallel_workers: int = Field(
         default=1,
         ge=1,
@@ -809,37 +912,53 @@ class ProjectInfo(BaseModel):
     @classmethod
     def resolve_output_size_field(cls, data: dict) -> dict:
         """Resolve output_size from string or list to tuple before validation."""
-        if isinstance(data, dict) and "output_size" in data:
-            v = data["output_size"]
+        if not isinstance(data, dict):
+            return data
 
-            # Handle list input (from YAML) - convert to tuple
-            if isinstance(v, list) and len(v) == 2:
-                try:
-                    v = (int(v[0]), int(v[1]))
-                except (ValueError, TypeError) as e:
-                    raise ValueError(f"Invalid output_size list: {v}") from e
-
-            # Resolve string or tuple to final dimensions
-            if isinstance(v, str):
-                resolved = resolve_output_size(v)
-            elif isinstance(v, tuple) and len(v) == 2:
-                resolved = resolve_output_size(v)
-            else:
+        if data.get("displays"):
+            if data.get("device") or "output_size" in data:
                 raise ValueError(
-                    f"output_size must be a string (named size) or "
-                    f"tuple/list of 2 integers, got: {v}"
+                    "Use either project.device/output_size or project.displays, "
+                    "not both"
                 )
+            return data
 
-            width, height = resolved
-            if width > 10000 or height > 10000:
-                raise ValueError("Output size too large (max 10000x10000)")
+        if not data.get("device"):
+            raise ValueError("project.device is required unless displays are set")
 
-            data["output_size"] = resolved
-        elif isinstance(data, dict) and "output_size" not in data:
-            # If output_size not provided, use default from appstore sizes
+        if "output_size" in data:
+            data["output_size"] = coerce_output_size(data["output_size"])
+        else:
             data["output_size"] = resolve_output_size("iPhone6_9")
 
         return data
+
+    @field_validator("displays")
+    @classmethod
+    def validate_display_devices_unique(
+        cls, v: Dict[str, DisplayTarget]
+    ) -> Dict[str, DisplayTarget]:
+        devices = [target.device for target in v.values()]
+        if len(devices) != len(set(devices)):
+            raise ValueError(
+                "Each display needs its own device frame: output folders are "
+                "named after the device"
+            )
+        return v
+
+    def resolved_displays(self) -> List[ResolvedDisplay]:
+        """Return every display to render, or the single project device."""
+        if self.displays:
+            return [
+                ResolvedDisplay(
+                    name=name, device=target.device, output_size=target.output_size
+                )
+                for name, target in self.displays.items()
+            ]
+        assert self.device is not None
+        return [
+            ResolvedDisplay(name=None, device=self.device, output_size=self.output_size)
+        ]
 
 
 class ProjectConfig(BaseModel):
@@ -860,3 +979,25 @@ class ProjectConfig(BaseModel):
     def create_output_directory(cls, v: "ProjectInfo") -> "ProjectInfo":
         Path(v.output_dir).mkdir(parents=True, exist_ok=True)
         return v
+
+    @model_validator(mode="after")
+    def validate_display_overrides(self):
+        known = set(self.project.displays)
+        for screenshot_id, screenshot_def in self.screenshots.items():
+            unknown = sorted(set(screenshot_def.displays) - known)
+            if unknown:
+                raise ValueError(
+                    f"Screenshot '{screenshot_id}' overrides unknown display(s) "
+                    f"{', '.join(unknown)}; project.displays defines: "
+                    f"{', '.join(sorted(known)) or 'none'}"
+                )
+        return self
+
+    def screenshots_for_display(
+        self, display: Optional[str]
+    ) -> Dict[str, ScreenshotDefinition]:
+        """Return screenshot definitions with one display's overrides applied."""
+        return {
+            screenshot_id: screenshot_def.for_display(display)
+            for screenshot_id, screenshot_def in self.screenshots.items()
+        }

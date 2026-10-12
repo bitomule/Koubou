@@ -9,6 +9,26 @@
     "height": 2736,
     "description": "iPhone Air (6.9\" alt)"
   },
+  "iPhoneDuo_Outer": {
+    "width": 1398,
+    "height": 2034,
+    "description": "iPhone Duo outer display, portrait"
+  },
+  "iPhoneDuo_Outer_Landscape": {
+    "width": 2034,
+    "height": 1398,
+    "description": "iPhone Duo outer display, landscape"
+  },
+  "iPhoneDuo_Inner": {
+    "width": 2007,
+    "height": 2853,
+    "description": "iPhone Duo inner display, portrait"
+  },
+  "iPhoneDuo_Inner_Landscape": {
+    "width": 2853,
+    "height": 2007,
+    "description": "iPhone Duo inner display, landscape"
+  },
   "iPhone6_7": {
     "width": 1290,
     "height": 2796,

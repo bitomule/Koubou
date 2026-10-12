@@ -4,7 +4,7 @@ import json
 import logging
 import signal
 from pathlib import Path
-from typing import Any, Optional, Set, Tuple
+from typing import Any, List, Optional, Set, Tuple
 
 import typer
 import yaml
@@ -530,8 +530,60 @@ def _show_results(results, output_dir: str) -> None:
 def _project_uses_html_templates(project_config: ProjectConfig) -> bool:
     return any(
         screenshot_def.template
+        or any(override.template for override in screenshot_def.displays.values())
         for screenshot_def in project_config.screenshots.values()
     )
+
+
+GenerationResult = Tuple[str, Optional[Path], Optional[Path], bool, Optional[str]]
+
+
+def _single_device_results(
+    project_config: ProjectConfig, result_paths: List[Path]
+) -> List[GenerationResult]:
+    results: List[GenerationResult] = []
+    for i, (screenshot_id, screenshot_def) in enumerate(
+        project_config.screenshots.items()
+    ):
+        if i < len(result_paths):
+            result_path = result_paths[i]
+            layout_path = (
+                _layout_output_path(result_path) if screenshot_def.template else None
+            )
+            results.append((screenshot_id, result_path, layout_path, True, None))
+        else:
+            results.append((screenshot_id, None, None, False, "Generation failed"))
+    return results
+
+
+def _display_results(
+    project_config: ProjectConfig, result_paths: List[Path]
+) -> List[GenerationResult]:
+    language = (
+        project_config.localization.languages[0]
+        if project_config.localization
+        else None
+    )
+    by_location = {}
+    for path in result_paths:
+        if language is None or path.parent.parent.name == language:
+            by_location[(path.parent.name, path.stem)] = path
+
+    results: List[GenerationResult] = []
+    for display in project_config.project.resolved_displays():
+        device_dir = display.device.replace(" ", "_")
+        screenshots = project_config.screenshots_for_display(display.name)
+        for screenshot_id, screenshot_def in screenshots.items():
+            name = f"{display.name}/{screenshot_id}"
+            found = by_location.get((device_dir, screenshot_id))
+            if found is None:
+                results.append((name, None, None, False, "Generation failed"))
+                continue
+            layout_path = (
+                _layout_output_path(found) if screenshot_def.template else None
+            )
+            results.append((name, found, layout_path, True, None))
+    return results
 
 
 def _layout_output_path(output_path: Path) -> Path:
@@ -611,6 +663,8 @@ def _classify_canvas(device: str, output_size: Tuple[int, int]) -> str:
         return "watch_portrait" if height >= width else "landscape"
     if width > height:
         return "landscape"
+    if "iphone duo" in device_lower:
+        return "duo_inner_portrait" if "inner" in device_lower else "duo_outer_portrait"
     if "ipad" in device_lower:
         return "ipad_portrait"
     if "iphone" in device_lower:
@@ -758,24 +812,10 @@ def generate(
         try:
             config_dir = config_file.parent
             result_paths = generator.generate_project(project_config, config_dir)
-            results = []
-            for i, (screenshot_id, screenshot_def) in enumerate(
-                project_config.screenshots.items()
-            ):
-                if i < len(result_paths):
-                    result_path = result_paths[i]
-                    layout_path = (
-                        _layout_output_path(result_path)
-                        if screenshot_def.template
-                        else None
-                    )
-                    results.append(
-                        (screenshot_id, result_path, layout_path, True, None)
-                    )
-                else:
-                    results.append(
-                        (screenshot_id, None, None, False, "Generation failed")
-                    )
+            if project_config.project.displays:
+                results = _display_results(project_config, result_paths)
+            else:
+                results = _single_device_results(project_config, result_paths)
         except Exception as _e:
             stderr_console.print(f"Project generation failed: {_e}", style="red")
             raise typer.Exit(1)

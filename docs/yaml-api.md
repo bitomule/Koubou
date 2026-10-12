@@ -35,6 +35,32 @@ project:
   output_dir: "Screenshots/Generated"
 ```
 
+### Devices with more than one display
+
+A device such as iPhone Duo has two displays, each with its own frame and App Store size. Declare them under `displays` instead of `device`/`output_size`; every screenshot is rendered once per display, into a folder named after that display's frame.
+
+```yaml
+project:
+  name: "My App - iPhone Duo"
+  displays:
+    outer:
+      device: "iPhone Duo - Night Sky - Outer Closed Portrait"
+      output_size: "iPhoneDuo_Outer"          # 1398×2034
+    inner:
+      device: "iPhone Duo - Night Sky - Inner Open Portrait"
+      output_size: "iPhoneDuo_Inner"          # 2007×2853
+
+screenshots:
+  welcome:
+    template: "templates/welcome.html"
+    assets:
+      app_screenshot: "raw/outer/welcome.png"
+    displays:
+      inner:                                   # template, content, background, frame replace;
+        assets:                                # variables and assets are merged
+          app_screenshot: "raw/inner/welcome.png"
+```
+
 ---
 
 ## Localization Configuration

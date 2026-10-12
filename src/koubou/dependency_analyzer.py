@@ -2,11 +2,20 @@
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Set, Union
+from typing import Any, Dict, List, Set, Union
 
 from .config import ProjectConfig
 
 logger = logging.getLogger(__name__)
+
+
+def _display_variants(config: ProjectConfig, screenshot_id: str) -> List[Any]:
+    variants: List[Any] = []
+    for display in config.project.resolved_displays():
+        variant = config.screenshots[screenshot_id].for_display(display.name)
+        if variant not in variants:
+            variants.append(variant)
+    return variants
 
 
 class AssetDependency:
@@ -101,99 +110,102 @@ class DependencyAnalyzer:
         self._asset_to_screenshots = {}
 
         # Analyze each screenshot for asset dependencies
-        for screenshot_id, screenshot_def in config.screenshots.items():
+        for screenshot_id in config.screenshots:
             screenshot_assets = []
+            for screenshot_def in _display_variants(config, screenshot_id):
 
-            # Track HTML template and its sibling files
-            if screenshot_def.template:
-                template_path_str = screenshot_def.template
-                if Path(template_path_str).is_absolute():
-                    template_resolved = Path(template_path_str)
-                else:
-                    template_resolved = config_dir / template_path_str
+                # Track HTML template and its sibling files
+                if screenshot_def.template:
+                    template_path_str = screenshot_def.template
+                    if Path(template_path_str).is_absolute():
+                        template_resolved = Path(template_path_str)
+                    else:
+                        template_resolved = config_dir / template_path_str
 
-                if template_resolved.exists():
-                    # Track the template file itself
-                    dep = AssetDependency(
-                        screenshot_id=screenshot_id,
-                        asset_path=str(template_resolved),
-                        asset_type="template",
-                    )
-                    dep.resolved_path = template_resolved.resolve()
-                    dep.last_modified = template_resolved.stat().st_mtime
-                    self.dependencies.append(dep)
-                    screenshot_assets.append(dep)
-
-                    asset_key = str(dep.resolved_path)
-                    if asset_key not in self._asset_to_screenshots:
-                        self._asset_to_screenshots[asset_key] = []
-                    self._asset_to_screenshots[asset_key].append(screenshot_id)
-
-                    # Track template directory files recursively (CSS, JS, images,
-                    # partials, nested assets, etc.)
-                    template_dir = template_resolved.parent.resolve()
-                    for sibling in template_dir.rglob("*"):
-                        if not sibling.is_file():
-                            continue
-                        if sibling.resolve() == template_resolved.resolve():
-                            continue
-
-                        sib_dep = AssetDependency(
+                    if template_resolved.exists():
+                        # Track the template file itself
+                        dep = AssetDependency(
                             screenshot_id=screenshot_id,
-                            asset_path=str(sibling),
-                            asset_type="template_asset",
+                            asset_path=str(template_resolved),
+                            asset_type="template",
                         )
-                        sib_dep.resolved_path = sibling.resolve()
-                        sib_dep.last_modified = sibling.stat().st_mtime
-                        self.dependencies.append(sib_dep)
-                        screenshot_assets.append(sib_dep)
+                        dep.resolved_path = template_resolved.resolve()
+                        dep.last_modified = template_resolved.stat().st_mtime
+                        self.dependencies.append(dep)
+                        screenshot_assets.append(dep)
 
-                        sib_key = str(sib_dep.resolved_path)
-                        if sib_key not in self._asset_to_screenshots:
-                            self._asset_to_screenshots[sib_key] = []
-                        self._asset_to_screenshots[sib_key].append(screenshot_id)
+                        asset_key = str(dep.resolved_path)
+                        if asset_key not in self._asset_to_screenshots:
+                            self._asset_to_screenshots[asset_key] = []
+                        self._asset_to_screenshots[asset_key].append(screenshot_id)
 
-            # Scan content items for asset references
-            for content_item in screenshot_def.content or []:
-                if content_item.type == "image" and content_item.asset:
-                    # Handle both string and dict asset formats
-                    asset_paths: List[str] = []
+                        # Track template directory files recursively (CSS, JS, images,
+                        # partials, nested assets, etc.)
+                        template_dir = template_resolved.parent.resolve()
+                        for sibling in template_dir.rglob("*"):
+                            if not sibling.is_file():
+                                continue
+                            if sibling.resolve() == template_resolved.resolve():
+                                continue
 
-                    if isinstance(content_item.asset, dict):
-                        # Dict format: collect all unique asset paths
-                        asset_paths = list(set(content_item.asset.values()))
-                    elif isinstance(content_item.asset, str):
-                        # String format: single path
-                        asset_paths = [content_item.asset]
-
-                    # Create dependencies for all asset paths
-                    for asset_path in asset_paths:
-                        if not asset_path:  # Skip empty paths
-                            continue
-
-                        dependency = AssetDependency(
-                            screenshot_id=screenshot_id,
-                            asset_path=asset_path,
-                            asset_type="image",
-                        )
-
-                        # Try to resolve the asset path
-                        if dependency.resolve_path(config_dir):
-                            self.dependencies.append(dependency)
-                            screenshot_assets.append(dependency)
-
-                            # Update mappings - use consistent path resolution
-                            asset_key = str(
-                                dependency.resolved_path.resolve()  # type: ignore  # noqa: E501
+                            sib_dep = AssetDependency(
+                                screenshot_id=screenshot_id,
+                                asset_path=str(sibling),
+                                asset_type="template_asset",
                             )
-                            if asset_key not in self._asset_to_screenshots:
-                                self._asset_to_screenshots[asset_key] = []
-                            self._asset_to_screenshots[asset_key].append(screenshot_id)
-                        else:
-                            logger.warning(
-                                f"Could not resolve asset {asset_path} "
-                                f"for screenshot {screenshot_id}"
+                            sib_dep.resolved_path = sibling.resolve()
+                            sib_dep.last_modified = sibling.stat().st_mtime
+                            self.dependencies.append(sib_dep)
+                            screenshot_assets.append(sib_dep)
+
+                            sib_key = str(sib_dep.resolved_path)
+                            if sib_key not in self._asset_to_screenshots:
+                                self._asset_to_screenshots[sib_key] = []
+                            self._asset_to_screenshots[sib_key].append(screenshot_id)
+
+                # Scan content items for asset references
+                for content_item in screenshot_def.content or []:
+                    if content_item.type == "image" and content_item.asset:
+                        # Handle both string and dict asset formats
+                        asset_paths: List[str] = []
+
+                        if isinstance(content_item.asset, dict):
+                            # Dict format: collect all unique asset paths
+                            asset_paths = list(set(content_item.asset.values()))
+                        elif isinstance(content_item.asset, str):
+                            # String format: single path
+                            asset_paths = [content_item.asset]
+
+                        # Create dependencies for all asset paths
+                        for asset_path in asset_paths:
+                            if not asset_path:  # Skip empty paths
+                                continue
+
+                            dependency = AssetDependency(
+                                screenshot_id=screenshot_id,
+                                asset_path=asset_path,
+                                asset_type="image",
                             )
+
+                            # Try to resolve the asset path
+                            if dependency.resolve_path(config_dir):
+                                self.dependencies.append(dependency)
+                                screenshot_assets.append(dependency)
+
+                                # Update mappings - use consistent path resolution
+                                asset_key = str(
+                                    dependency.resolved_path.resolve()  # type: ignore  # noqa: E501
+                                )
+                                if asset_key not in self._asset_to_screenshots:
+                                    self._asset_to_screenshots[asset_key] = []
+                                self._asset_to_screenshots[asset_key].append(
+                                    screenshot_id
+                                )
+                            else:
+                                logger.warning(
+                                    f"Could not resolve asset {asset_path} "
+                                    f"for screenshot {screenshot_id}"
+                                )
 
             self._screenshot_to_assets[screenshot_id] = screenshot_assets
 

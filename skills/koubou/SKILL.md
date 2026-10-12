@@ -195,8 +195,8 @@ Read `design-guide.md` before generating templates. Read `yaml-reference.md` bef
 
 1. Create working directory (e.g., `AppStore/` or wherever makes sense for the project)
 2. Run `kou setup-html`
-3. Read `project.device` and `project.output_size` from the YAML
-4. Run `kou inspect-frame "<device>" --output-size <size> --output json` and use that geometry before writing CSS
+3. Read `project.device` and `project.output_size` from the YAML — or, for a two-display device like iPhone Duo, every entry under `project.displays` (see `yaml-reference.md`)
+4. Run `kou inspect-frame "<device>" --output-size <size> --output json` (once per display) and use that geometry before writing CSS
 5. Draft the narrative arc and 2-3 headline/subtitle options per slide before touching layout. Pick the strongest one first. Copy quality comes before CSS
 6. Translate the style decision into a campaign brief:
    - what the set should feel like
@@ -338,8 +338,13 @@ Use exact names from `kou list-frames`. Common ones:
 - `iPhone 16 Pro - Black Titanium - Portrait`
 - `iPhone 16 Pro Max - Black Titanium - Portrait`
 - `iPad Pro 13 - M4 - Space Gray - Portrait`
+- `iPhone Duo - Night Sky - Outer Closed Portrait` and `iPhone Duo - Night Sky - Inner Open Portrait` (also Star White, landscape poses, and `Outer Open`)
 
 Search with: `kou list-frames "iPhone 16"`
+
+### iPhone Duo
+
+One device, two displays: outer 1398x2034 and inner 2007x2853 (and their landscape versions). Use `project.displays` so one config renders both; each display lands in its own folder. App Store Connect keeps both in one screenshot set: upload each folder with `asc screenshots upload --device-type IPHONE_DUO` (`asc` 5.12.0+). `canvas_class` is `duo_outer_portrait` or `duo_inner_portrait`: the inner canvas is close to square, so design its layout rather than reusing a tall iPhone template. Apple's guidelines ask for product images used as is: keep copy beside the device, not over it.
 
 ### Frame inspection for layout decisions
 
@@ -361,6 +366,8 @@ Use this data to choose typography scale, crop aggressiveness, and layout densit
 | `iPhone6_7` | 1290x2796 | iPhone 15/14/13 Pro Max, Plus |
 | `iPhone6_5` | 1242x2688 | iPhone 11 Pro Max, XS Max |
 | `iPhone6_1` | 1179x2556 | iPhone 16/15/14/13 Pro |
+| `iPhoneDuo_Outer` | 1398x2034 | iPhone Duo outer display |
+| `iPhoneDuo_Inner` | 2007x2853 | iPhone Duo inner display |
 | `iPhone5_5` | 1242x2208 | iPhone 8 Plus, 7 Plus |
 | `iPadPro13` | 2064x2752 | iPad Pro 13" M4 |
 | `iPadPro12_9` | 2048x2732 | iPad Pro 12.9" |
